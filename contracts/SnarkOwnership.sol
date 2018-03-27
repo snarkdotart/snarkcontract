@@ -7,7 +7,7 @@ import "zeppelin-solidity/contracts/token/ERC721/ERC721.sol";
 contract SnarkOwnership is ERC721 {
 
     // содержит связь id полотна с их владельцем
-    mapping(uint256 => address) internal canvasToOwner;
+    mapping(uint256 => address) internal tokenToOwner;
 
     // содержит информацию о количестве токенов, принадлежащих владельцу
     mapping(address => uint256) internal ownershipTokenCount;
@@ -17,7 +17,7 @@ contract SnarkOwnership is ERC721 {
 
     // модификатор, фильтрующий по принадлежности к токену
     modifier onlyOwnerOf(uint256 _tokenId) {
-        require(msg.sender == canvasToOwner[_tokenId]);
+        require(msg.sender == tokenToOwner[_tokenId]);
         _;
     }
 
@@ -30,7 +30,7 @@ contract SnarkOwnership is ERC721 {
     /// @dev Возвращает адрес владельца токена
     /// @param _tokenId Токен, владельца которого хотим узнать
     function ownerOf(uint256 _tokenId) public view returns (address _owner) {
-        return canvasToOwner[_tokenId];
+        return tokenToOwner[_tokenId];
     }
 
     /// @dev Производит передачу токена на другой адрес
@@ -68,7 +68,7 @@ contract SnarkOwnership is ERC721 {
         // увеличиваем количество картин у нового владельца
         ownershipTokenCount[_to]++;
         // записываем нового владельца
-        canvasToOwner[_tokenId] = _to;
+        tokenToOwner[_tokenId] = _to;
         // вызов события по спецификации ERC721
         Transfer(_from, _to, _tokenId);
     }
