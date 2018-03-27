@@ -22,8 +22,8 @@ contract SnarkMarket is SnarkBase {
     struct Bid {
         // id полотна
         uint canvasId;
-        // номер экземпляра
-        // uint canvasIndex;
+        // активен ли текущий бид
+        bool isActive;
         // адрес, выставившего bid
         address bidder;
         // предложенная цена за полотно
@@ -60,12 +60,29 @@ contract SnarkMarket is SnarkBase {
         }
 
         // сохраняем текущий bid для выбранного токена
-        bids[_tokenId] = Bid(_tokenId, msg.sender, msg.value);
+        bids[_tokenId] = Bid(_tokenId, true, msg.sender, msg.value);
     }
 
     /// @dev Функция позволяет тказаться от bid и вернуть деньги себе на кошелек
     /// @param _tokenId Токен, от которого хотят отказаться
     function withdrawBid(uint256 _tokenId) {
+        
+        // вызвавший не должен быть владельцем полотна
+        require(tokenToOwner[_tokenId] != msg.sender);
+
+        Bid storage bid = bids[_tokenId];
+
+        // вызов должен быть только тем, кто является бидером
+        require(msg.sender == bid.bidder);
+
+        // запоминаем предыдущую стоимость
+        uint256 amount = bid.value;
+
+        // забиваем бид пустышкой
+        bids[_tokenId] = Bid(_tokenId, false, address(0), 0);
+
+        // возвращаем денежку
+        msg.sender.transfer(amount);
     }
 
     /// @dev Фукнция совершения покупки полотна
