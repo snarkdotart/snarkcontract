@@ -85,6 +85,8 @@ contract SnarkBase is Ownable, SnarkOwnership {
     {
         // адрес не должен быть равен нулю
         require(msg.sender != address(0));
+        // массивы участников и их долей должны быть равны по длине
+        require(_addrIncomeParticipants.length == _percentageParts.length);
         // проверяем на существование картины с таким хэшем во избежание повторной загрузки
         require(isExistCanvasByHash(_hashOfCanvas) == false);
         // проверяем, что количество полотен было >= 1
@@ -104,6 +106,8 @@ contract SnarkBase is Ownable, SnarkOwnership {
             uint256 _tokenId = SafeMath.sub(digitalCanvases.length, 1);
             // на всякий случай проверяем, что нет переполнения
             require(_tokenId == uint256(uint32(_tokenId)));
+
+
             // теперь необходимо сохранить список участников, участвующих в дележке прибыли и их доли
             Participant[] storage investors = canvasIdToParticipants[_tokenId];
             // первым делом добавляем snark, как участника, по умолчанию
@@ -118,6 +122,8 @@ contract SnarkBase is Ownable, SnarkOwnership {
                 // !!! НАДО БЫ отправить лучше один раз массивом (id полотна, адресат, его доля).
                 PercentageApprovalEvent(_tokenId, _addrIncomeParticipants[inv], _percentageParts[inv]);
             }
+
+
             // назначение владельца экземпляра, где также будет сгенерировано событие Transfer протокола ERC 721,
             // которое укажет на то, что полотно было добавлено в блокчейн.
             _transfer(0, _artist, _tokenId);
@@ -128,20 +134,50 @@ contract SnarkBase is Ownable, SnarkOwnership {
     /// @param _tokenId Токен, для которого хотим получить участиков распределения прибыли
     function approveParticipation(uint256 _tokenId) public {
         require(msg.sender != address(0));
-        bool isReady = true;
+        bool _isReady = true;
         Participant[] storage investors = canvasIdToParticipants[_tokenId];
         for (uint8 i = 0; i < investors.length; i++) {
             if (msg.sender == investors[i].participant) {
                 // выставляем для текущего адреса свойство подтвреждения
                 investors[i].isApproved = true;
             }
-            isReady = isReady && investors[i].isApproved;
+            _isReady = _isReady && investors[i].isApproved;
         }
         // проверяем все ли участники подтверждены и если да, то 
         // выставляем готовность полотна торговаться
-        if (isReady) {
+        if (_isReady) {
             DigitalCanvas storage canvas = digitalCanvases[_tokenId];
-            canvas.isReadyForSale = isReady;
+            canvas.isReadyForSale = _isReady;
+        }
+    }
+
+    /// @dev Изменение долевого участия. Возможно только до тех пор, 
+    /// пока картина не выставлена на продажу. ??? ИЛИ ЗАПРЕТИТЬ ???
+    /// @param _tokenId Токен, для которого хотят поменять условия распределения прибыли
+    /// @param _addrIncomeParticipants Массив адресов, которые участвуют в распределении прибыли
+    /// @param _percentageParts Доли соответствующие адресам
+    function changePercentageParticipation(
+        uint256 _tokenId,        
+        address[] _addrIncomeParticipants,
+        uint8[] _percentageParts
+    ) 
+        public 
+    {
+        require(_addrIncomeParticipants.length == _percentageParts.length);
+
+        // теперь необходимо сохранить список участников, участвующих в дележке прибыли и их доли
+        Participant[] storage investors = canvasIdToParticipants[_tokenId];
+        // первым делом добавляем snark, как участника, по умолчанию
+        investors.push(Participant(owner, snarkPercentageAmount, true));
+        // а теперь добавляем всех остальных из списка, заданных художником
+        for (uint8 inv = 0; inv < _addrIncomeParticipants.length; inv++) {
+            investors.push(Participant(_addrIncomeParticipants[inv], _percentageParts[inv], false));
+
+            // отправляем уведомление всем участникам, чтобы они подтвердили свое 
+            // согласие на установленную их долю в доходе. 
+            // !!! То, что событие будет вызываться для каждой копии картины отдельно - БОЛЬШОЙ НЕДОСТАТОК
+            // !!! НАДО БЫ отправить лучше один раз массивом (id полотна, адресат, его доля).
+            PercentageApprovalEvent(_tokenId, _addrIncomeParticipants[inv], _percentageParts[inv]);
         }
     }
 
@@ -160,8 +196,5 @@ contract SnarkBase is Ownable, SnarkOwnership {
 
     // получение списка картин и долей участника, ожидающих его подтверждения
     // function getWaiteApprovalList
-
-
-    // изменение долевого участия можно только до тех пор, пока картина не выставлена на продажу
 
 }
