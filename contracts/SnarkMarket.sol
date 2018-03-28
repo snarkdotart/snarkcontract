@@ -5,6 +5,7 @@ import "./SnarkBase.sol";
 
 
 contract SnarkMarket is SnarkBase {
+    event CanvasBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
 
     struct Offer {
         // Id полотна
@@ -33,7 +34,7 @@ contract SnarkMarket is SnarkBase {
     // содержит связку token с bid
     mapping(uint256 => Bid) public bids;
     // содержит связку token с offer
-    mapping(uint256 => Offer) public ffers;
+    mapping(uint256 => Offer) public offers;
     // содержит связку адреса с его балансом
     mapping(address => uint256) public pendingWithdrawals;
 
@@ -41,7 +42,7 @@ contract SnarkMarket is SnarkBase {
 
     /// @dev Функция, выставляющая bid для выбранного токена
     /// @param _tokenId Токен, который хотят приобрести
-    function setBid(uint256 _tokenId) payable {
+    function setBid(uint256 _tokenId) public payable {
         // 1. нам не важно, доступен ли токен для продажи,
         // поэтому принимать bid мы можем всегда.
         // 2. токен не должен принадлежать тому, кто выставляет bid
@@ -65,8 +66,7 @@ contract SnarkMarket is SnarkBase {
 
     /// @dev Функция позволяет тказаться от bid и вернуть деньги себе на кошелек
     /// @param _tokenId Токен, от которого хотят отказаться
-    function withdrawBid(uint256 _tokenId) {
-        
+    function withdrawBid(uint256 _tokenId) public {
         // вызвавший не должен быть владельцем полотна
         require(tokenToOwner[_tokenId] != msg.sender);
 
@@ -87,7 +87,59 @@ contract SnarkMarket is SnarkBase {
 
     /// @dev Фукнция совершения покупки полотна
     /// @param _tokenId Токен, который покупают
-    function buyCanvas(uint256 _tokenId) payable {
+    function buyCanvas(uint256 _tokenId) public payable {
+        // токен не может быть нулевым
+        require(_tokenId != 0);
+        Offer storage offer = offers[_tokenId];
+        DigitalCanvas storage canvas = digitalCanvases[_tokenId];
+        // совершить покупку можно лишь только того полотна, которое выставлено на продажу
+        require(canvas.isForSale);
+        // переданное количество денег не должно быть меньше установленной цены
+        require(msg.value >= offer.price);
+        // покупатель должен быть либо не установлен заранее, либо установлен на того, 
+        // кто сейчас пытается купить это полотно
+        require(offer.offerTo == address(0) || offer.offerTo == msg.sender);
+        // нельзя продать самому себе
+        require(tokenToOwner[_tokenId] != msg.sender);
+        // устанавливаем владельцем текущего пользователя
+        tokenToOwner[_tokenId] = msg.sender;
+        // производим передачу токена (смотри SnarkOwnership)
+        _transfer(offer.seller, msg.sender, _tokenId);
+        // теперь необходимо выявить доход, и если он был, то произвести
+        // распределение дохода, согласно долей участников. Расчет в weis
+        if (canvas.lastPrice < msg.value && (msg.value - canvas.lastPrice) >= 100) {
+            // вычисляем доход, полученный при продаже
+            uint profit = msg.value - canvas.lastPrice;
+            // тут будем хранить остаток, после выплаты всем участникам
+            uint residue = profit;
+            // получаем список участников прибыли
+            Participant[] storage participants = canvasIdToParticipants[_tokenId];
+            // и по очереди выплачиваем
+            for (uint8 i = 0; i < participants.length; i++) {
+                uint payout = profit * participants[i].persentageAmount / 100;
+                pendingWithdrawals[participants[i].participant] += payout;
+                residue -= payout;
+            }
+            // все что осталось после выплат всем участникам - отдаем продавцу
+            pendingWithdrawals[offer.seller] += residue;
+        } else {
+            // если не с кем делиться, то весь доход себе
+            pendingWithdrawals[offer.seller] += msg.value;
+        }
+        // записываем по какой цене полотно было куплено
+        canvas.lastPrice = msg.value;
+        // снимаем с продажи
+        canvas.isForSale = false;
+        // геренируем событие покупки токена
+        CanvasBoughtEvent(_tokenId, msg.value, offer.seller, msg.sender);
+
+        Bid storage bid = bids[_tokenId];
+        // если покупатель выставлял bid, то необходимо его ему вернуть
+        if (bid.bidder == msg.sender) {
+            pendingWithdrawals[msg.sender] += bid.value;
+            // и бид для токена заполняем пустышкой
+            bids[_tokenId] = Bid(_tokenId, false, address(0), 0);
+        }
     }
 
     // функции продавца
