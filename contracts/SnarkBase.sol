@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
@@ -11,10 +11,10 @@ contract SnarkBase is Ownable, SnarkOwnership {
     // событие, оповещающее, что требуется подтверждение согласия от участников по их долям
     event PercentageApprovalEvent(uint256 _tokenId, address _to, uint8 _percentageAmount);
 
-    // Описывает структуру цифрового полотна
-    struct DigitalCanvas {
+    // Описывает структуру цифровой работы
+    struct DigitalWork {
         // номер копии экземпляра или id копии
-        uint16 canvasCopyNumber;
+        uint16 digitalWorkCopyNumber;
         
         // цена предыдущей продажи, присущей данной конкретной копии полотна
         // необходима для того, чтобы можно было вычислить прибыль при вторичной продаже.
@@ -27,9 +27,12 @@ contract SnarkBase is Ownable, SnarkOwnership {
         
         // адрес художника
         address artist;
+
+        // доля дохода при вторичной продаже, идущая художнику и его списку участников
+        uint8 artistPart;
         
         // hash файла SHA3
-        bytes32 hashOfCanvas;
+        bytes32 hashOfDigitalWork;
         
         // выставлено ли полотно на продажу
         bool isForSale;
@@ -37,6 +40,9 @@ contract SnarkBase is Ownable, SnarkOwnership {
         // готово к продаже будет только тогда, когда абсолютно все участники прибыли
         // одобрили свои доли в доходе
         bool isReadyForSale;
+
+        // признак первичной продажи
+        bool isItFirstSelling;
         
         // адреса участников прибыли, кроме самого художника, так как
         // художнику отправляем остаток, после всех переводов
@@ -68,16 +74,17 @@ contract SnarkBase is Ownable, SnarkOwnership {
     uint8 private snarkPercentageAmount = 5;
 
     // массив, содержащий абсолютно все полотна
-    DigitalCanvas[] internal digitalCanvases;
+    DigitalWork[] internal digitalWorks;
 
     // содержит связь id полотна со списком участников и их долей
-    mapping(uint256 => Participant[]) internal canvasIdToParticipants;
+    mapping(uint256 => Participant[]) internal digitalWorkIdToParticipants;
 
     // добавляем новое цифровое полотно в блокчейн
-    function addNewCanvas(
-        bytes32 _hashOfCanvas,
+    function addNewDigitalWork(
+        bytes32 _hashOfDigitalWork,
         uint8 _limitedEdition,
         address _artist,
+        uint8 _artistPart,
         address[] _addrIncomeParticipants,
         uint8[] _percentageParts
     ) 
@@ -88,28 +95,29 @@ contract SnarkBase is Ownable, SnarkOwnership {
         // массивы участников и их долей должны быть равны по длине
         require(_addrIncomeParticipants.length == _percentageParts.length);
         // проверяем на существование картины с таким хэшем во избежание повторной загрузки
-        require(isExistCanvasByHash(_hashOfCanvas) == false);
+        require(isExistDigitalWorkByHash(_hashOfDigitalWork) == false);
         // проверяем, что количество полотен было >= 1
         require(_limitedEdition >= 1);
         // создаем столько экземпляров полотна, сколько задано в limitEdition
         for (uint8 i = 0; i < _limitedEdition; i++) {
-            digitalCanvases.push(DigitalCanvas({
-                canvasCopyNumber: i,
-                lastPrice: 0, 
-                limitedEdition: _limitedEdition, 
-                artist: _artist, 
-                hashOfCanvas: _hashOfCanvas,
+            digitalWorks.push(DigitalWork({
+                digitalWorkCopyNumber: i,
+                lastPrice: 0,
+                limitedEdition: _limitedEdition,
+                artist: _artist,
+                artistPart: _artistPart,
+                hashOfDigitalWork: _hashOfDigitalWork,
                 isForSale: false,
-                isReadyForSale: false
+                isReadyForSale: false,
+                isItFirstSelling: true
             }));
             // получаем id помещенного полотна в хранилище
-            uint256 _tokenId = SafeMath.sub(digitalCanvases.length, 1);
+            uint256 _tokenId = SafeMath.sub(digitalWorks.length, 1);
             // на всякий случай проверяем, что нет переполнения
             require(_tokenId == uint256(uint32(_tokenId)));
 
-
             // теперь необходимо сохранить список участников, участвующих в дележке прибыли и их доли
-            Participant[] storage investors = canvasIdToParticipants[_tokenId];
+            Participant[] storage investors = digitalWorkIdToParticipants[_tokenId];
             // первым делом добавляем snark, как участника, по умолчанию
             investors.push(Participant(owner, snarkPercentageAmount, true));
             // а теперь добавляем всех остальных из списка, заданных художником
@@ -120,9 +128,8 @@ contract SnarkBase is Ownable, SnarkOwnership {
                 // согласие на установленную их долю в доходе. 
                 // !!! То, что событие будет вызываться для каждой копии картины отдельно - БОЛЬШОЙ НЕДОСТАТОК
                 // !!! НАДО БЫ отправить лучше один раз массивом (id полотна, адресат, его доля).
-                PercentageApprovalEvent(_tokenId, _addrIncomeParticipants[inv], _percentageParts[inv]);
+                emit PercentageApprovalEvent(_tokenId, _addrIncomeParticipants[inv], _percentageParts[inv]);
             }
-
 
             // назначение владельца экземпляра, где также будет сгенерировано событие Transfer протокола ERC 721,
             // которое укажет на то, что полотно было добавлено в блокчейн.
@@ -135,7 +142,7 @@ contract SnarkBase is Ownable, SnarkOwnership {
     function approveParticipation(uint256 _tokenId) public {
         require(msg.sender != address(0));
         bool _isReady = true;
-        Participant[] storage investors = canvasIdToParticipants[_tokenId];
+        Participant[] storage investors = digitalWorkIdToParticipants[_tokenId];
         for (uint8 i = 0; i < investors.length; i++) {
             if (msg.sender == investors[i].participant) {
                 // выставляем для текущего адреса свойство подтвреждения
@@ -146,8 +153,8 @@ contract SnarkBase is Ownable, SnarkOwnership {
         // проверяем все ли участники подтверждены и если да, то 
         // выставляем готовность полотна торговаться
         if (_isReady) {
-            DigitalCanvas storage canvas = digitalCanvases[_tokenId];
-            canvas.isReadyForSale = _isReady;
+            DigitalWork storage digitalWork = digitalWorks[_tokenId];
+            digitalWork.isReadyForSale = _isReady;
         }
     }
 
@@ -166,7 +173,7 @@ contract SnarkBase is Ownable, SnarkOwnership {
         require(_addrIncomeParticipants.length == _percentageParts.length);
 
         // теперь необходимо сохранить список участников, участвующих в дележке прибыли и их доли
-        Participant[] storage investors = canvasIdToParticipants[_tokenId];
+        Participant[] storage investors = digitalWorkIdToParticipants[_tokenId];
         // первым делом добавляем snark, как участника, по умолчанию
         investors.push(Participant(owner, snarkPercentageAmount, true));
         // а теперь добавляем всех остальных из списка, заданных художником
@@ -177,16 +184,16 @@ contract SnarkBase is Ownable, SnarkOwnership {
             // согласие на установленную их долю в доходе. 
             // !!! То, что событие будет вызываться для каждой копии картины отдельно - БОЛЬШОЙ НЕДОСТАТОК
             // !!! НАДО БЫ отправить лучше один раз массивом (id полотна, адресат, его доля).
-            PercentageApprovalEvent(_tokenId, _addrIncomeParticipants[inv], _percentageParts[inv]);
+            emit PercentageApprovalEvent(_tokenId, _addrIncomeParticipants[inv], _percentageParts[inv]);
         }
     }
 
     /// @dev Функция проверки существования картины по хешу
     /// @param _hash Хеш полотна
-    function isExistCanvasByHash(bytes32 _hash) private view returns (bool) {
+    function isExistDigitalWorkByHash(bytes32 _hash) private view returns (bool) {
         bool _isExist = false;
-        for (uint256 i = 0; i < digitalCanvases.length; i++) {
-            if (digitalCanvases[i].hashOfCanvas == _hash) {
+        for (uint256 i = 0; i < digitalWorks.length; i++) {
+            if (digitalWorks[i].hashOfDigitalWork == _hash) {
                 _isExist = true;
                 break;
             }

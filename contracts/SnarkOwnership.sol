@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
 
 import "zeppelin-solidity/contracts/token/ERC721/ERC721.sol";
@@ -13,7 +13,7 @@ contract SnarkOwnership is ERC721 {
     mapping(address => uint256) internal ownershipTokenCount;
 
     // содержит список адресов новых владельцев, которых апрувнули владельцы токенов
-    mapping (uint256 => address) internal canvasApprovals;
+    mapping (uint256 => address) internal digitalWorkApprovals;
 
     // модификатор, фильтрующий по принадлежности к токену
     modifier onlyOwnerOf(uint256 _tokenId) {
@@ -44,14 +44,14 @@ contract SnarkOwnership is ERC721 {
     /// @param _to Адрес нового владельца, которому предаются права на токен
     /// @param _tokenId Токен, который будет передан новому владельцу
     function approve(address _to, uint256 _tokenId) public onlyOwnerOf(_tokenId) {
-        canvasApprovals[_tokenId] = _to;
-        Approval(msg.sender, _to, _tokenId);
+        digitalWorkApprovals[_tokenId] = _to;
+        emit Approval(msg.sender, _to, _tokenId);
     }
 
     /// @dev Передача токена новому владельцу, если предыдущий владелец утвердил нового владельца
     /// @param _tokenId Токен, который будет передан новому владельцу
     function takeOwnership(uint256 _tokenId) public {
-        require(canvasApprovals[_tokenId] == msg.sender);
+        require(digitalWorkApprovals[_tokenId] == msg.sender);
         address owner = ownerOf(_tokenId);
         _transfer(owner, msg.sender, _tokenId);
     }
@@ -70,7 +70,7 @@ contract SnarkOwnership is ERC721 {
         // записываем нового владельца
         tokenToOwner[_tokenId] = _to;
         // вызов события по спецификации ERC721
-        Transfer(_from, _to, _tokenId);
+        emit Transfer(_from, _to, _tokenId);
     }
    
 }
