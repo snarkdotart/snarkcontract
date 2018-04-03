@@ -15,10 +15,18 @@ contract SnarkOwnership is ERC721 {
     // содержит список адресов новых владельцев, которых апрувнули владельцы токенов
     mapping (uint256 => address) internal digitalWorkApprovals;
 
+    // содержит адрес Snark аккаунта
+    address internal snarkOwner;
+
     // модификатор, фильтрующий по принадлежности к токену
     modifier onlyOwnerOf(uint256 _tokenId) {
         require(msg.sender == tokenToOwner[_tokenId]);
         _;
+    }
+
+    // конструктор, где запоминаем адрес Snark аккаунта
+    function SnarkOwnership() public {
+        snarkOwner = msg.sender;
     }
 
     /// @dev Функция протокола ERC 721. Возвращает количество токенов, принадлежащих адресу

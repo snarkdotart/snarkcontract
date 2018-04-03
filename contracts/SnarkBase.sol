@@ -7,159 +7,133 @@ import "./SnarkOwnership.sol";
 
 
 contract SnarkBase is Ownable, SnarkOwnership { 
-
-    // событие, оповещающее, что требуется подтверждение согласия от участников по их долям
-    event PercentageApprovalEvent(uint256 _tokenId, address _to, uint8 _percentageAmount);
-
-    // Описывает структуру цифровой работы
-    struct DigitalWork {
-        // номер копии экземпляра или id копии
-        uint16 digitalWorkCopyNumber;
-        
-        // цена предыдущей продажи, присущей данной конкретной копии полотна
-        // необходима для того, чтобы можно было вычислить прибыль при вторичной продаже.
-        // при первичной продаже, тут будет 0.
-        uint lastPrice;
-        
-        // общее количество экземпляров данного полотна, доступных для продажи
-        // ??? возможно эта величина не относится к самой картине, должна принадлежать как свойство в маркетинге
-        uint16 limitedEdition; 
-        
-        // адрес художника
-        address artist;
-
-        // доля дохода при вторичной продаже, идущая художнику и его списку участников
-        uint8 artistPart;
-        
-        // hash файла SHA3
-        bytes32 hashOfDigitalWork;
-        
-        // выставлено ли полотно на продажу
-        bool isForSale;
-
-        // готово к продаже будет только тогда, когда абсолютно все участники прибыли
-        // одобрили свои доли в доходе
-        bool isReadyForSale;
-
-        // признак первичной продажи
-        bool isItFirstSelling;
-        
-        // адреса участников прибыли, кроме самого художника, так как
-        // художнику отправляем остаток, после всех переводов
-        // Сюда snark прописываем автоматом при создании полотна
-        // address[] addressesOfIncomesParticipants;
-
-        // доли участников, участвующих в распределении прибыли
-        // для snark прописываем сразу при создании полотна
-        // mapping(address => uint8) addressToPercentagePart;
-
-        // содержит согласие участников на предложенную долю
-        // от дохода для каждого полотна
-        // mapping(address => bool) addressToApprovedByParticipant;
-
-        // адрес доступа к картине, в случае расположения ее в сети IPFS
-        // ??? надо ли шифровать картину и если да, то где тогда будем хранить 
-        // пароль для расшифровки ???
-        // string ipfsUrl; // - похоже этот url надо хранить снаружи, т.е. у нас в базе
-    }
-
-    // описывает участников и их доли
-    struct Participant {
-        address participant;
-        uint8 persentageAmount;
-        bool isApproved;
-    }
+    // тип продажи, в которой участвует цифровая работа
+    enum SaleType { None, Offer, Auction }
 
     // значение в процентах доли Snark
     uint8 private snarkPercentageAmount = 5;
 
-    // массив, содержащий абсолютно все полотна
+    struct DigitalWork {
+        // название работы
+        string digitalWorkTitle;
+
+        // имя художника (до 32 bytes)
+        string artistName; 
+
+        // hash файла SHA3 (32 bytes)
+        bytes32 hashOfDigitalWork;
+
+        // общее количество экземпляров данной работы, доступных для продажи (2 bytes)
+        uint16 limitedEdition; 
+        
+        // номер копии экземпляра или id копии (2 bytes)
+        uint16 copyNumber;
+        
+        // стоимость предыдущей продажи (32 bytes)
+        uint256 lastPrice;
+
+        // доля дохода при вторичной продаже, идущая художнику и его списку участников (1 bytes)
+        // по умолчанию предполагаем - 20%
+        uint8 appropriationPercentForSecondTrade;
+
+        // признак первичной продажи
+        bool isItFirstSelling;
+
+        // картина может находиться только в одном из трех состояний:
+        // 1. либо не продаваться
+        // 2. либо продаваться через обычное предложение
+        // 3. либо продаваться через аукцион
+        // Это необходимо для исключения возможности двойной продажи 
+        SaleType saleType;
+        
+        // schema of profit division
+        mapping(address => uint8) participantToPercentMap;
+
+        // список адресов участников, задействованных в распределении дохода
+        address[] participants;
+
+        // ссылка для доступа к картине
+        string digitalWorkUrl;
+    }
+
+    // массив, содержащий абсолютно все цифровые работы в нашей системе
     DigitalWork[] internal digitalWorks;
 
-    // содержит связь id полотна со списком участников и их долей
-    mapping(uint256 => Participant[]) internal digitalWorkIdToParticipants;
-
-    // добавляем новое цифровое полотно в блокчейн
-    function addNewDigitalWork(
+    /// @dev Фукнция добавления нового цифрового полотна в блокчейн
+    /// @param _digitalWorkTitle Название цифрового полотна
+    /// @param _artistName Имя художника
+    /// @param _hashOfDigitalWork Уникальный хэш картины
+    /// @param _limitedEdition Количество экземпляров данной цифровой работы
+    /// @param _appropriationPercent Доля в процентах для вторичной продажи, 
+    ///        которая будет задействована в распредлении прибыли
+    function addDigitalWork(
+        string _digitalWorkTitle,
+        string _artistName,
         bytes32 _hashOfDigitalWork,
         uint8 _limitedEdition,
-        address _artist,
-        uint8 _artistPart,
-        address[] _addrIncomeParticipants,
-        uint8[] _percentageParts
+        uint8 _appropriationPercent,
+        string _digitalWorkUrl
     ) 
-        external
+        public
     {
         // адрес не должен быть равен нулю
         require(msg.sender != address(0));
-        // массивы участников и их долей должны быть равны по длине
-        require(_addrIncomeParticipants.length == _percentageParts.length);
         // проверяем на существование картины с таким хэшем во избежание повторной загрузки
         require(isExistDigitalWorkByHash(_hashOfDigitalWork) == false);
         // проверяем, что количество полотен было >= 1
         require(_limitedEdition >= 1);
         // создаем столько экземпляров полотна, сколько задано в limitEdition
+        // сразу добавляем "интерес" Snark 
         for (uint8 i = 0; i < _limitedEdition; i++) {
             digitalWorks.push(DigitalWork({
-                digitalWorkCopyNumber: i,
-                lastPrice: 0,
-                limitedEdition: _limitedEdition,
-                artist: _artist,
-                artistPart: _artistPart,
+                digitalWorkTitle: _digitalWorkTitle,
+                artistName: _artistName,
                 hashOfDigitalWork: _hashOfDigitalWork,
-                isForSale: false,
-                isReadyForSale: false,
-                isItFirstSelling: true
+                limitedEdition: _limitedEdition,
+                copyNumber: i + 1,
+                lastPrice: 0,
+                appropriationPercentForSecondTrade: _appropriationPercent,
+                isItFirstSelling: true,
+                saleType: SaleType.None,
+                participants: new address[](0),
+                digitalWorkUrl: _digitalWorkUrl
             }));
             // получаем id помещенного полотна в хранилище
             uint256 _tokenId = SafeMath.sub(digitalWorks.length, 1);
             // на всякий случай проверяем, что нет переполнения
             require(_tokenId == uint256(uint32(_tokenId)));
-
-            // теперь необходимо сохранить список участников, участвующих в дележке прибыли и их доли
-            Participant[] storage investors = digitalWorkIdToParticipants[_tokenId];
-            // первым делом добавляем snark, как участника, по умолчанию
-            investors.push(Participant(owner, snarkPercentageAmount, true));
-            // а теперь добавляем всех остальных из списка, заданных художником
-            for (uint8 inv = 0; inv < _addrIncomeParticipants.length; inv++) {
-                investors.push(Participant(_addrIncomeParticipants[inv], _percentageParts[inv], false));
-
-                // отправляем уведомление всем участникам, чтобы они подтвердили свое 
-                // согласие на установленную их долю в доходе. 
-                // !!! То, что событие будет вызываться для каждой копии картины отдельно - БОЛЬШОЙ НЕДОСТАТОК
-                // !!! НАДО БЫ отправить лучше один раз массивом (id полотна, адресат, его доля).
-                emit PercentageApprovalEvent(_tokenId, _addrIncomeParticipants[inv], _percentageParts[inv]);
-            }
-
+            // сразу же закладываем долю Snark
+            digitalWorks[_tokenId].participants.push(snarkOwner);
+            digitalWorks[_tokenId].participantToPercentMap[snarkOwner] = snarkPercentageAmount;
             // назначение владельца экземпляра, где также будет сгенерировано событие Transfer протокола ERC 721,
             // которое укажет на то, что полотно было добавлено в блокчейн.
-            _transfer(0, _artist, _tokenId);
+            _transfer(0, msg.sender, _tokenId);
         }
     }
 
-    /// @dev Принятие подтверждения от участника о согласии его доле
-    /// @param _tokenId Токен, для которого хотим получить участиков распределения прибыли
-    function approveParticipation(uint256 _tokenId) public {
-        require(msg.sender != address(0));
-        bool _isReady = true;
-        Participant[] storage investors = digitalWorkIdToParticipants[_tokenId];
-        for (uint8 i = 0; i < investors.length; i++) {
-            if (msg.sender == investors[i].participant) {
-                // выставляем для текущего адреса свойство подтвреждения
-                investors[i].isApproved = true;
-            }
-            _isReady = _isReady && investors[i].isApproved;
-        }
-        // проверяем все ли участники подтверждены и если да, то 
-        // выставляем готовность полотна торговаться
-        if (_isReady) {
-            DigitalWork storage digitalWork = digitalWorks[_tokenId];
-            digitalWork.isReadyForSale = _isReady;
+    /// @dev применяем схему распределения дохода для цифровой работы, заданную для Offer или Auction
+    /// @param _tokenId Токен, к которому будем применять распределение
+    /// @param _addrIncomeParticipants Адреса участников прибыли
+    /// @param _percentageParts Процентные доли участников прибыли
+    function applySchemaOfProfitDivision(
+        uint _tokenId, 
+        address[] _addrIncomeParticipants, 
+        uint8[] _percentageParts
+    ) 
+        internal 
+        onlyOwnerOf(_tokenId)
+    {
+        // массивы участников и их долей должны быть равны по длине
+        require(_addrIncomeParticipants.length == _percentageParts.length);
+        // теперь необходимо сохранить список участников, участвующих в дележке прибыли и их доли
+        // кроме Snark, т.к. оно было задано ранее в функции addDigitalWork
+        for (uint8 i = 0; i < _addrIncomeParticipants.length; i++) {
+            digitalWorks[_tokenId].participants.push(_addrIncomeParticipants[i]);
+            digitalWorks[_tokenId].participantToPercentMap[_addrIncomeParticipants[i]] = _percentageParts[i];
         }
     }
 
-    /// @dev Изменение долевого участия. Возможно только до тех пор, 
-    /// пока картина не выставлена на продажу. ??? ИЛИ ЗАПРЕТИТЬ ???
+    /// @dev Изменение долевого участия. Менять можно только процентные доли для уже записанных адресов
     /// @param _tokenId Токен, для которого хотят поменять условия распределения прибыли
     /// @param _addrIncomeParticipants Массив адресов, которые участвуют в распределении прибыли
     /// @param _percentageParts Доли соответствующие адресам
@@ -168,23 +142,14 @@ contract SnarkBase is Ownable, SnarkOwnership {
         address[] _addrIncomeParticipants,
         uint8[] _percentageParts
     ) 
-        public 
+        public
+        onlyOwnerOf(_tokenId) 
     {
+        // массивы участников и их долей должны быть равны по длине
         require(_addrIncomeParticipants.length == _percentageParts.length);
-
-        // теперь необходимо сохранить список участников, участвующих в дележке прибыли и их доли
-        Participant[] storage investors = digitalWorkIdToParticipants[_tokenId];
-        // первым делом добавляем snark, как участника, по умолчанию
-        investors.push(Participant(owner, snarkPercentageAmount, true));
-        // а теперь добавляем всех остальных из списка, заданных художником
-        for (uint8 inv = 0; inv < _addrIncomeParticipants.length; inv++) {
-            investors.push(Participant(_addrIncomeParticipants[inv], _percentageParts[inv], false));
-
-            // отправляем уведомление всем участникам, чтобы они подтвердили свое 
-            // согласие на установленную их долю в доходе. 
-            // !!! То, что событие будет вызываться для каждой копии картины отдельно - БОЛЬШОЙ НЕДОСТАТОК
-            // !!! НАДО БЫ отправить лучше один раз массивом (id полотна, адресат, его доля).
-            emit PercentageApprovalEvent(_tokenId, _addrIncomeParticipants[inv], _percentageParts[inv]);
+        // меняем только проценты для уже существующих адресов
+        for (uint8 i = 0; i < _addrIncomeParticipants.length; i++) {
+            digitalWorks[_tokenId].participantToPercentMap[_addrIncomeParticipants[i]] = _percentageParts[i];
         }
     }
 
@@ -201,7 +166,52 @@ contract SnarkBase is Ownable, SnarkOwnership {
         return _isExist;
     }
 
-    // получение списка картин и долей участника, ожидающих его подтверждения
-    // function getWaiteApprovalList
+    /// @dev Возвращает общее количество цифровых работ в системе
+    function getAmountOfTokens() public view returns(uint256) {
+        return digitalWorks.length;
+    }
 
+    /// @dev Возвращает список токенов по адресу
+    /// @param _owner Адрес, для которого хотим получить список токенов
+    function getOwnerTokenList(address _owner) public view returns (uint256[]) {
+        uint256[] memory tokensList = new uint256[](balanceOf(msg.sender));
+        uint256 index = 0;
+        for (uint i = 0; i < digitalWorks.length; i++) {
+            if (ownerOf(i) == _owner) 
+                tokensList[index++] = i;
+        }
+        return tokensList;
+    }
+
+    /// @dev Возвращает детальную информацию по одной выбранной цифровой работе
+    /// @param _tokenId Токен, для которого хотим получить детальную информацию
+    function getDetailsForToken(uint256 _tokenId) 
+        public 
+        view 
+        returns (
+            string digitalWorkTitle, 
+            string artistName, 
+            bytes32 hashOfDigitalWork, 
+            uint16 limitedEdition, 
+            uint16 copyNumber, 
+            uint256 lastPrice, 
+            uint8 appropriationPercentForSecondTrade, 
+            bool isItFirstSelling, 
+            address[] participants, 
+            string digitalWorkUrl
+        ) 
+    {
+        return (
+            digitalWorks[_tokenId].digitalWorkTitle,
+            digitalWorks[_tokenId].artistName,
+            digitalWorks[_tokenId].hashOfDigitalWork,
+            digitalWorks[_tokenId].limitedEdition,
+            digitalWorks[_tokenId].copyNumber,
+            digitalWorks[_tokenId].lastPrice,
+            digitalWorks[_tokenId].appropriationPercentForSecondTrade,
+            digitalWorks[_tokenId].isItFirstSelling,
+            digitalWorks[_tokenId].participants,
+            digitalWorks[_tokenId].digitalWorkUrl
+        );
+    }
 }
