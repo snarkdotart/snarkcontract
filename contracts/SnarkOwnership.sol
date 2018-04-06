@@ -24,6 +24,15 @@ contract SnarkOwnership is ERC721 {
         _;
     }
 
+    modifier onlyOwnerOfMany(uint256[] _tokenIds) {
+        bool isSenderOwner = true;
+        for (uint8 i = 0; i < _tokenIds.length; i++) {
+            isSenderOwner = (isSenderOwner && (msg.sender == tokenToOwner[_tokenIds[i]]));
+        }
+        require(isSenderOwner);
+        _;
+    }
+
     // конструктор, где запоминаем адрес Snark аккаунта
     function SnarkOwnership() public {
         snarkOwner = msg.sender;

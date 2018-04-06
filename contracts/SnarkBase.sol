@@ -11,7 +11,7 @@ contract SnarkBase is Ownable, SnarkOwnership {
     enum SaleType { None, Offer, Auction }
 
     // значение в процентах доли Snark
-    uint8 private snarkPercentageAmount = 5;
+    uint8 internal snarkPercentageAmount = 5;
 
     struct DigitalWork {
         // название работы
@@ -58,6 +58,11 @@ contract SnarkBase is Ownable, SnarkOwnership {
 
     // массив, содержащий абсолютно все цифровые работы в нашей системе
     DigitalWork[] internal digitalWorks;
+
+    /// @dev Возвращает адрес и долю Snark-а
+    function getSnarkParticipation() public view returns (address, uint8) {
+        return (snarkOwner, snarkPercentageAmount);
+    }
 
     /// @dev Фукнция добавления нового цифрового полотна в блокчейн
     /// @param _digitalWorkTitle Название цифрового полотна

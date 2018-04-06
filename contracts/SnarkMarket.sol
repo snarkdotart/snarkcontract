@@ -5,24 +5,173 @@ import "./SnarkBase.sol";
 
 
 contract SnarkMarket is SnarkBase {
+
+    // событие на подтверждение согласия участников с их долями
+    event NeedApproveOfferEvent(uint256 offerId, uint256[] _tokenIds, uint _price, address[] _participants, uint8[] _percentAmounts);
+
+    event PercentageApprovalEvent(uint256 _tokenId, address _to, uint8 _percentageAmount);
+    
+    // событие, возникающие после продажи работы
     event digitalWorkBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
 
-    struct Bulk {
-        string bulkName; // имя кучи
-    }
-
     struct Offer {
-        // Id полотна
-        uint digitalWorkId;
-        // номер экземпляра полотна
-        // uint digitalWorkIndex;
-        // предлагаемая цена в ether
+        // предлагаемая цена в ether для всех работ
         uint price;
-        // адрес продавца
-        address seller;
         // адрес коллекционера, кому явно выставляется предложение
         address offerTo;
+        // признак готовности к продаже (true когда все approve)
+        bool isApproved;
+        // адреса участников прибыли
+        address[] participants;
+        // содержит связь участника с размером его доли
+        mapping(address => uint8) participantToPercentageAmountMap;
+        // содержит связь участника с его подтверждением
+        mapping(address => bool) participantToApproveMap;
+        // количество работ в данном предложении. Уменьшаем при продаже картины
+        uint256 countOfDigitalWorks;
     }
+
+    // содержит список всех предложений
+    Offer[] internal offers;
+
+    // содержит связь цифровой работы с его предложением
+    mapping(uint256 => uint256) internal digitalWorkToOfferMap;
+
+    // владелец может делать много оферов, каждый из которых включает кучу разных картин
+    mapping(uint256 => address) internal offerToOwnerMap;
+
+    /// @dev Модификатор, пропускающий только участников дохода для этого оффера
+    modifier onlyOfferParticipator(uint256 _offerId) {
+        bool isItParticipant = false;
+        address[] storage p = offers[_offerId].participants;
+        for (uint8 i = 0; i < p.length; i++) {
+            if (msg.sender == p[i]) isItParticipant = true;
+        }
+        require(isItParticipant);
+        _;
+    }
+
+    // function SnarkMarket() public {
+        // добавляем пустой Offer в качестве первого
+        // предполагаем, что картина по умолчанию ссылается на нулевой оффер,
+        // либо ссылается на него сразу после продажи
+        // isApproved = false для отсекания попадания этого офера в список активных
+        // offers.push(Offer({
+        //     price: 0,
+        //     offerTo: address(0),
+        //     isApproved: false,
+        //     isAllSoldOut: true,
+        //     participants: address[](0),
+        //     countOfDigitalWorks: 0
+        // }));
+    // }
+
+    // @dev Возвращает количество офферов
+    function getCountOfOffers() public view returns (uint256) {
+        // меньше на 1, т.к. есть пустой первый оффер
+        return offers.length; // - 1;
+    }
+
+    /// @dev Проверка на пустой оффер
+    /// @param _offerId Id-шник offer-a
+    // function isItEmptyOffer(uint256 _offerId) public view returns (bool) {
+    //     return (
+    //         offers[_offerId].price == 0 &&
+    //         offers[_offerId].offerTo.length == 0 &&
+    //         offers[_offerId].isApproved == false &&
+    //         offers[_offerId].isAllSoldOut == true &&
+    //         offers[_offerId].participants.length == 0 &&
+    //         offers[_offerId].countOfDigitalWorks == 0 
+    //     );
+    // }
+
+    /// @dev Функция получения всех картин, принадлежащих оферу
+    /// @param _offerId Id-шник offer-a
+    function getDigitalWorksOffersList(uint256 _offerId) public view returns (uint256[]) {
+        require(offers.length > 0);
+        // нельзя запрашивать нулевой оффер, т.к. это пустой
+        // require(_offerId != 0);
+        // выделяем массив размерности, заданной в оффере
+        uint256[] memory offerDigitalWorksList = new uint256[](offers[_offerId].countOfDigitalWorks);
+        uint256 index = 0;
+        for (uint256 i = 0; i < digitalWorks.length; i++) {
+            // если текущая работа принадлежит уже какому-то оферу и этот офер тот, 
+            // что нас инетересует, то добавляем его индекс в возвращаемую таблицу
+            if (digitalWorkToOfferMap[digitalWorks[i]] == _offerId &&
+                digitalWorks[i].saleType == SaleType.Offer) {
+                offerDigitalWorksList[index++] = i;
+            }
+        }
+        return offerDigitalWorksList;
+    }
+
+    /// @dev Функция создания офера. вызывает событие апрува для участников
+    /// @param _tokenId Список id-шников цифровых работ, которые будут включены в это предложение
+    /// @param _price Цена для всех цифровых работ, включенных в это предложение
+    /// @param _offerTo Адрес, кому выставляется данное предложение
+    /// @param _participants Список участников прибыли
+    function createOffer(
+        uint256[] _tokenIds, 
+        uint256 _price, 
+        address _offerTo, 
+        address[] _participants,
+        uint8[] _percentAmounts
+    ) 
+        public 
+        onlyOwnerOfMany(_tokenIds)
+    {
+        // создание оффера и получение его id
+        uint256 offerId = offers.push(Offer({
+            price: _price,
+            offerTo: _offerTo,
+            isApproved: false,
+            participants: address[](0),
+            countOfDigitalWorks: _tokenIds.length
+        })) - 1;
+        // заполняем список участников прибыли
+        for (uint8 i = 0; i < _participants.length; i++) {
+            // сначала сохраняем адрес участника
+            offers[offerId].participants.push(_participants[i]);
+            // а затем его долю
+            offers[offerId].participantToPercentageAmountMap[_participants[i]] = _percentAmounts[i];
+        }
+
+        // ну и не забываем про себя любимых, т.е. Snark 
+        /// !!!!!!! ВОЗМОЖНО УЖЕ БУДЕТ ПРИХОДИТЬ ОТ КЛИЕНТА - ЗАКОММЕНТИРОВАТЬ ТОГДА !!!!!!!
+        offers[offerId].participants.push(snarkOwner);
+        offers[offerId].participantToPercentageAmountMap[snarkOwner] = snarkPercentageAmount;
+        // !!!!!!! КОНЕЦ КОММЕНТАРИЯ 
+
+        // для всех цифровых работ выполняем следующее
+        for (i = 0; i < _tokenIds.length; i++) {
+            // в самой работе помечаем, что она участвует в offer
+            digitalWorks[_tokenIds[i]].saleType = SaleType.Offer;
+            // помечаем к какому offer она принадлежит
+            digitalWorkToOfferMap[_tokenIds[i]] = offerId;
+        }
+        // записываем владельца данного оффера
+        offerToOwnerMap[offerId] = msg.sender;
+        // генерим ивент для всех участников, участвующих в дележке прибыли (кроме Snark).
+        // передаем туда: id текущего оффера, список картин, цену, список участников и их доли 
+        emit NeedApproveOfferEvent(offerId, _tokenIds, _price, _participants, _percentAmounts);
+
+        // если offerTo не пустой, то генерим ивент для чела (должны его оповестить) - только после того, как все апрувнут
+        
+    }
+
+    function approveOffer(uint256 _offerId) public {}
+
+    // функция принятия согласия от участника
+    // функция получения всех оферов, принадлежащих овнеру
+    // функция фильтрации, отсеивающая уже завершившиеся оферы
+    // функция фильтрации, отсеивающая не готовые оферы для продажи
+    // модификатор, проверяющий принадлежность картины овнеру
+    // модификатор, проверяющий принадлежность офера овнеру
+    // функция модификации участников и их долей в случае отклонения
+    // функция продажи картины. снять все оферы и биды для картины.
+    // функция принятия бида и продажи. снять все оферы и биды.
+    /// @dev Проверяем, не прода
+
 
     struct Bid {
         // id полотна
@@ -32,7 +181,7 @@ contract SnarkMarket is SnarkBase {
         // адрес, выставившего bid
         address bidder;
         // предложенная цена за полотно
-        uint value;
+        uint price;
     }
 
     // 1. Создается bulk, куда помещаются картины.
@@ -43,14 +192,11 @@ contract SnarkMarket is SnarkBase {
     // содержит связку token-а картины с bulk
     // mapping(uint256 => Bulk) public bulks;
     
-
-
-
     // содержит связку token с bid
-    mapping(uint256 => Bid) public bids;
+    // mapping(uint256 => Bid) public bids;
 
     // содержит связку token с offer
-    mapping(uint256 => Offer) public offers;
+    // mapping(uint256 => Offer) public offers;
 
     // содержит связку адреса с его балансом
     mapping(address => uint256) public pendingWithdrawals;
@@ -156,19 +302,32 @@ contract SnarkMarket is SnarkBase {
         }
     }
 
-    // функции продавца
-    // 1. сделать offer для своего полотна
-    // 2. принять bid
-    function setOffer(uint256 _tokenId, uint256 _price, address _offerTo) public {
-        require(_tokenId != 0);
-        DigitalWork storage digitalWork = digitalWorks[_tokenId];
-        require(digitalWork.isReadyForSale); // только, если все участники апрувнули свои доли
-        require(msg.sender == ownerOf(_tokenId)); // выставить на продажу может только владелец
-        offers[_tokenId] = Offer(_tokenId, _price, msg.sender, _offerTo);
-    }
 
     // общие функции для продавца и покупателя
 
     // 1. вывод средств на свой кошелек
+    /********* ПО ИДЕЕ ТОЛЬКО ПОСЛЕ АПРУВА ВСЕХ УЧАСТНИКОВ СТОИТ ДЕЛАТЬ ApplySchema распрделения прибыли по картинам **********/
+    // ОТНОСИТСЯ К ОФФЕР или к АУКЦИОНУ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    /// @dev Принятие подтверждения от участника о согласии его доле
+    /// @param _tokenId Токен, для которого хотим получить участиков распределения прибыли
+    function approveParticipation(uint256 _tokenId) public {
+        require(msg.sender != address(0));
+        bool _isReady = true;
+        Participant[] storage investors = digitalWorkIdToParticipants[_tokenId];
+        for (uint8 i = 0; i < investors.length; i++) {
+            if (msg.sender == investors[i].participant) {
+                // выставляем для текущего адреса свойство подтвреждения
+                investors[i].isApproved = true;
+            }
+            _isReady = _isReady && investors[i].isApproved;
+        }
+        // проверяем все ли участники подтверждены и если да, то 
+        // выставляем готовность полотна торговаться
+        if (_isReady) {
+            DigitalWork storage digitalWork = digitalWorks[_tokenId];
+            digitalWork.isReadyForSale = _isReady;
+        }
+    }
+
 
 }
