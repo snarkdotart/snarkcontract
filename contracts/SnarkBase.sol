@@ -130,6 +130,8 @@ contract SnarkBase is Ownable, SnarkOwnership {
     {
         // массивы участников и их долей должны быть равны по длине
         require(_addrIncomeParticipants.length == _percentageParts.length);
+        // удаляем, если схема уже существует
+        deleteSchemaOfProfitDivision(_tokenId);
         // теперь необходимо сохранить список участников, участвующих в дележке прибыли и их доли
         // кроме Snark, т.к. оно было задано ранее в функции addDigitalWork
         for (uint8 i = 0; i < _addrIncomeParticipants.length; i++) {
