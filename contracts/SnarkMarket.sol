@@ -41,12 +41,12 @@ contract SnarkMarket is SnarkBase {
 
     // содержит связь цифровой работы с его предложением
     mapping(uint256 => uint256) internal digitalWorkToOfferMap;
-
     // владелец может делать много оферов, каждый из которых включает кучу разных картин
     mapping(uint256 => address) internal offerToOwnerMap;
-
     // содержит количество офферов для овнера
     mapping(address => uint256) internal ownerToCountOffersMap;
+    // содержит связку адреса с его балансом
+    mapping(address => uint256) public pendingWithdrawals;
 
     /// @dev Модификатор, пропускающий только участников дохода для этого оффера
     modifier onlyOfferParticipator(uint256 _offerId) {
@@ -160,27 +160,10 @@ contract SnarkMarket is SnarkBase {
             participants: address[](0),
             countOfDigitalWorks: _tokenIds.length
         })) - 1;
-        bool isSnarkDelivered = false;
-        // заполняем список участников прибыли
-        for (uint8 i = 0; i < _participants.length; i++) {
-            // сначала сохраняем адрес участника
-            offers[offerId].participants.push(_participants[i]);
-            // а затем его долю
-            offers[offerId].participantToPercentageAmountMap[_participants[i]] = _percentAmounts[i];
-            // на тот случай, если с клиента уже будет приходить информация о доле Snark
-            if (_participants[i] == snarkOwner) isSnarkDelivered = true;
-        }
-        // ну и не забываем про себя любимых, т.е. Snark, если он чуть выше не был передан и обработан
-        if (isSnarkDelivered == false) {
-            // записываем адрес Snark
-            offers[offerId].participants.push(snarkOwner); 
-            // записываем долю Snark
-            offers[offerId].participantToPercentageAmountMap[snarkOwner] = snarkPercentageAmount;
-        }
-        // и сразу апруваем Snark
-        offers[offerId].participantToApproveMap[snarkOwner] = true;
+        // применяем новую схему распределения прибыли
+        applyNewSchemaOfProfitDivisionForOffer(offerId, _participants, _percentAmounts);
         // для всех цифровых работ выполняем следующее
-        for (i = 0; i < _tokenIds.length; i++) {
+        for (uint8 i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в offer
             digitalWorks[_tokenIds[i]].saleType = SaleType.Offer;
             // помечаем к какому offer она принадлежит
@@ -284,10 +267,70 @@ contract SnarkMarket is SnarkBase {
         return list;
     }
 
-    // функция модификации участников и их долей в случае отклонения
+    /// @dev Функция модификации участников и их долей для offera, в случае отклонения одним из участников
+    /// @param _offerId Id-шник оффера
+    /// @param _participants Массив адресов участников прибыли
+    /// @param _percentAmounts Массив долей участников прибыли
+    function setNewSchemaOfProfitDivisionForOffer(
+        uint256 _offerId,
+        address[] _participants,
+        uint8[] _percentAmounts
+    )
+        public
+        onlyOfferOwner(_offerId)
+    {
+        // длины массивов должны совпадать
+        require(_participants.length == _percentAmounts.length);
+        // применяем новую схему
+        applyNewSchemaOfProfitDivisionForOffer(_offerId, _participants, _percentAmounts);
+        // т.к. изменения доли для одного затрагивает всех, то заново всех надо оповещать
+        emit NeedApproveOfferEvent(_offerId, _participants, _percentAmounts);
+    }
 
+    /// @dev Применяем схему к офферу
+    /// @param _offerId Id-шник оффера
+    /// @param _participants Массив адресов участников прибыли
+    /// @param _percentAmounts Массив долей участников прибыли
+    function applyNewSchemaOfProfitDivisionForOffer(
+        uint256 _offerId,
+        address[] _participants,
+        uint8[] _percentAmounts
+    ) 
+        private
+    {
+        // удаляем все, ибо могли исключить кого-то из участников и добавить новых
+        Offer storage offer = offers[_offerId];
+        for (uint8 i = 0; i < offer.participants.length; i++) {
+            // удаляем процентные доли
+            delete offer.participantToPercentageAmountMap[offer.participants[i]];
+            // удаляем "согласия", ибо уже изменились значения для всех
+            delete offer.participantToApproveMap[offer.participants[i]];
+        }
+        offer.participants.length = 0;
+        // применяем новую схему
+        bool isSnarkDelivered = false;
+        // заполняем список участников прибыли
+        for (i = 0; i < _participants.length; i++) {
+            // сначала сохраняем адрес участника
+            offer.participants.push(_participants[i]);
+            // а затем его долю
+            offer.participantToPercentageAmountMap[_participants[i]] = _percentAmounts[i];
+            // на тот случай, если с клиента уже будет приходить информация о доле Snark
+            if (_participants[i] == snarkOwner) isSnarkDelivered = true;
+        }
+        // ну и не забываем про себя любимых, т.е. Snark, если он чуть выше не был передан и обработан
+        if (isSnarkDelivered == false) {
+            // записываем адрес Snark
+            offer.participants.push(snarkOwner); 
+            // записываем долю Snark
+            offer.participantToPercentageAmountMap[snarkOwner] = snarkPercentageAmount;
+        }
+        // и сразу апруваем Snark
+        offer.participantToApproveMap[snarkOwner] = true;
+    }
+ 
     // функция продажи картины. снять все оферы и биды для картины.
-    // функция принятия бида и продажи. снять все оферы и биды.
+    // функция принятия бида и продажи предложившему. снять все оферы и биды.
     /// @dev Проверяем, не прода
 
 /********************************************************************************************************/
@@ -316,8 +359,6 @@ contract SnarkMarket is SnarkBase {
     // содержит связку token с offer
     // mapping(uint256 => Offer) public offers;
 
-    // содержит связку адреса с его балансом
-    mapping(address => uint256) public pendingWithdrawals;
 
     // функции покупателя
     /// @dev Функция, выставляющая bid для выбранного токена
@@ -426,26 +467,5 @@ contract SnarkMarket is SnarkBase {
     // 1. вывод средств на свой кошелек
     /********* ПО ИДЕЕ ТОЛЬКО ПОСЛЕ АПРУВА ВСЕХ УЧАСТНИКОВ СТОИТ ДЕЛАТЬ ApplySchema распрделения прибыли по картинам **********/
     // ОТНОСИТСЯ К ОФФЕР или к АУКЦИОНУ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    /// @dev Принятие подтверждения от участника о согласии его доле
-    /// @param _tokenId Токен, для которого хотим получить участиков распределения прибыли
-    function approveParticipation(uint256 _tokenId) public {
-        require(msg.sender != address(0));
-        bool _isReady = true;
-        Participant[] storage investors = digitalWorkIdToParticipants[_tokenId];
-        for (uint8 i = 0; i < investors.length; i++) {
-            if (msg.sender == investors[i].participant) {
-                // выставляем для текущего адреса свойство подтвреждения
-                investors[i].isApproved = true;
-            }
-            _isReady = _isReady && investors[i].isApproved;
-        }
-        // проверяем все ли участники подтверждены и если да, то 
-        // выставляем готовность полотна торговаться
-        if (_isReady) {
-            DigitalWork storage digitalWork = digitalWorks[_tokenId];
-            digitalWork.isReadyForSale = _isReady;
-        }
-    }
-
 
 }
