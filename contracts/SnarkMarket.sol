@@ -7,9 +7,12 @@ import "./SnarkBase.sol";
 contract SnarkMarket is SnarkBase {
 
     // событие на подтверждение согласия участников с их долями
-    event NeedApproveOfferEvent(uint256 offerId, uint256[] _tokenIds, uint _price, address[] _participants, uint8[] _percentAmounts);
-
-    event PercentageApprovalEvent(uint256 _tokenId, address _to, uint8 _percentageAmount);
+    event NeedApproveOfferEvent(uint256 offerId, address[] _participants, uint8[] _percentAmounts);
+    // событие, оповещающее о выставленном предложении выбранного участника системы
+    event OfferToEvent(uint256 offerId, address _offerTo);
+    // событие, оповещающее об отклонении offerTo чуваков данный оффер
+    event OfferToDeclined(uint256 _offerId, address _offerTo);
+    // event PercentageApprovalEvent(uint256 _tokenId, address _to, uint8 _percentageAmount);
     
     // событие, возникающие после продажи работы
     event digitalWorkBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
@@ -40,6 +43,9 @@ contract SnarkMarket is SnarkBase {
     // владелец может делать много оферов, каждый из которых включает кучу разных картин
     mapping(uint256 => address) internal offerToOwnerMap;
 
+    // содержит количество офферов для овнера
+    mapping(address => uint256) internal ownerToCountOffersMap;
+
     /// @dev Модификатор, пропускающий только участников дохода для этого оффера
     modifier onlyOfferParticipator(uint256 _offerId) {
         bool isItParticipant = false;
@@ -48,6 +54,12 @@ contract SnarkMarket is SnarkBase {
             if (msg.sender == p[i]) isItParticipant = true;
         }
         require(isItParticipant);
+        _;
+    }
+
+    /// @dev Модификатор, отсекающий чужих offerTo
+    modifier onlyOfferTo(uint256 _offerId) {
+        require(msg.sender == offers[_offerId].offerTo);
         _;
     }
 
@@ -85,12 +97,24 @@ contract SnarkMarket is SnarkBase {
     //     );
     // }
 
+    /// @dev Возвращает список offers, принадлежащие интересуемому овнеру
+    /// @param _owner Адрес интересуемого овнера
+    function getOwnerOffersList(address _owner) public view returns (uint256[]) {
+        // выделяем массив под то количество, которое записано для этого овнера
+        uint256[] memory offersList = new uint256[](ownerToCountOffersMap[_owner]);
+        uint256 index = 0;
+        for (uint256 i = 0; i < offers.length; i++) {
+            if (offerToOwnerMap[i] == _owner) {
+                offersList[index++] = i;
+            }
+        }
+        return offersList;
+    }
+
     /// @dev Функция получения всех картин, принадлежащих оферу
     /// @param _offerId Id-шник offer-a
     function getDigitalWorksOffersList(uint256 _offerId) public view returns (uint256[]) {
         require(offers.length > 0);
-        // нельзя запрашивать нулевой оффер, т.к. это пустой
-        // require(_offerId != 0);
         // выделяем массив размерности, заданной в оффере
         uint256[] memory offerDigitalWorksList = new uint256[](offers[_offerId].countOfDigitalWorks);
         uint256 index = 0;
@@ -106,7 +130,7 @@ contract SnarkMarket is SnarkBase {
     }
 
     /// @dev Функция создания офера. вызывает событие апрува для участников
-    /// @param _tokenId Список id-шников цифровых работ, которые будут включены в это предложение
+    /// @param _tokenIds Список id-шников цифровых работ, которые будут включены в это предложение
     /// @param _price Цена для всех цифровых работ, включенных в это предложение
     /// @param _offerTo Адрес, кому выставляется данное предложение
     /// @param _participants Список участников прибыли
@@ -128,20 +152,25 @@ contract SnarkMarket is SnarkBase {
             participants: address[](0),
             countOfDigitalWorks: _tokenIds.length
         })) - 1;
+        bool isSnarkDelivered = false;
         // заполняем список участников прибыли
         for (uint8 i = 0; i < _participants.length; i++) {
             // сначала сохраняем адрес участника
             offers[offerId].participants.push(_participants[i]);
             // а затем его долю
             offers[offerId].participantToPercentageAmountMap[_participants[i]] = _percentAmounts[i];
+            // на тот случай, если с клиента уже будет приходить информация о доле Snark
+            if (_participants[i] == snarkOwner) isSnarkDelivered = true;
         }
-
-        // ну и не забываем про себя любимых, т.е. Snark 
-        /// !!!!!!! ВОЗМОЖНО УЖЕ БУДЕТ ПРИХОДИТЬ ОТ КЛИЕНТА - ЗАКОММЕНТИРОВАТЬ ТОГДА !!!!!!!
-        offers[offerId].participants.push(snarkOwner);
-        offers[offerId].participantToPercentageAmountMap[snarkOwner] = snarkPercentageAmount;
-        // !!!!!!! КОНЕЦ КОММЕНТАРИЯ 
-
+        // ну и не забываем про себя любимых, т.е. Snark, если он чуть выше не был передан и обработан
+        if (isSnarkDelivered == false) {
+            // записываем адрес Snark
+            offers[offerId].participants.push(snarkOwner); 
+            // записываем долю Snark
+            offers[offerId].participantToPercentageAmountMap[snarkOwner] = snarkPercentageAmount;
+        }
+        // и сразу апруваем Snark
+        offers[offerId].participantToApproveMap[snarkOwner] = true;
         // для всех цифровых работ выполняем следующее
         for (i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в offer
@@ -151,20 +180,68 @@ contract SnarkMarket is SnarkBase {
         }
         // записываем владельца данного оффера
         offerToOwnerMap[offerId] = msg.sender;
-        // генерим ивент для всех участников, участвующих в дележке прибыли (кроме Snark).
-        // передаем туда: id текущего оффера, список картин, цену, список участников и их доли 
-        emit NeedApproveOfferEvent(offerId, _tokenIds, _price, _participants, _percentAmounts);
-
-        // если offerTo не пустой, то генерим ивент для чела (должны его оповестить) - только после того, как все апрувнут
-        
+        // увеличиваем количество офферов принадлежащих овнеру
+        ownerToCountOffersMap[msg.sender]++;
+        // генерим ивент для всех участников, участвующих в дележке прибыли.
+        // передаем туда: id текущего оффера, по которому участник сможет получить и просмотреть
+        // список картин, а также выставленную цену
+        emit NeedApproveOfferEvent(offerId, _participants, _percentAmounts);
     }
 
-    function approveOffer(uint256 _offerId) public {}
+    /// @dev Участник прибыли подтверждает свое согласие на выставленные условия
+    /// @param _offerId id-шник оффера
+    function approveOffer(uint256 _offerId) public onlyOfferParticipator(_offerId) {
+        Offer storage offer = offers[_offerId];
+        // отмечаем текущего участника, как согласного с условиями
+        offer.participantToApproveMap[msg.sender] = true;
+        // проверяем все ли согласились или нет
+        bool isAllApproved = true;
+        for (uint8 i = 0; i < offer.participants.length; i++) {
+            isAllApproved = isAllApproved && offer.participantToApproveMap[offer.participants[i]];
+        }
+        // если все согласны, то копируем условия в сами картины, дабы каждая картина имела возможность,
+        // в последствие, знать условия распределения прибыли
+        if (isAllApproved) {
+            uint256[] memory tokens = getDigitalWorksOffersList(_offerId);
+            for (i = 0; i < tokens.length; i++) {
+                for (uint8 j = 0; j < offer.participants.length; j++) {
+                    // записываем адрес
+                    digitalWorks[i].participants.push(offer.participants[j]);
+                    // записываем долю
+                    digitalWorks[i].participantToPercentMap[offer.participants[j]] = 
+                        offer.participantToApproveMap[offer.participants[j]];
+                }
+            }
+        }
+        // и только теперь помечаем, что оффер может выставляться на продажу
+        offer.isApproved = isAllApproved;
+        // если offerTo не пустой и все участники согласны с условиями, 
+        // то оповещаем того, для кого это предложение предназначено
+        if (offer.offerTo != address(0) && offer.isAllApproved) {
+            emit OfferToEvent(_offerId, offer.offerTo);
+        }
+    }
 
-    // функция принятия согласия от участника
-    // функция получения всех оферов, принадлежащих овнеру
-    // функция фильтрации, отсеивающая уже завершившиеся оферы
-    // функция фильтрации, отсеивающая не готовые оферы для продажи
+    // !!!!!!!! Вопросы по фукнциональности: !!!!!!!!
+    // Надо ли показывать в общей куче офферов те, офферы, которые выставлены адресно, т.е. имеют offerTo 
+    // Что делать в случае отклонения/отказа чувака offerTo от этого предложения?
+
+    /// @dev Получили отказ от offerTo на наше предложение
+    /// @param _offerId Id-шник offer-а
+    function declineFromOfferTo(uint256 _offerId) public onlyOfferTo(_offerId) {
+        // убираем offerTo для данного офера и оставляем его в в общей продаже
+        offers[_offerId].offerTo = address(0);
+        // генерим событие owner-у, что offerTo послал нафиг
+        emit OfferToDeclined(_offerId, msg.sender);
+    }
+
+    /// @dev Отказ участника прибыли с предложенными условиями
+    /// @param _offerId Id-шник offer-а
+    function declineOfferApprove(uint256 _offerId) public onlyOfferParticipator(_offerId) {
+        
+    }
+    // cancelOffer - отменить продажу. все картины исключаются из оффера и оффер удаляется. условия распределения прибыли у картин также чистятся.
+    // функция фильтрации, отсеивающая не готовые оферы для продажи. Т.е. чтобы показать только активные офферы.
     // модификатор, проверяющий принадлежность картины овнеру
     // модификатор, проверяющий принадлежность офера овнеру
     // функция модификации участников и их долей в случае отклонения
@@ -172,7 +249,7 @@ contract SnarkMarket is SnarkBase {
     // функция принятия бида и продажи. снять все оферы и биды.
     /// @dev Проверяем, не прода
 
-
+/********************************************************************************************************/
     struct Bid {
         // id полотна
         uint digitalWorkId;
