@@ -14,6 +14,8 @@ contract SnarkMarket is SnarkBase {
     event OfferToDeclined(uint256 _offerId, address _offerTo);
     // событие, оповещающее, что участник прибыли не согласен с условиями
     event DeclineApprove(uint256 _offerId, address _participant);
+    // событие, оповещающее, что offer был удален
+    event OfferDeleted(uint256 _offerId);
     // событие, возникающие после продажи работы
     event digitalWorkBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
 
@@ -60,6 +62,12 @@ contract SnarkMarket is SnarkBase {
     /// @dev Модификатор, отсекающий чужих offerTo
     modifier onlyOfferTo(uint256 _offerId) {
         require(msg.sender == offers[_offerId].offerTo);
+        _;
+    }
+
+    // @dev Модификатор, пропускающий только владельца оффера
+    modifier onlyOfferOwner(uint256 _offerId) {
+        require(msg.sender == offerToOwnerMap[_offerId]);
         _;
     }
 
@@ -242,7 +250,36 @@ contract SnarkMarket is SnarkBase {
         emit DeclineApprove(_offerId, msg.sender);
     }
     
-    // cancelOffer - отменить продажу. все картины исключаются из оффера и оффер удаляется. условия распределения прибыли у картин также чистятся.
+    // @dev Удаление offer-а. Вызывается также после продажи последней картины, включенной в оффер.
+    /// @param _offerId Id-шник offer-а
+    function deleteOffer(uint256 _offerId) public onlyOfferOwner(_offerId) {
+        // очищаем все данные в картинах
+        uint256[] memory tokens = getDigitalWorksOffersList(_offerId);
+        for (uint8 i = 0; i < tokens.length; i++) {
+            // "отвязываем" картину от оффера
+            digitalWorks[i].saleType = SaleType.None;
+            // очищаем связи участников с их долями
+            for (uint8 j = 0; j < digitalWorks[i].participants.length; j++) {
+                delete digitalWorks[i].participantToPercentMap[digitalWorks[i].participants[j]];
+            }
+            // удаляем связь цифровой работы с оффером
+            delete digitalWorkToOfferMap[digitalWorks[i]];
+            // "схлопываем" массив с участниками
+            digitalWorks[i].participants.length = 0;
+        }
+        // удаляем связь оффера с владельцем
+        delete offerToOwnerMap[_offerId];
+        // уменьшаем счетчик офферов у владельца
+        ownerToCountOffersMap[msg.sender]--;
+        // удаляем сам оффер из таблицы offers
+        for (i = _offerId; i < offers.length - 1; i++) {
+            offers[i] = offers[i+1];
+        }
+        offers.length--;
+        // генерим событие о том, что удален оффер
+        emit OfferDeleted(_offerId);
+    }
+
     // функция фильтрации, отсеивающая не готовые оферы для продажи. Т.е. чтобы показать только активные офферы.
     // модификатор, проверяющий принадлежность картины овнеру
     // модификатор, проверяющий принадлежность офера овнеру
