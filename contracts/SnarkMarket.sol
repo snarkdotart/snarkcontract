@@ -12,8 +12,8 @@ contract SnarkMarket is SnarkBase {
     event OfferToEvent(uint256 offerId, address _offerTo);
     // событие, оповещающее об отклонении offerTo чуваков данный оффер
     event OfferToDeclined(uint256 _offerId, address _offerTo);
-    // event PercentageApprovalEvent(uint256 _tokenId, address _to, uint8 _percentageAmount);
-    
+    // событие, оповещающее, что участник прибыли не согласен с условиями
+    event DeclineApprove(uint256 _offerId, address _participant);
     // событие, возникающие после продажи работы
     event digitalWorkBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
 
@@ -238,8 +238,10 @@ contract SnarkMarket is SnarkBase {
     /// @dev Отказ участника прибыли с предложенными условиями
     /// @param _offerId Id-шник offer-а
     function declineOfferApprove(uint256 _offerId) public onlyOfferParticipator(_offerId) {
-        
+        // в этом случае мы только можем только оповестить владельца об отказе
+        emit DeclineApprove(_offerId, msg.sender);
     }
+    
     // cancelOffer - отменить продажу. все картины исключаются из оффера и оффер удаляется. условия распределения прибыли у картин также чистятся.
     // функция фильтрации, отсеивающая не готовые оферы для продажи. Т.е. чтобы показать только активные офферы.
     // модификатор, проверяющий принадлежность картины овнеру
