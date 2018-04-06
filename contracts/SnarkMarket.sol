@@ -202,23 +202,19 @@ contract SnarkMarket is SnarkBase {
         Offer storage offer = offers[_offerId];
         // отмечаем текущего участника, как согласного с условиями
         offer.participantToApproveMap[msg.sender] = true;
-        // проверяем все ли согласились или нет
+        // проверяем все ли согласились или нет, а за одно формируем массив долей для участников
         bool isAllApproved = true;
+        uint8[] memory parts = new uint8[](offer.participants.length);
         for (uint8 i = 0; i < offer.participants.length; i++) {
             isAllApproved = isAllApproved && offer.participantToApproveMap[offer.participants[i]];
+            parts[i] = offer.participantToPercentageAmountMap[offer.participants[i]];
         }
         // если все согласны, то копируем условия в сами картины, дабы каждая картина имела возможность,
         // в последствие, знать условия распределения прибыли
         if (isAllApproved) {
             uint256[] memory tokens = getDigitalWorksOffersList(_offerId);
             for (i = 0; i < tokens.length; i++) {
-                for (uint8 j = 0; j < offer.participants.length; j++) {
-                    // записываем адрес
-                    digitalWorks[i].participants.push(offer.participants[j]);
-                    // записываем долю
-                    digitalWorks[i].participantToPercentMap[offer.participants[j]] = 
-                        offer.participantToApproveMap[offer.participants[j]];
-                }
+                applySchemaOfProfitDivision(tokens[i], offer.participants, parts);
             }
         }
         // и только теперь помечаем, что оффер может выставляться на продажу
@@ -250,22 +246,18 @@ contract SnarkMarket is SnarkBase {
         emit DeclineApprove(_offerId, msg.sender);
     }
     
-    // @dev Удаление offer-а. Вызывается также после продажи последней картины, включенной в оффер.
+    /// @dev Удаление offer-а. Вызывается также после продажи последней картины, включенной в оффер.
     /// @param _offerId Id-шник offer-а
     function deleteOffer(uint256 _offerId) public onlyOfferOwner(_offerId) {
         // очищаем все данные в картинах
         uint256[] memory tokens = getDigitalWorksOffersList(_offerId);
         for (uint8 i = 0; i < tokens.length; i++) {
             // "отвязываем" картину от оффера
-            digitalWorks[i].saleType = SaleType.None;
+            digitalWorks[tokens[i]].saleType = SaleType.None;
             // очищаем связи участников с их долями
-            for (uint8 j = 0; j < digitalWorks[i].participants.length; j++) {
-                delete digitalWorks[i].participantToPercentMap[digitalWorks[i].participants[j]];
-            }
+            deleteSchemaOfProfitDivision(tokens[i]);
             // удаляем связь цифровой работы с оффером
-            delete digitalWorkToOfferMap[digitalWorks[i]];
-            // "схлопываем" массив с участниками
-            digitalWorks[i].participants.length = 0;
+            delete digitalWorkToOfferMap[tokens[i]];
         }
         // удаляем связь оффера с владельцем
         delete offerToOwnerMap[_offerId];
@@ -280,10 +272,20 @@ contract SnarkMarket is SnarkBase {
         emit OfferDeleted(_offerId);
     }
 
-    // функция фильтрации, отсеивающая не готовые оферы для продажи. Т.е. чтобы показать только активные офферы.
-    // модификатор, проверяющий принадлежность картины овнеру
-    // модификатор, проверяющий принадлежность офера овнеру
+    /// @dev Получение списка всех активных offers (которые Approved)
+    function getActiveOffersList() public view returns(uint256[]) {
+        // пока подготавливаем максимальный размер
+        uint256[] memory list = new uint256[](offers.length);
+        uint256 index = 0;
+        for (uint256 i = 0; i < offers.length; i++) {
+            if (offers[i].isApproved) list[index++] = i;
+        }
+        list.length = index;
+        return list;
+    }
+
     // функция модификации участников и их долей в случае отклонения
+
     // функция продажи картины. снять все оферы и биды для картины.
     // функция принятия бида и продажи. снять все оферы и биды.
     /// @dev Проверяем, не прода

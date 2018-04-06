@@ -138,6 +138,16 @@ contract SnarkBase is Ownable, SnarkOwnership {
         }
     }
 
+    /// @dev Удаление схемы распределения дохода для выбранной цифровой работы
+    /// @param _tokenId Id цифровой работы
+    function deleteSchemaOfProfitDivision(uint256 _tokenId) internal {
+        for (uint8 i = 0; i < digitalWorks[_tokenId].participants.length; i++) {
+            delete digitalWorks[_tokenId].participantToPercentMap[digitalWorks[_tokenId].participants[i]];
+        }
+        // "схлопываем" массив с участниками
+        digitalWorks[i].participants.length = 0;
+    }
+
     /// @dev Изменение долевого участия. Менять можно только процентные доли для уже записанных адресов
     /// @param _tokenId Токен, для которого хотят поменять условия распределения прибыли
     /// @param _addrIncomeParticipants Массив адресов, которые участвуют в распределении прибыли
