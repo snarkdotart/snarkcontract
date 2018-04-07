@@ -472,28 +472,4 @@ contract SnarkMarket is SnarkBase {
 
     // функция вывода средств себе на кошелек withdraw funds
     function withdrawFunds(address owner) public {}
-
-/********************************************************************************************************/
-
-    /// @dev Функция позволяет тказаться от bid и вернуть деньги себе на кошелек
-    /// @param _tokenId Токен, от которого хотят отказаться
-    function withdrawBid(uint256 _tokenId) public {
-        // вызвавший не должен быть владельцем полотна
-        require(tokenToOwner[_tokenId] != msg.sender);
-
-        Bid storage bid = bids[_tokenId];
-
-        // вызов должен быть только тем, кто является бидером
-        require(msg.sender == bid.bidder);
-
-        // запоминаем предыдущую стоимость
-        uint256 amount = bid.value;
-
-        // забиваем бид пустышкой
-        bids[_tokenId] = Bid(_tokenId, false, address(0), 0);
-
-        // возвращаем денежку
-        msg.sender.transfer(amount);
-    }
-
 }
