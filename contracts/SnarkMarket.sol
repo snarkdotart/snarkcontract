@@ -36,8 +36,17 @@ contract SnarkMarket is SnarkBase {
         uint256 countOfDigitalWorks;
     }
 
+    struct Bid {
+        // id полотна
+        uint digitalWorkId;
+        // предложенная цена за полотно
+        uint price;
+    }
+
     // содержит список всех предложений
     Offer[] internal offers;
+    // содержит список всех бидов
+    Bid[] internal bids;
 
     // содержит связь цифровой работы с его предложением
     mapping(uint256 => uint256) internal digitalWorkToOfferMap;
@@ -45,6 +54,14 @@ contract SnarkMarket is SnarkBase {
     mapping(uint256 => address) internal offerToOwnerMap;
     // содержит количество офферов для овнера
     mapping(address => uint256) internal ownerToCountOffersMap;
+    // содержит связку бида с его владельцем
+    mapping(uint256 => address) internal bidToOwnerMap;
+    // содержит связку token с bid
+    mapping(uint256 => uint256) internal digitalWorkToBidMap; 
+    // счетчик количества бидов для каждого овнера
+    mapping(address => uint256) internal bidderToCountBidsMap;
+    // содержит признак наличия выставленного бида для цифровой работы
+    mapping(uint256 => bool) internal digitalWorkToIsExistBidMap;
     // содержит связку адреса с его балансом
     mapping(address => uint256) public pendingWithdrawals;
 
@@ -71,39 +88,11 @@ contract SnarkMarket is SnarkBase {
         _;
     }
 
-    // function SnarkMarket() public {
-        // добавляем пустой Offer в качестве первого
-        // предполагаем, что картина по умолчанию ссылается на нулевой оффер,
-        // либо ссылается на него сразу после продажи
-        // isApproved = false для отсекания попадания этого офера в список активных
-        // offers.push(Offer({
-        //     price: 0,
-        //     offerTo: address(0),
-        //     isApproved: false,
-        //     isAllSoldOut: true,
-        //     participants: address[](0),
-        //     countOfDigitalWorks: 0
-        // }));
-    // }
-
     // @dev Возвращает количество офферов
     function getCountOfOffers() public view returns (uint256) {
         // меньше на 1, т.к. есть пустой первый оффер
         return offers.length; // - 1;
     }
-
-    /// @dev Проверка на пустой оффер
-    /// @param _offerId Id-шник offer-a
-    // function isItEmptyOffer(uint256 _offerId) public view returns (bool) {
-    //     return (
-    //         offers[_offerId].price == 0 &&
-    //         offers[_offerId].offerTo.length == 0 &&
-    //         offers[_offerId].isApproved == false &&
-    //         offers[_offerId].isAllSoldOut == true &&
-    //         offers[_offerId].participants.length == 0 &&
-    //         offers[_offerId].countOfDigitalWorks == 0 
-    //     );
-    // }
 
     /// @dev Возвращает список offers, принадлежащие интересуемому овнеру
     /// @param _owner Адрес интересуемого овнера
@@ -208,10 +197,6 @@ contract SnarkMarket is SnarkBase {
             emit OfferToEvent(_offerId, offer.offerTo);
         }
     }
-
-    // !!!!!!!! Вопросы по фукнциональности: !!!!!!!!
-    // Надо ли показывать в общей куче офферов те, офферы, которые выставлены адресно, т.е. имеют offerTo 
-    // Что делать в случае отклонения/отказа чувака offerTo от этого предложения?
 
     /// @dev Получили отказ от offerTo на наше предложение
     /// @param _offerId Id-шник offer-а
@@ -329,61 +314,70 @@ contract SnarkMarket is SnarkBase {
         offer.participantToApproveMap[snarkOwner] = true;
     }
  
-    // функция продажи картины. снять все оферы и биды для картины.
-    // функция принятия бида и продажи предложившему. снять все оферы и биды.
-    /// @dev Проверяем, не прода
-
-/********************************************************************************************************/
-    struct Bid {
-        // id полотна
-        uint digitalWorkId;
-        // активен ли текущий бид
-        bool isActive;
-        // адрес, выставившего bid
-        address bidder;
-        // предложенная цена за полотно
-        uint price;
-    }
-
-    // 1. Создается bulk, куда помещаются картины.
-    //    Для bulk задается цена и схема распределения доходов,
-    //    которые будут распространяться на все картины в bulk.
-    // 2. Offer создается для всего bulk, где будут
-
-    // содержит связку token-а картины с bulk
-    // mapping(uint256 => Bulk) public bulks;
-    
-    // содержит связку token с bid
-    // mapping(uint256 => Bid) public bids;
-
-    // содержит связку token с offer
-    // mapping(uint256 => Offer) public offers;
-
-
-    // функции покупателя
     /// @dev Функция, выставляющая bid для выбранного токена
     /// @param _tokenId Токен, который хотят приобрести
     function setBid(uint256 _tokenId) public payable {
-        // 1. нам не важно, доступен ли токен для продажи,
-        // поэтому принимать bid мы можем всегда.
-        // 2. токен не должен принадлежать тому, кто выставляет bid
+        // нам не важно, доступен ли токен для продажи, поэтому
+        // принимать bid мы можем всегда, за исключением, когда
+        // цифровая работа выставлена на аукцион
+        require(digitalWorks[_tokenId].saleType != SaleType.Auction);
+        // токен не должен принадлежать тому, кто выставляет bid
         require(tokenToOwner[_tokenId] != msg.sender);
         require(msg.sender != address(0));
-        require(msg.value > 0);
 
-        Bid storage bid = bids[_tokenId];
-
-        // выставленный bid однозначно должен быть больше предыдущего, как минимум на 5%
-        require(msg.value >= bid.value + (bid.value * 5 / 100));
-
-        // предыдущему бидеру нужно вернуть его сумму
-        if (bid.value > 0) {
-            pendingWithdrawals[bid.bidder] += bid.value;
+        uint256 bidId;
+        if (digitalWorkToIsExistBidMap[_tokenId]) {
+            // если для выбранной цифровой работы bid уже был задан, то получаем его id-шник 
+            bidId = digitalWorkToBidMap[_tokenId];
+            // получаем сам бид по его id-шнику
+            Bid storage bid = bids[bidId];
+            // если такой бид уже существует у нас, то выполняем проверки
+            if (bid.digitalWorkId == _tokenId) {
+                // выставленный bid однозначно должен быть больше предыдущего, как минимум на 5%
+                require(msg.value >= bid.price + (bid.price * 5 / 100));
+                // предыдущему бидеру нужно вернуть его сумму
+                if (bid.price > 0) {
+                    pendingWithdrawals[bidToOwnerMap[bidId]] += bid.value;
+                    // уменьшаем счетчик количества бидов у биддера
+                    bidderToCountBidsMap[bidToOwnerMap[bidId]]--;
+                }
+            } 
+            // теперь устанавливаем новую цену
+            bid.price = msg.value;
+        } else {
+            // бида с таким tokenId у нас небыло раньше, поэтому формируем
+            bidId = bids.push(Bid({
+                digitalWorkId: _tokenId,
+                price: msg.value
+            })) - 1;
+            // т.к. для работы может быть выставлен только один бид, то его мы и присваиваем этой работе
+            digitalWorkToBidMap[_tokenId] = bidId;
+            // помечаем, что для данной работы бид был выставлен
+            digitalWorkToIsExistBidMap[_tokenId] = true;
         }
-
-        // сохраняем текущий bid для выбранного токена
-        bids[_tokenId] = Bid(_tokenId, true, msg.sender, msg.value);
+        // устанавливаем нового владельца этого бида
+        bidToOwnerMap[bidId] = msg.sender;
+        // увеличиваем количество бидов у биддера
+        bidderToCountBidsMap[msg.sender]++;
     }
+    
+    // просмотреть все свои биды
+    // ??? просмотреть биды, принадлежащие картине - возможно нет смысла, если бид будет один всегда
+    // снять/отменить свой бид
+    // функция продажи картины. снять все оферы и биды для картины.
+    // функция принятия бида и продажи предложившему. снять все оферы и биды.
+    /// @dev Проверяем, не прода
+    // !!!!!!!! Вопросы по фукнциональности: !!!!!!!!
+    // Надо ли показывать в общей куче офферов те, офферы, которые выставлены адресно, т.е. имеют offerTo 
+    // Что делать в случае отклонения/отказа чувака offerTo от этого предложения?
+
+
+/********************************************************************************************************/
+
+
+
+
+    // функции покупателя
 
     /// @dev Функция позволяет тказаться от bid и вернуть деньги себе на кошелек
     /// @param _tokenId Токен, от которого хотят отказаться
@@ -465,7 +459,6 @@ contract SnarkMarket is SnarkBase {
     // общие функции для продавца и покупателя
 
     // 1. вывод средств на свой кошелек
-    /********* ПО ИДЕЕ ТОЛЬКО ПОСЛЕ АПРУВА ВСЕХ УЧАСТНИКОВ СТОИТ ДЕЛАТЬ ApplySchema распрделения прибыли по картинам **********/
-    // ОТНОСИТСЯ К ОФФЕР или к АУКЦИОНУ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 }
