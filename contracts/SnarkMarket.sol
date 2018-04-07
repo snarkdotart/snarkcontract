@@ -16,6 +16,8 @@ contract SnarkMarket is SnarkBase {
     event DeclineApprove(uint256 _offerId, address _participant);
     // событие, оповещающее, что offer был удален
     event OfferDeleted(uint256 _offerId);
+    // событие, оповещающее об установке нового bid-а
+    event NewBidEstablished(uint256 _bidId, address _bidder, uint256 _value);
     // событие, возникающие после продажи работы
     event digitalWorkBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
 
@@ -45,6 +47,7 @@ contract SnarkMarket is SnarkBase {
 
     // содержит список всех предложений
     Offer[] internal offers;
+
     // содержит список всех бидов
     Bid[] internal bids;
 
@@ -65,6 +68,7 @@ contract SnarkMarket is SnarkBase {
     // содержит связку адреса с его балансом
     mapping(address => uint256) public pendingWithdrawals;
 
+
     /// @dev Модификатор, пропускающий только участников дохода для этого оффера
     modifier onlyOfferParticipator(uint256 _offerId) {
         bool isItParticipant = false;
@@ -82,9 +86,15 @@ contract SnarkMarket is SnarkBase {
         _;
     }
 
-    // @dev Модификатор, пропускающий только владельца оффера
+    /// @dev Модификатор, пропускающий только владельца оффера
     modifier onlyOfferOwner(uint256 _offerId) {
         require(msg.sender == offerToOwnerMap[_offerId]);
+        _;
+    }
+
+    /// @dev Модификатор, пропускающий только владельца бида
+    modifier onlyBidOwner(uint256 _bidId) {
+        require(msg.sender == bidToOwnerMap[_bidId]);
         _;
     }
 
@@ -337,7 +347,11 @@ contract SnarkMarket is SnarkBase {
                 require(msg.value >= bid.price + (bid.price * 5 / 100));
                 // предыдущему бидеру нужно вернуть его сумму
                 if (bid.price > 0) {
-                    pendingWithdrawals[bidToOwnerMap[bidId]] += bid.value;
+                    // записываем сумму ему же на "вексель", которые позже он сам может изъять
+                    // pendingWithdrawals[bidToOwnerMap[bidId]] += bid.price;
+
+                    // возвращаем денежку предыдущему биддеру
+                    bidToOwnerMap[bidId].transfer(bid.price);
                     // уменьшаем счетчик количества бидов у биддера
                     bidderToCountBidsMap[bidToOwnerMap[bidId]]--;
                 }
@@ -359,47 +373,38 @@ contract SnarkMarket is SnarkBase {
         bidToOwnerMap[bidId] = msg.sender;
         // увеличиваем количество бидов у биддера
         bidderToCountBidsMap[msg.sender]++;
+        // формируем событие о создании нового бида для токена
+        emit NewBidEstablished(bidId, msg.value);
     }
     
-    // просмотреть все свои биды
-    // ??? просмотреть биды, принадлежащие картине - возможно нет смысла, если бид будет один всегда
-    // снять/отменить свой бид
-    // функция продажи картины. снять все оферы и биды для картины.
-    // функция принятия бида и продажи предложившему. снять все оферы и биды.
-    /// @dev Проверяем, не прода
-    // !!!!!!!! Вопросы по фукнциональности: !!!!!!!!
-    // Надо ли показывать в общей куче офферов те, офферы, которые выставлены адресно, т.е. имеют offerTo 
-    // Что делать в случае отклонения/отказа чувака offerTo от этого предложения?
-
-
-/********************************************************************************************************/
-
-
-
-
-    // функции покупателя
-
-    /// @dev Функция позволяет тказаться от bid и вернуть деньги себе на кошелек
-    /// @param _tokenId Токен, от которого хотят отказаться
-    function withdrawBid(uint256 _tokenId) public {
-        // вызвавший не должен быть владельцем полотна
-        require(tokenToOwner[_tokenId] != msg.sender);
-
-        Bid storage bid = bids[_tokenId];
-
-        // вызов должен быть только тем, кто является бидером
-        require(msg.sender == bid.bidder);
-
-        // запоминаем предыдущую стоимость
-        uint256 amount = bid.value;
-
-        // забиваем бид пустышкой
-        bids[_tokenId] = Bid(_tokenId, false, address(0), 0);
-
-        // возвращаем денежку
-        msg.sender.transfer(amount);
+    /// @dev отмена своего бида
+    /// @param _bidId Id bid
+    function cancelBid(uint256 _bidId) public onlyBidOwner(_bidId) {
+        // уменьшаем счетчик количества бидов у биддера
+        bidderToCountBidsMap[bidder]--;
+        // получаем сам бид по его id-шнику
+        Bid storage bid = bids[_bidId];
+        // получаем адрес, кто являлся владельцев бида
+        address bidder = bidToOwnerMap[_bidId];
+        // предыдущему бидеру нужно вернуть его сумму
+        bidder.transfer(bid.price);
+        // удаляем привязку цифровой работы с бидом
+        delete digitalWorkToBidMap[bid.digitalWorkId];
+        // удаляем привязку бида с владельцем
+        delete bidToOwnerMap[_bidId];
+        // помечаем, что цифровая работа не имеет бидов
+        digitalWorkToIsExistBidMap[bid.digitalWorkId] = false;
+        // удаляем запись из таблицы бидов
+        for (uint256 i = _bidId; i < bids.length - 1; i++) {
+            bids[i] = bids[i+1];
+        }
+        bids.length--;
     }
 
+    // функция принятия бида и продажи предложившему. снять все оферы и биды.
+    function acceptBid(uint256 _bidId) public {}
+
+    // функция продажи картины. снять все оферы и биды для картины.
     /// @dev Фукнция совершения покупки полотна
     /// @param _tokenId Токен, который покупают
     function buyDigitalWork(uint256 _tokenId) public payable {
@@ -455,10 +460,36 @@ contract SnarkMarket is SnarkBase {
         }
     }
 
+    // просмотреть все свои биды
+    function getBidList(address owner) public view {}
 
-    // общие функции для продавца и покупателя
+    // просмотреть сколько у чувака есть денег тут у нас в контракте, чтобы мог вывести себе на кошелек
+    function getWithdrawBalance(address owner) public view {}
 
-    // 1. вывод средств на свой кошелек
+    // функция вывода средств себе на кошелек withdraw funds
+    function withdrawFunds(address owner) public {}
 
+/********************************************************************************************************/
+
+    /// @dev Функция позволяет тказаться от bid и вернуть деньги себе на кошелек
+    /// @param _tokenId Токен, от которого хотят отказаться
+    function withdrawBid(uint256 _tokenId) public {
+        // вызвавший не должен быть владельцем полотна
+        require(tokenToOwner[_tokenId] != msg.sender);
+
+        Bid storage bid = bids[_tokenId];
+
+        // вызов должен быть только тем, кто является бидером
+        require(msg.sender == bid.bidder);
+
+        // запоминаем предыдущую стоимость
+        uint256 amount = bid.value;
+
+        // забиваем бид пустышкой
+        bids[_tokenId] = Bid(_tokenId, false, address(0), 0);
+
+        // возвращаем денежку
+        msg.sender.transfer(amount);
+    }
 
 }
