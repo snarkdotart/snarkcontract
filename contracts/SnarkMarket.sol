@@ -18,6 +18,8 @@ contract SnarkMarket is SnarkBase {
     event OfferDeleted(uint256 _offerId);
     // событие, оповещающее об установке нового bid-а
     event NewBidEstablished(uint256 _bidId, address _bidder, uint256 _value);
+    // событие, оповещающее, что был отменен бид для цифровой работы
+    event BidCanceled(uint256 digitalWorkId);
     // событие, возникающие после продажи работы
     event digitalWorkBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
 
@@ -380,25 +382,27 @@ contract SnarkMarket is SnarkBase {
     /// @dev отмена своего бида
     /// @param _bidId Id bid
     function cancelBid(uint256 _bidId) public onlyBidOwner(_bidId) {
-        // уменьшаем счетчик количества бидов у биддера
-        bidderToCountBidsMap[bidder]--;
-        // получаем сам бид по его id-шнику
-        Bid storage bid = bids[_bidId];
         // получаем адрес, кто являлся владельцев бида
         address bidder = bidToOwnerMap[_bidId];
-        // предыдущему бидеру нужно вернуть его сумму
-        bidder.transfer(bid.price);
+        uint256 bidValue = bids[_bidId].price;
+        uint256 digitalWorkId = bids[_bidId].digitalWorkId;
+        // уменьшаем счетчик количества бидов у биддера
+        bidderToCountBidsMap[bidder]--;
         // удаляем привязку цифровой работы с бидом
-        delete digitalWorkToBidMap[bid.digitalWorkId];
+        delete digitalWorkToBidMap[digitalWorkId];
         // удаляем привязку бида с владельцем
         delete bidToOwnerMap[_bidId];
         // помечаем, что цифровая работа не имеет бидов
-        digitalWorkToIsExistBidMap[bid.digitalWorkId] = false;
+        digitalWorkToIsExistBidMap[digitalWorkId] = false;
         // удаляем запись из таблицы бидов
         for (uint256 i = _bidId; i < bids.length - 1; i++) {
             bids[i] = bids[i+1];
         }
         bids.length--;
+        // предыдущему бидеру нужно вернуть его сумму
+        bidder.transfer(bidValue);
+        // генерим событие о том, что бид был удален
+        emit BidCanceled(digitalWorkId);
     }
 
     // функция принятия бида и продажи предложившему. снять все оферы и биды.
