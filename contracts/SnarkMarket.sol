@@ -543,12 +543,37 @@ contract SnarkMarket is SnarkBase {
         emit digitalWorkBoughtEvent(_tokenId, msg.value, _from, _to);
     }
 
-    // просмотреть все свои биды
-    function getBidList(address owner) public view {}
+    /// @dev Просмотреть все свои биды
+    /// @param _owner Адрес, для которого хотим получить список всех бидов
+    function getBidList(address _owner) public view returns (uint256[]) {        
+        uint256[] memory bidIdList = new uint256[](bidderToCountBidsMap[_owner]);
+        uint256 index = 0;
+        for (uint256 i = 0; i < bids.length; i++) {
+            if (bidToOwnerMap[bids[i]] == _owner) 
+                bidIdList[index++] = i;
+        }
+        bidIdList.length = index;
+        return bidIdList;
+    }
 
-    // просмотреть сколько у чувака есть денег тут у нас в контракте, чтобы мог вывести себе на кошелек
-    function getWithdrawBalance(address owner) public view {}
+    /// @dev Просмотреть сколько у чувака есть денег тут у нас в контракте, чтобы мог вывести себе на кошелек
+    /// @param _owner Адрес, для которого хотим получить баланс 
+    function getWithdrawBalance(address _owner) public view returns (uint256) {
+        return pendingWithdrawals[_owner];
+    }
 
-    // функция вывода средств себе на кошелек withdraw funds
-    function withdrawFunds(address owner) public {}
+    /// @dev Функция вывода средств себе на кошелек withdraw funds
+    /// @param _owner Адрес, который хочет вывести средства
+    function withdrawFunds(address _owner) public {
+        uint256 balance = pendingWithdrawals[_owner];
+        delete pendingWithdrawals[_owner];
+        _owner.transfer(balance);
+    }
+    
+    // !!!!!!! ПОСЛЕ УДАЛЕНИЯ БИДОВ, ОФФЕРОВ и АУКЦИОНОВ - не будут ли нарушены связи в ассоциативных массивах ???
+    // скажем оффер имел 5 записей и id-шник - это порядковый номер в массиве... после удаления элемента из массива,
+    // скажем 3-элемент, то 4-ой станет 3-им, а 5-ый - 4-м, т.е. id-шники сместятся, 
+    // а значит если в ассоциативном массиве была связь на 4 и 5, то она (связь) херится !!!!!!!
+    // !!!!! ВИДИМО НАДО ТАКЖЕ ПЕРЕНАСТРАИВАТЬ АССОЦИАТИВНЫЕ МАССИВЫ !!!!!!
+
 }
