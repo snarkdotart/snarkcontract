@@ -129,7 +129,7 @@ contract SnarkMarket is SnarkBase {
         for (uint256 i = 0; i < digitalWorks.length; i++) {
             // если текущая работа принадлежит уже какому-то оферу и этот офер тот, 
             // что нас инетересует, то добавляем его индекс в возвращаемую таблицу
-            if (digitalWorkToOfferMap[digitalWorks[i]] == _offerId &&
+            if (digitalWorkToOfferMap[i] == _offerId &&
                 digitalWorks[i].saleType == SaleType.Offer) {
                 offerDigitalWorksList[index++] = i;
             }
@@ -157,7 +157,7 @@ contract SnarkMarket is SnarkBase {
             price: _price,
             offerTo: _offerTo,
             isApproved: false,
-            participants: address[](0),
+            participants: new address[](0),
             countOfDigitalWorks: _tokenIds.length
         })) - 1;
         // применяем новую схему распределения прибыли
@@ -204,7 +204,7 @@ contract SnarkMarket is SnarkBase {
         offer.isApproved = isAllApproved;
         // если offerTo не пустой и все участники согласны с условиями, 
         // то оповещаем того, для кого это предложение предназначено
-        if (offer.offerTo != address(0) && offer.isAllApproved) {
+        if (offer.offerTo != address(0) && isAllApproved) {
             emit OfferToEvent(_offerId, offer.offerTo);
         }
     }
@@ -243,8 +243,8 @@ contract SnarkMarket is SnarkBase {
         // уменьшаем счетчик офферов у владельца
         ownerToCountOffersMap[msg.sender]--;
         // удаляем сам оффер из таблицы offers
-        for (i = _offerId; i < offers.length - 1; i++) {
-            offers[i] = offers[i+1];
+        for (uint256 j = _offerId; j < offers.length - 1; j++) {
+            offers[j] = offers[j+1];
         }
         offers.length--;
         // генерим событие о том, что удален оффер
@@ -259,7 +259,6 @@ contract SnarkMarket is SnarkBase {
         for (uint256 i = 0; i < offers.length; i++) {
             if (offers[i].isApproved) list[index++] = i;
         }
-        list.length = index;
         return list;
     }
 
@@ -375,7 +374,7 @@ contract SnarkMarket is SnarkBase {
         // увеличиваем количество бидов у биддера
         bidderToCountBidsMap[msg.sender]++;
         // формируем событие о создании нового бида для токена
-        emit NewBidEstablished(bidId, msg.value);
+        emit NewBidEstablished(bidId, msg.sender, msg.value);
     }
     
     /// @dev отмена своего бида
@@ -488,11 +487,10 @@ contract SnarkMarket is SnarkBase {
     /// @param _tokenId Токен, который покупают
     function buyDigitalWork(uint256 _tokenId) public payable {
         // сюда могут зайти как с Offer, так и с Auction
-        DigitalWork storage digitalWork = digitalWorks[_tokenId];
-        // совершить покупку можно лишь только ту работу, которая выставлена
+        // совершить покупку можно лишь только той работы, которая выставлена
         // на продажу через аукцион или вторичную
         require(digitalWorks[_tokenId].saleType == SaleType.Offer ||
-                digitalWorks[_tokenId].saleType == SaleType.Auction); 
+                digitalWorks[_tokenId].saleType == SaleType.Auction);
         // запоминаем, был ли оффер, чтобы в конце удалить его или аукцион
         bool isTypeOffer = (digitalWorks[_tokenId].saleType == SaleType.Offer);
 
@@ -549,10 +547,9 @@ contract SnarkMarket is SnarkBase {
         uint256[] memory bidIdList = new uint256[](bidderToCountBidsMap[_owner]);
         uint256 index = 0;
         for (uint256 i = 0; i < bids.length; i++) {
-            if (bidToOwnerMap[bids[i]] == _owner) 
+            if (bidToOwnerMap[i] == _owner) 
                 bidIdList[index++] = i;
         }
-        bidIdList.length = index;
         return bidIdList;
     }
 
