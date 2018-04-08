@@ -70,7 +70,6 @@ contract SnarkMarket is SnarkBase {
     // содержит связку адреса с его балансом
     mapping(address => uint256) public pendingWithdrawals;
 
-
     /// @dev Модификатор, пропускающий только участников дохода для этого оффера
     modifier onlyOfferParticipator(uint256 _offerId) {
         bool isItParticipant = false;
@@ -386,82 +385,162 @@ contract SnarkMarket is SnarkBase {
         address bidder = bidToOwnerMap[_bidId];
         uint256 bidValue = bids[_bidId].price;
         uint256 digitalWorkId = bids[_bidId].digitalWorkId;
-        // уменьшаем счетчик количества бидов у биддера
-        bidderToCountBidsMap[bidder]--;
-        // удаляем привязку цифровой работы с бидом
-        delete digitalWorkToBidMap[digitalWorkId];
-        // удаляем привязку бида с владельцем
-        delete bidToOwnerMap[_bidId];
-        // помечаем, что цифровая работа не имеет бидов
-        digitalWorkToIsExistBidMap[digitalWorkId] = false;
-        // удаляем запись из таблицы бидов
-        for (uint256 i = _bidId; i < bids.length - 1; i++) {
-            bids[i] = bids[i+1];
-        }
-        bids.length--;
+        // удаляем бид
+        _deleteBid(_bidId);
         // предыдущему бидеру нужно вернуть его сумму
         bidder.transfer(bidValue);
         // генерим событие о том, что бид был удален
         emit BidCanceled(digitalWorkId);
     }
 
-    // функция принятия бида и продажи предложившему. снять все оферы и биды.
-    function acceptBid(uint256 _bidId) public {}
+    /// @dev Удаление бида из основной таблицы бидов
+    /// @param _bidId Id bid
+    function _deleteBid(uint256 _bidId) private {
+        // уменьшаем счетчик количества бидов у биддера
+        bidderToCountBidsMap[bidToOwnerMap[_bidId]]--;
+        // удаляем привязку цифровой работы с бидом
+        delete digitalWorkToBidMap[bids[_bidId].digitalWorkId];
+        // удаляем привязку бида с владельцем
+        delete bidToOwnerMap[_bidId];
+        // помечаем, что цифровая работа не имеет бидов
+        digitalWorkToIsExistBidMap[bids[_bidId].digitalWorkId] = false;
+        // удаляем запись из таблицы бидов
+        for (uint256 i = _bidId; i < bids.length - 1; i++) {
+            bids[i] = bids[i+1];
+        }
+        bids.length--;
+    }
+
+    /// @dev Функция принятия бида и продажи предложившему. снять все оферы и биды.
+    function acceptBid(uint256 _bidId) public {
+        // получаем id цифровой работы, которую владелец согласен продать по цене бида
+        uint256 _tokenId = bids[_bidId].digitalWorkId;
+        // принять может только владелец цифровой работы
+        require(msg.sender == ownerOf(_tokenId));
+        // запоминаем от кого и куда должна уйти цифровая работа
+        address _from = ownerOf(_tokenId);
+        address _to = bidToOwnerMap[_bidId];
+        // сохраняем сумму
+        uint256 _price = bids[_bidId].price;
+        // устанавливаем владельцем текущего пользователя
+        tokenToOwner[_tokenId] = _to;
+        // т.к. деньги уже были перечислены за бид, то просто передаем токен новому владельцу
+        _transfer(_from, _to, _tokenId);
+        // был ли оффер?
+        bool doesItHasOffer = (digitalWorks[_tokenId].saleType == SaleType.Offer);
+        // распределяем прибыль
+        _incomeDistribution(_price, _tokenId, _from);
+        // удаляем бид
+        _deleteBid(_bidId);
+        // если есть оффер, то его также надо удалить
+        if (doesItHasOffer) {
+            uint256 offerId = digitalWorkToOfferMap[_tokenId];
+            deleteOffer(offerId);
+        }
+        // оповещаем, что картина была продана
+        emit digitalWorkBoughtEvent(_tokenId, _price, _from, _to);
+    }
+
+    /// @dev Функция распределения прибыли
+    /// @param _price Цена, за которую продается цифровая работа
+    /// @param _tokenId Id цифровой работы
+    /// @param _from Адрес продавца
+    function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) private {
+        // распределяем прибыль согласно схеме, содержащейся в самой картине
+        DigitalWork storage digitalWork = digitalWorks[_tokenId];
+        // вычисляем прибыль предварительно
+        if (digitalWork.lastPrice < _price && (_price - digitalWork.lastPrice) >= 100) {
+            uint256 profit = _price - digitalWork.lastPrice;
+            // проверяем первичная ли эта продажа или нет
+            if (digitalWork.isItFirstSelling) { 
+                // если да, то помечаем, что первичная продажа закончилась
+                digitalWork.isItFirstSelling = false;
+            } else {
+                // если вторичная продажа, то профит уменьшаем до заданного художником значения в процентах
+                // при этом же оставшая сумма должна перейти продавцу
+                uint256 amountToSeller = profit;
+                // сумма, которая будет распределяться
+                profit = profit * digitalWork.appropriationPercentForSecondTrade / 100;
+                // сумма, которая уйдет продавцу
+                amountToSeller -= profit;
+                pendingWithdrawals[_from] += amountToSeller;
+            }
+            uint256 residue = profit; // тут будем хранить остаток, после выплаты всем участникам
+            for (uint8 i = 0; i < digitalWork.participants.length; i++) { // по очереди обрабатываем участников выплат
+                uint256 payout = profit * digitalWork.participantToPercentMap[digitalWork.participants[i]] / 100; // вычисляем сумму выплаты
+                pendingWithdrawals[digitalWork.participants[i]] += payout; // и переводим ему на "вексель"
+                residue -= payout; // вычисляем остаток после выплаты
+            }
+            // если вдруг что-то осталось после распределения, то остаток переводим продавцу
+            pendingWithdrawals[_from] += residue;
+        } else {
+            // если дохода нет, то все зачисляем продавцу
+            pendingWithdrawals[_from] += _price; 
+        }
+        // запоминаем цену, по которой продались, в lastPrice в картине
+        digitalWork.lastPrice = _price;
+        // помечаем, что не имеет никаких статусов продажи
+        digitalWork.saleType = SaleType.None;
+    }
 
     // функция продажи картины. снять все оферы и биды для картины.
     /// @dev Фукнция совершения покупки полотна
     /// @param _tokenId Токен, который покупают
     function buyDigitalWork(uint256 _tokenId) public payable {
-        require(_tokenId != 0);
-        Offer storage offer = offers[_tokenId];
+        // сюда могут зайти как с Offer, так и с Auction
         DigitalWork storage digitalWork = digitalWorks[_tokenId];
-        address seller = offer.seller;
-        address buyer = msg.sender;
-        require(digitalWork.isForSale); // совершить покупку можно лишь только того полотна, которое выставлено на продажу
-        require(msg.value >= offer.price); // переданное количество денег не должно быть меньше установленной цены
-        // покупатель должен быть либо не установлен заранее, либо установлен на того, 
-        // кто сейчас пытается купить это полотно
-        require(offer.offerTo == address(0) || offer.offerTo == buyer);
-        require(ownerOf(_tokenId) != buyer); // нельзя продать самому себе
-        tokenToOwner[_tokenId] = buyer; // устанавливаем владельцем текущего пользователя
-        _transfer(seller, buyer, _tokenId); // производим передачу токена (смотри SnarkOwnership)
-        // теперь необходимо выявить доход, и если он был, то произвести
-        // распределение дохода, согласно долей участников. Расчет в weis.
-        if (digitalWork.lastPrice < msg.value && (msg.value - digitalWork.lastPrice) >= 100) {
-            uint256 profit = msg.value - digitalWork.lastPrice; // вычисляем доход, полученный при продаже.
-            if (digitalWork.isItFirstSelling) { // проверяем первичная ли эта продажа или нет
-                digitalWork.isItFirstSelling = false; // помечаем, что первичная продажа закончилась
-            } else {
-                // если вторичная продажа, то профит уменьшаем до заданного художником значения в процентах
-                // при этом же оставшая сумма должна перейти продавцу
-                uint256 amountToSeller = profit;
-                profit = profit * digitalWork.artistPart / 100; // сумма, которая будет распределяться
-                amountToSeller -= profit; // сумма, которая уйдет продавцу
-                pendingWithdrawals[seller] += amountToSeller;
-            }
-            uint256 residue = profit; // тут будем хранить остаток, после выплаты всем участникам
-            Participant[] storage participants = digitalWorkIdToParticipants[_tokenId]; // получаем список участников прибыли
-            for (uint8 i = 0; i < participants.length; i++) { // по очереди обрабатываем участников выплат
-                uint256 payout = profit * participants[i].persentageAmount / 100; // вычисляем сумму выплаты
-                pendingWithdrawals[participants[i].participant] += payout; // и выплачиваем
-                residue -= payout; // вычисляем остаток после выплаты
-            }
-            if (seller != digitalWork.artist && digitalWork.isItFirstSelling == false) {
-                pendingWithdrawals[digitalWork.artist] += residue; // вторичная продажа, художнику - остаток
-            } else {
-                pendingWithdrawals[offer.seller] += residue; // первичная продажа, продавцу - остаток
-            }
+        // совершить покупку можно лишь только ту работу, которая выставлена
+        // на продажу через аукцион или вторичную
+        require(digitalWorks[_tokenId].saleType == SaleType.Offer ||
+                digitalWorks[_tokenId].saleType == SaleType.Auction); 
+        // запоминаем, был ли оффер, чтобы в конце удалить его или аукцион
+        bool isTypeOffer = (digitalWorks[_tokenId].saleType == SaleType.Offer);
+
+        address _from;
+        address _to;
+        uint256 _price;
+
+        if (isTypeOffer) {
+            // если это таки был Offer
+            uint256 offerId = digitalWorkToOfferMap[_tokenId];
+            _from = offerToOwnerMap[offerId];
+            _to = msg.sender;
+            _price = offers[offerId].price;
+            // покупатель должен быть либо не установлен заранее, либо установлен на того, 
+            // кто сейчас пытается купить это полотно
+            require(offers[offerId].offerTo == address(0) || offers[offerId].offerTo == _to);
         } else {
-            pendingWithdrawals[offer.seller] += msg.value; // если дохода нет, то все оставляем себе
+            // если это таки был Auction
+            /*********************************************************************************************/
         }
-        digitalWork.lastPrice = msg.value; // записываем по какой цене полотно было куплено
-        digitalWork.isForSale = false; // снимаем с продажи
-        emit digitalWorkBoughtEvent(_tokenId, msg.value, seller, buyer); // геренируем событие покупки токена
-        Bid storage bid = bids[_tokenId];
-        if (bid.bidder == buyer) { // если покупатель выставлял bid, то необходимо его ему вернуть
-            pendingWithdrawals[buyer] += bid.value;
-            bids[_tokenId] = Bid(_tokenId, false, address(0), 0);
+        // переданное количество денег не должно быть меньше установленной цены
+        require(msg.value >= _price); 
+        // нельзя продать самому себе
+        require(ownerOf(_tokenId) != _to);
+        // устанавливаем владельцем текущего пользователя
+        tokenToOwner[_tokenId] = _to;
+        // производим передачу токена (смотри SnarkOwnership)
+        _transfer(_from, _to, _tokenId); 
+        // распределяем прибыль
+        _incomeDistribution(msg.value, _tokenId, _from);        
+        // удаляем бид, если есть
+        if (digitalWorkToIsExistBidMap[_tokenId]) {
+            uint256 bidId = digitalWorkToBidMap[_tokenId];
+            uint256 bidValue = bids[bidId].price;
+            address bidder = bidToOwnerMap[bidId];
+            // удаляем бид
+            _deleteBid(bidId);
+            // предыдущему бидеру нужно вернуть его сумму
+            bidder.transfer(bidValue);
         }
+        // удаляем offer, если есть
+        if (isTypeOffer) {
+            deleteOffer(digitalWorkToOfferMap[_tokenId]);
+        }
+        // удаляем аукцион, удаляем его
+        /*********************************************************************************************/
+        // геренируем событие, оповещающее, что совершена покупка
+        emit digitalWorkBoughtEvent(_tokenId, msg.value, _from, _to);
     }
 
     // просмотреть все свои биды
