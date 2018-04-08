@@ -489,8 +489,7 @@ contract SnarkMarket is SnarkBase {
         // сюда могут зайти как с Offer, так и с Auction
         // совершить покупку можно лишь только той работы, которая выставлена
         // на продажу через аукцион или вторичную
-        require(digitalWorks[_tokenId].saleType == SaleType.Offer ||
-                digitalWorks[_tokenId].saleType == SaleType.Auction);
+        require(digitalWorks[_tokenId].saleType == SaleType.Offer || digitalWorks[_tokenId].saleType == SaleType.Auction);
         // запоминаем, был ли оффер, чтобы в конце удалить его или аукцион
         bool isTypeOffer = (digitalWorks[_tokenId].saleType == SaleType.Offer);
 
