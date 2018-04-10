@@ -23,13 +23,20 @@ contract SnarkMarket is SnarkBase {
     // событие, возникающие после продажи работы
     event digitalWorkBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
 
+    // предполагаем 4 состояния у Offer-ов и Аукционов:
+    // Preparing - "подготавливается", только создался и не апрувнут участниками
+    // NotActive - апрувнут участниками, но не работает еще (это только у аукциона)
+    // Active - активный, когда начал участвовать в продаже картин
+    // Finished - завершенный, когда все картины проданы
+    enum SaleStatus { Preparing, NotActive, Active, Finished }
+
     struct Offer {
         // предлагаемая цена в ether для всех работ
         uint price;
         // адрес коллекционера, кому явно выставляется предложение
         address offerTo;
         // признак готовности к продаже (true когда все approve)
-        bool isApproved;
+        // bool isApproved;
         // адреса участников прибыли
         address[] participants;
         // содержит связь участника с размером его доли
@@ -38,6 +45,8 @@ contract SnarkMarket is SnarkBase {
         mapping(address => bool) participantToApproveMap;
         // количество работ в данном предложении. Уменьшаем при продаже картины
         uint256 countOfDigitalWorks;
+        // статус предложения
+        SaleStatus saleStatus;
     }
 
     struct Bid {
@@ -47,11 +56,37 @@ contract SnarkMarket is SnarkBase {
         uint price;
     }
 
+    struct Auction {
+        // начальная цена в wei
+        uint256 startingPrice;
+        // конечная цена в wei
+        uint256 endingPrice;
+        // дата и время начала аукциона
+        uint64 startingDate;
+        // продолжительность аукциона в сутках
+        uint16 duration;
+        // признак готовности к продаже (true когда все approve)
+        bool isApproved;
+        // список картин, участвующих в аукционе
+        address[] participants;
+        // содержит связь участника с размером его доли
+        mapping(address => uint8) participantToPercentageAmountMap;
+        // содержит связь участника с его подтверждением
+        mapping(address => bool) participantToApproveMap;
+        // количество работ в данном предложении. Уменьшаем при продаже картины
+        uint256 countOfDigitalWorks;
+        // статус предложения
+        SaleStatus saleStatus;
+    }
+
     // содержит список всех предложений
     Offer[] internal offers;
 
     // содержит список всех бидов
     Bid[] internal bids;
+
+    // список всех аукционов
+    Auction[] internal auctions;
 
     // содержит связь цифровой работы с его предложением
     mapping(uint256 => uint256) internal digitalWorkToOfferMap;
@@ -69,6 +104,13 @@ contract SnarkMarket is SnarkBase {
     mapping(uint256 => bool) internal digitalWorkToIsExistBidMap;
     // содержит связку адреса с его балансом
     mapping(address => uint256) public pendingWithdrawals;
+    // содержит связь цифровой работы с аукционом, в котором она участвует
+    mapping(uint256 => uint256) internal digitalWorkToAuctionMap;
+    // содержит связь аукциона с его владельцем
+    mapping(uint256 => address) internal auctionToOwnerMap;
+    // содержит счетчик аукционов, принадлежащих одному владельцу
+    mapping(address => uint256) internal ownerToCountAuctionsMap;
+
 
     /// @dev Модификатор, пропускающий только участников дохода для этого оффера
     modifier onlyOfferParticipator(uint256 _offerId) {
@@ -100,9 +142,14 @@ contract SnarkMarket is SnarkBase {
     }
 
     // @dev Возвращает количество офферов
-    function getCountOfOffers() public view returns (uint256) {
-        // меньше на 1, т.к. есть пустой первый оффер
-        return offers.length; // - 1;
+    // @param _status Интересуемый статус SaleStatus
+    function getCountOfOffers(uint8 _status) public view returns (uint256) {
+        require(uint8(SaleStatus.Finished) >= _status);
+        uint256 count = 0;
+        for (uint i = 0; i < offers.length; i++) {
+            if (offers[i].saleStatus == SaleStatus(_status)) count++;
+        }
+        return count;
     }
 
     /// @dev Возвращает список offers, принадлежащие интересуемому овнеру
@@ -123,6 +170,7 @@ contract SnarkMarket is SnarkBase {
     /// @param _offerId Id-шник offer-a
     function getDigitalWorksOffersList(uint256 _offerId) public view returns (uint256[]) {
         require(offers.length > 0);
+        require(_offerId < offers.length);
         // выделяем массив размерности, заданной в оффере
         uint256[] memory offerDigitalWorksList = new uint256[](offers[_offerId].countOfDigitalWorks);
         uint256 index = 0;
@@ -156,9 +204,9 @@ contract SnarkMarket is SnarkBase {
         uint256 offerId = offers.push(Offer({
             price: _price,
             offerTo: _offerTo,
-            isApproved: false,
             participants: new address[](0),
-            countOfDigitalWorks: _tokenIds.length
+            countOfDigitalWorks: _tokenIds.length,
+            saleStatus: SaleStatus.Preparing
         })) - 1;
         // применяем новую схему распределения прибыли
         applyNewSchemaOfProfitDivisionForOffer(offerId, _participants, _percentAmounts);
@@ -201,7 +249,7 @@ contract SnarkMarket is SnarkBase {
             }
         }
         // и только теперь помечаем, что оффер может выставляться на продажу
-        offer.isApproved = isAllApproved;
+        if (isAllApproved) offer.saleStatus = SaleStatus.Active;
         // если offerTo не пустой и все участники согласны с условиями, 
         // то оповещаем того, для кого это предложение предназначено
         if (offer.offerTo != address(0) && isAllApproved) {
@@ -257,7 +305,8 @@ contract SnarkMarket is SnarkBase {
         uint256[] memory list = new uint256[](offers.length);
         uint256 index = 0;
         for (uint256 i = 0; i < offers.length; i++) {
-            if (offers[i].isApproved) list[index++] = i;
+            if (offers[i].saleStatus == SaleStatus.Active) 
+                list[index++] = i;
         }
         return list;
     }
@@ -348,10 +397,11 @@ contract SnarkMarket is SnarkBase {
                 // предыдущему бидеру нужно вернуть его сумму
                 if (bid.price > 0) {
                     // записываем сумму ему же на "вексель", которые позже он сам может изъять
-                    // pendingWithdrawals[bidToOwnerMap[bidId]] += bid.price;
+                    pendingWithdrawals[bidToOwnerMap[bidId]] += bid.price;
 
-                    // возвращаем денежку предыдущему биддеру
-                    bidToOwnerMap[bidId].transfer(bid.price);
+                    // или возвращаем денежку предыдущему биддеру ????
+                    // bidToOwnerMap[bidId].transfer(bid.price);
+
                     // уменьшаем счетчик количества бидов у биддера
                     bidderToCountBidsMap[bidToOwnerMap[bidId]]--;
                 }
@@ -566,24 +616,44 @@ contract SnarkMarket is SnarkBase {
         _owner.transfer(balance);
     }
 
-    // !!!!!!! ПОСЛЕ УДАЛЕНИЯ БИДОВ, ОФФЕРОВ и АУКЦИОНОВ - не будут ли нарушены связи в ассоциативных массивах ???
+    // 1. !!!!!!! ПОСЛЕ УДАЛЕНИЯ БИДОВ, ОФФЕРОВ и АУКЦИОНОВ - не будут ли нарушены связи в ассоциативных массивах ???
     // скажем оффер имел 5 записей и id-шник - это порядковый номер в массиве... после удаления элемента из массива,
     // скажем 3-элемент, то 4-ой станет 3-им, а 5-ый - 4-м, т.е. id-шники сместятся, 
     // а значит если в ассоциативном массиве была связь на 4 и 5, то она (связь) херится !!!!!!!
     // !!!!! ВИДИМО НАДО ТАКЖЕ ПЕРЕНАСТРАИВАТЬ АССОЦИАТИВНЫЕ МАССИВЫ ЛИБО МЕНЯТЬ ПОДХОД !!!!!!
 
-    // аукцион содерит дату начала старта - не имеет смысла, видимо, ибо дергать надо из-вне
-    // дату конеца проведения аукциона
-    // стартовую цену
-    // конечную цену
-    // шаг цены
-    // временной шаг снижения цены
+    // 2. !!!!!!! НАДО ОТЛИЧАТЬ OFFER и AUCTION первычиные или вторичные, 
+    // ибо задаваться участники прибыли должны только при первичной продаже
+
+    // !!!!! ПОЧЕМУ У ДАДЫ И КОТИКОВ ВО ВРЕМЯ АУКЦИОНА КАРТИНЫ ПРИНАДЛЕЖАТ АУКЦИОНУ САМОЙ ПЛОЩАДКЕ  ????
+
+    // 3. !!!!!!! РЕЖИМ ТО МОЖЕТ БЫТЬ ПАССИВНЫМ, ЧТО ОЗНАЧАЕТ НИЧЕГО ИЗ-ВНЕ МЕНЯТЬ НЕ НАДО
+    // ДОСТАТОЧНО ВЫЧИСЛЯТЬ СОСТОЯНИЕ И ЦЕНУ В МОМЕНТ ЗАПРОСА
+    // НЕДОСТАТОК: НЕ ПОЛУЧИТСЯ ГЕНЕРИТЬ СОБЫТИЯ (НАЧАЛА АУКЦИОНА, ЕГО ОКОНЧАНИЯ И ИЗМЕНЕНИЯ ЦЕНЫ)
+
+    // аукцион содерит:
+    // на сколько будет падать цена - вычисляется: (стартовая цена - конечная цена) / длительность аукциона
     // при достижении конечной цены минус временной шаг, мы распускаем аукцион и оповещаем об этом
 
-    // функции: создать аукцион. Как только все участники согласятся с условиями - он запускается
+    // функции: 
+    // 1. Создать аукцион. Для его запуска должно сработать 2 условия: 
+    //    а) все участники должны согласится с условиями доли в прибыли; 
+    //    б) должна наступить дата старта.
+    //    В случае, если до даты старта не успели все апрувнуть, то запуск должен будет произойти сразу же, 
+    //    как только будет апрувнут последний участник и при этом между временем старта и окончания аукциона 
+    //    должен быть как минимум один временной шаг (например - сутки). В этом случае, цена не успеет
+    //    достичь минимально заданного значения.
+    // 2. апрувнуть его всеми участниками прибыли
+    // 3. функция изменения цены работ, которая будет вызываться из-вне по таймеру Ethereum Alarm Clock
+    // 4. завершение аукциона и "роспуск" всех картин
 
-    struct Auction {
+    // перенос id шника внутрь структуры - ничего не дает, 
+    // т.к. будут возникать моменты создания дубликатов id
 
+    // !!!!!!!!!!!! НИЧЕГО не удаляем из массивов offers, bids, auctions !!!!!!!!!!!!!!
+
+    function createAuction() public {
+        // для картин необходимо проверять, чтобы они были со статусом None
     }
 
 }
