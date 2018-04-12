@@ -7,23 +7,27 @@ import "./SnarkBase.sol";
 contract SnarkMarket is SnarkBase {
 
     // событие, оповещающее о созданни нового оффера
-    event OfferCreated(uint256 offerId);
+    event OfferCreatedEvent(uint256 offerId);
     // событие на подтверждение согласия участников с их долями
-    event NeedApproveOfferEvent(uint256 offerId, address[] _participants, uint8[] _percentAmounts);
+    event NeedApproveOfferEvent(uint256 offerId, address indexed _participant, uint8 _percentAmount);
     // событие, оповещающее о выставленном предложении выбранного участника системы
-    event OfferToEvent(uint256 offerId, address _offerTo);
+    event OfferToEvent(uint256 offerId, address indexed _offerTo);
     // событие, оповещающее об отклонении offerTo чуваков данный оффер
-    event OfferToDeclined(uint256 _offerId, address _offerTo);
+    event OfferToDeclinedEvent(uint256 _offerId, address indexed _offerTo);
     // событие, оповещающее, что участник прибыли не согласен с условиями
-    event DeclineApprove(uint256 _offerId, address _participant);
+    event DeclineApproveEvent(uint256 _offerId, address indexed _participant);
     // событие, оповещающее, что offer был удален
-    event OfferDeleted(uint256 _offerId);
+    event OfferDeletedEvent(uint256 _offerId);
     // событие, оповещающее об установке нового bid-а
-    event NewBidEstablished(uint256 _bidId, address _bidder, uint256 _value);
+    event NewBidEstablishedEvent(uint256 _bidId, address indexed _bidder, uint256 _value);
     // событие, оповещающее, что был отменен бид для цифровой работы
-    event BidCanceled(uint256 digitalWorkId);
+    event BidCanceledEvent(uint256 _digitalWorkId);
     // событие, возникающие после продажи работы
     event digitalWorkBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
+    // событие, оповещающее, что был создан новый аукцион
+    event AuctionCreatedEvent(uint256 _auctionId);
+    // оповещает участника о необходимости подтвердить согласие на его долю в продаже картины
+    event NeedApproveAuctionEvent(uint256 _auctionId, address indexed _participant, uint8 _percentAmount);
 
     // предполагаем 4 состояния у Offer-ов и Аукционов:
     // Preparing - "подготавливается", только создался и не апрувнут участниками
@@ -67,8 +71,6 @@ contract SnarkMarket is SnarkBase {
         uint64 startingDate;
         // продолжительность аукциона в сутках
         uint16 duration;
-        // признак готовности к продаже (true когда все approve)
-        bool isApproved;
         // список картин, участвующих в аукционе
         address[] participants;
         // содержит связь участника с размером его доли
@@ -137,6 +139,37 @@ contract SnarkMarket is SnarkBase {
         _;
     }
 
+    /// @dev Модификатор, проверяющий, чтобы работы не участвовали в продажах где-то еще
+    modifier onlyNoneStatus(uint256[] _tokenIds) {
+        bool isStatusNone = true;
+        for (uint8 i = 0; i < _tokenIds.length; i++) {
+            isStatusNone = (isStatusNone && (digitalWorks[_tokenIds[i]].saleType == SaleType.None));
+        }
+        require(isStatusNone);
+        _;
+    }
+
+    // @dev Модификатор, проверяющий картины на соответствие первичной продажи
+    modifier onlyFirstSale(uint256[] _tokenIds) {
+        bool isFistSale = true;
+        for (uint8 i = 0; i < _tokenIds.length; i++) {
+            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isItFirstSelling);
+        }
+        require(isFistSale);
+        _;
+    }
+
+    // @dev Модификатор, проверяющий картины на соответствие вторичной продажи
+    modifier onlySecondSale(uint256[] _tokenIds) {
+        bool isSecondSale = true;
+        for (uint8 i = 0; i < _tokenIds.length; i++) {
+            isSecondSale = (isSecondSale && !digitalWorks[_tokenIds[i]].isItFirstSelling);
+        }
+        require(isSecondSale);
+        _;
+    }    
+
+    /// @dev Модификатор, проверяющий переданный id оффера на попадание в интервал
     modifier correctOfferId(uint256 _offerId) {
         require(offers.length > 0);
         require(_offerId < offers.length);
@@ -196,6 +229,7 @@ contract SnarkMarket is SnarkBase {
     /// @param _price Цена для всех цифровых работ, включенных в это предложение
     /// @param _offerTo Адрес, кому выставляется данное предложение
     /// @param _participants Список участников прибыли
+    /// @param _percentAmounts Список процентных долей участников
     function createOffer(
         uint256[] _tokenIds, 
         uint256 _price, 
@@ -205,7 +239,13 @@ contract SnarkMarket is SnarkBase {
     ) 
         public 
         onlyOwnerOfMany(_tokenIds)
+        onlyNoneStatus(_tokenIds)
+        onlyFirstSale(_tokenIds)
     {
+        // сюда могут прийти картины как на вторичную продажу, так и как на первичную
+        // для вторичной - у картины уже заданы параметры распределения
+        // для первичной - необходимо задать и апрувнуть
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!        
         // создание оффера и получение его id
         uint256 offerId = offers.push(Offer({
             price: _price,
@@ -230,7 +270,10 @@ contract SnarkMarket is SnarkBase {
         // генерим ивент для всех участников, участвующих в дележке прибыли.
         // передаем туда: id текущего оффера, по которому участник сможет получить и просмотреть
         // список картин, а также выставленную цену
-        emit NeedApproveOfferEvent(offerId, _participants, _percentAmounts);
+        for (i = 0; i < _participants.length; i++) {
+            // оповещаем адресно
+            emit NeedApproveOfferEvent(offerId, _participants[i], _percentAmounts[i]);
+        }
     }
 
     /// @dev Функция создания офера для вторичной продажи
@@ -244,6 +287,8 @@ contract SnarkMarket is SnarkBase {
     ) 
         public 
         onlyOwnerOfMany(_tokenIds)
+        onlyNoneStatus(_tokenIds)
+        onlySecondSale(_tokenIds)
     {
         // создание оффера и получение его id
         uint256 offerId = offers.push(Offer({
@@ -264,7 +309,7 @@ contract SnarkMarket is SnarkBase {
         // увеличиваем количество офферов принадлежащих овнеру
         ownerToCountOffersMap[msg.sender]++;
         // сообщаем, что был создан новый оффер
-        emit OfferCreated(offerId);
+        emit OfferCreatedEvent(offerId);
     }
 
     /// @dev Участник прибыли подтверждает свое согласие на выставленные условия
@@ -296,7 +341,7 @@ contract SnarkMarket is SnarkBase {
         if (offer.offerTo != address(0) && isAllApproved) {
             emit OfferToEvent(_offerId, offer.offerTo);
         } else 
-            emit OfferCreated(_offerId);
+            emit OfferCreatedEvent(_offerId);
     }
 
     /// @dev Получили отказ от offerTo на наше предложение
@@ -305,14 +350,14 @@ contract SnarkMarket is SnarkBase {
         // убираем offerTo для данного офера и оставляем его в в общей продаже
         offers[_offerId].offerTo = address(0);
         // генерим событие owner-у, что offerTo послал нафиг
-        emit OfferToDeclined(_offerId, msg.sender);
+        emit OfferToDeclinedEvent(_offerId, msg.sender);
     }
 
     /// @dev Отказ участника прибыли с предложенными условиями
     /// @param _offerId Id-шник offer-а
     function declineOfferApprove(uint256 _offerId) public onlyOfferParticipator(_offerId) {
         // в этом случае мы только можем только оповестить владельца об отказе
-        emit DeclineApprove(_offerId, msg.sender);
+        emit DeclineApproveEvent(_offerId, msg.sender);
     }
     
     /// @dev Удаление offer-а. Вызывается также после продажи последней картины, включенной в оффер.
@@ -334,7 +379,7 @@ contract SnarkMarket is SnarkBase {
         // помечаем оффер, как завершившийся
         offers[_offerId].saleStatus = SaleStatus.Finished;
         // генерим событие о том, что удален оффер
-        emit OfferDeleted(_offerId);
+        emit OfferDeletedEvent(_offerId);
     }
 
     /// @dev Получение списка всех активных offers (которые Approved)
@@ -366,7 +411,10 @@ contract SnarkMarket is SnarkBase {
         // применяем новую схему
         applyNewSchemaOfProfitDivisionForOffer(_offerId, _participants, _percentAmounts);
         // т.к. изменения доли для одного затрагивает всех, то заново всех надо оповещать
-        emit NeedApproveOfferEvent(_offerId, _participants, _percentAmounts);
+        for (uint256 i = 0; i < _participants.length; i++) {
+            // оповещаем адресно
+            emit NeedApproveOfferEvent(_offerId, _participants[i], _percentAmounts[i]);
+        }
     }
 
     /// @dev Применяем схему к офферу
@@ -463,7 +511,7 @@ contract SnarkMarket is SnarkBase {
         // увеличиваем количество бидов у биддера
         bidderToCountBidsMap[msg.sender]++;
         // формируем событие о создании нового бида для токена
-        emit NewBidEstablished(bidId, msg.sender, msg.value);
+        emit NewBidEstablishedEvent(bidId, msg.sender, msg.value);
     }
     
     /// @dev отмена своего бида
@@ -478,7 +526,7 @@ contract SnarkMarket is SnarkBase {
         // предыдущему бидеру нужно вернуть его сумму
         bidder.transfer(bidValue);
         // генерим событие о том, что бид был удален
-        emit BidCanceled(digitalWorkId);
+        emit BidCanceledEvent(digitalWorkId);
     }
 
     /// @dev Удаление бида из основной таблицы бидов
@@ -520,7 +568,9 @@ contract SnarkMarket is SnarkBase {
         // если есть оффер, то его также надо удалить
         if (doesItHasOffer) {
             uint256 offerId = digitalWorkToOfferMap[_tokenId];
-            deleteOffer(offerId);
+            // удаляем только, если у него не осталось картин для продажи
+            if (getDigitalWorksOffersList(offerId).length == 0)
+                deleteOffer(offerId);
         }
         // оповещаем, что картина была продана
         emit digitalWorkBoughtEvent(_tokenId, _price, _from, _to);
@@ -618,7 +668,8 @@ contract SnarkMarket is SnarkBase {
         }
         // удаляем offer, если есть
         if (isTypeOffer) {
-            deleteOffer(digitalWorkToOfferMap[_tokenId]);
+            if (getDigitalWorksOffersList(offerId).length == 0)
+                deleteOffer(offerId);
         }
         // удаляем аукцион, удаляем его
         /*********************************************************************************************/
@@ -641,15 +692,152 @@ contract SnarkMarket is SnarkBase {
     /// @dev Просмотреть сколько у чувака есть денег тут у нас в контракте, чтобы мог вывести себе на кошелек
     /// @param _owner Адрес, для которого хотим получить баланс 
     function getWithdrawBalance(address _owner) public view returns (uint256) {
+        require(_owner != address(0));
         return pendingWithdrawals[_owner];
     }
 
     /// @dev Функция вывода средств себе на кошелек withdraw funds
     /// @param _owner Адрес, который хочет вывести средства
     function withdrawFunds(address _owner) public {
+        require(_owner != address(0));
         uint256 balance = pendingWithdrawals[_owner];
         delete pendingWithdrawals[_owner];
         _owner.transfer(balance);
+    }
+
+    /// @dev Функция создания аукциона для картин ПЕРВИЧНОЙ продажи. Вызывает событие апрува для участников
+    /// @param _tokenIds Список id-шников цифровых работ, которые будут включены в это предложение
+    /// @param _startingPrice Стартовая цена картин
+    /// @param _endingPrice Конечная цена картин
+    /// @param _startingDate Дата начала аукциона (timestamp)
+    /// @param _duration Продолжительность аукциона (в сутках)
+    /// @param _participants Список участников прибыли
+    /// @param _percentAmounts Список процентных долей участников
+    function createAuction(
+        uint256[] _tokenIds,
+        uint256 _startingPrice,
+        uint256 _endingPrice,
+        uint64 _startingDate,
+        uint16 _duration,
+        address[] _participants,
+        uint8[] _percentAmounts
+    ) 
+        public
+        onlyOwnerOfMany(_tokenIds)
+        onlyNoneStatus(_tokenIds)
+        onlyFirstSale(_tokenIds)
+    {
+        uint256 auctionId = auctions.push(Auction({
+            startingPrice: _startingPrice,
+            endingPrice: _endingPrice,
+            startingDate: _startingDate,
+            duration: _duration,
+            participants: new address[](0),
+            countOfDigitalWorks: _tokenIds.length,
+            saleStatus: SaleStatus.Preparing
+        })) - 1;
+        // применяем схему распределения пока для самого аукциона (не для цифровых работ)
+        applyNewSchemaOfProfitDivisionForAuction(auctionId, _participants, _percentAmounts);
+        // для всех цифровых работ выполняем следующее:
+        for (uint8 i = 0; i < _tokenIds.length; i++) {
+            // в самой работе помечаем, что она участвует в аукционе
+            digitalWorks[_tokenIds[i]].saleType = SaleType.Auction;
+            // помечаем к какому аукциону она принадлежит
+            digitalWorkToAuctionMap[_tokenIds[i]] = auctionId;
+        }
+        // записываем владельца данного аукциона
+        auctionToOwnerMap[auctionId] = msg.sender;
+        // увеличиваем количество аукционов, принадлежащих овнеру
+        ownerToCountAuctionsMap[msg.sender]++;
+
+        for (i = 0; i < _participants.length; i++) {
+            // адресно оповещаем каждого из участиков
+            emit NeedApproveAuctionEvent(auctionId, _participants[i], _percentAmounts[i]);
+        }
+    }
+
+    /// @dev Функция создания аукциона для картин ВТОРИЧНОЙ продажи.
+    /// @param _tokenIds Список id-шников цифровых работ, которые будут включены в это предложение
+    /// @param _startingPrice Стартовая цена картин
+    /// @param _endingPrice Конечная цена картин
+    /// @param _startingDate Дата начала аукциона (timestamp)
+    /// @param _duration Продолжительность аукциона (в сутках)
+    function createAuction(
+        uint256[] _tokenIds,
+        uint256 _startingPrice,
+        uint256 _endingPrice,
+        uint64 _startingDate,
+        uint16 _duration
+    ) 
+        public
+        onlyOwnerOfMany(_tokenIds)
+        onlyNoneStatus(_tokenIds)
+        onlySecondSale(_tokenIds)
+    {
+        uint256 auctionId = auctions.push(Auction({
+            startingPrice: _startingPrice,
+            endingPrice: _endingPrice,
+            startingDate: _startingDate,
+            duration: _duration,
+            participants: new address[](0),
+            countOfDigitalWorks: _tokenIds.length,
+            saleStatus: SaleStatus.Preparing
+        })) - 1;
+        // для всех цифровых работ выполняем следующее:
+        for (uint8 i = 0; i < _tokenIds.length; i++) {
+            // в самой работе помечаем, что она участвует в аукционе
+            digitalWorks[_tokenIds[i]].saleType = SaleType.Auction;
+            // помечаем к какому аукциону она принадлежит
+            digitalWorkToAuctionMap[_tokenIds[i]] = auctionId;
+        }
+        // записываем владельца данного аукциона
+        auctionToOwnerMap[auctionId] = msg.sender;
+        // увеличиваем количество аукционов, принадлежащих овнеру
+        ownerToCountAuctionsMap[msg.sender]++;
+        // кричим, что был создан аукцион
+        emit AuctionCreatedEvent(auctionId);
+    }
+
+    /// @dev Применяем схему к аукциону
+    /// @param _auctionId Id-шник аукциона
+    /// @param _participants Массив адресов участников прибыли
+    /// @param _percentAmounts Массив долей участников прибыли
+    function applyNewSchemaOfProfitDivisionForAuction(
+        uint256 _auctionId,
+        address[] _participants,
+        uint8[] _percentAmounts
+    ) 
+        private
+    {
+        // удаляем все, ибо могли исключить кого-то из участников и добавить новых
+        Auction storage auction = auctions[_auctionId];
+        for (uint8 i = 0; i < auction.participants.length; i++) {
+            // удаляем процентные доли
+            delete auction.participantToPercentageAmountMap[auction.participants[i]];
+            // удаляем "согласия", ибо уже изменились значения для всех
+            delete auction.participantToApproveMap[auction.participants[i]];
+        }
+        auction.participants.length = 0;
+        // применяем новую схему
+        bool isSnarkDelivered = false;
+        // заполняем список участников прибыли
+        for (i = 0; i < _participants.length; i++) {
+            // сначала сохраняем адрес участника
+            auction.participants.push(_participants[i]);
+            // а затем его долю
+            auction.participantToPercentageAmountMap[_participants[i]] = _percentAmounts[i];
+            // на тот случай, если с клиента уже будет приходить информация о доле Snark
+            if (_participants[i] == snarkOwner) isSnarkDelivered = true;
+        }
+        // ну и не забываем про себя любимых, т.е. Snark, если он чуть выше не был передан и обработан
+        if (isSnarkDelivered == false) {
+            // записываем адрес Snark
+            auction.participants.push(snarkOwner); 
+            // записываем долю Snark
+            auction.participantToPercentageAmountMap[snarkOwner] = snarkPercentageAmount;
+        }
+        // и сразу апруваем Snark
+        auction.participantToApproveMap[snarkOwner] = true;
     }
 
     // 1. !!!!!!! ПОСЛЕ УДАЛЕНИЯ БИДОВ, ОФФЕРОВ и АУКЦИОНОВ - не будут ли нарушены связи в ассоциативных массивах ???
@@ -687,9 +875,6 @@ contract SnarkMarket is SnarkBase {
     // т.к. будут возникать моменты создания дубликатов id
 
     // !!!!!!!!!!!! НИЧЕГО не удаляем из массивов offers, bids, auctions !!!!!!!!!!!!!!
-
-    function createAuction() public {
-        // для картин необходимо проверять, чтобы они были со статусом None
-    }
+    // !!!!!!!!!!!! НЕ СМЕШИВАТЬ ПЕРВИЧНЫЕ ПРОДАЖИ И АУКЦИОНЫ СО ВТОРИЧНЫМИ !!!!!!!!!!!!
 
 }
