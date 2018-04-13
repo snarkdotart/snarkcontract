@@ -15,7 +15,7 @@ contract SnarkMarket is SnarkBase {
     // событие, оповещающее об отклонении offerTo чуваков данный оффер
     event OfferToDeclinedEvent(uint256 _offerId, address indexed _offerTo);
     // событие, оповещающее, что участник прибыли не согласен с условиями
-    event DeclineApproveEvent(uint256 _offerId, address indexed _participant);
+    event DeclineApproveEvent(uint256 _offerId, address indexed _offerOwner, address indexed _participant);
     // событие, оповещающее, что offer был удален
     event OfferDeletedEvent(uint256 _offerId);
     // событие, оповещающее об установке нового bid-а
@@ -176,10 +176,27 @@ contract SnarkMarket is SnarkBase {
         _;
     }
 
+    modifier correctAuctionId(uint256 _auctionId) {
+        require(auctions.length > 0);
+        require(_auctionId < auctions.length);
+        _;        
+    }
+
     /// @dev Модификатор, пропускающий только владельца бида
     modifier onlyBidOwner(uint256 _bidId) {
         require(msg.sender == bidToOwnerMap[_bidId]);
         _;
+    }
+
+    /// @dev Модификатор, пропускающий только участников дохода для этого аукциона
+    modifier onlyAuctionParticipator(uint256 _auctionId) {
+        bool isItParticipant = false;
+        address[] storage p = auctions[_auctionId].participants;
+        for (uint8 i = 0; i < p.length; i++) {
+            if (msg.sender == p[i]) isItParticipant = true;
+        }
+        require(isItParticipant);
+        _;        
     }
 
     // @dev Возвращает количество офферов
@@ -224,7 +241,7 @@ contract SnarkMarket is SnarkBase {
         return offerDigitalWorksList;
     }
 
-    /// @dev Функция создания офера. вызывает событие апрува для участников
+    /// @dev Функция создания офера первичной продажи. вызывает событие апрува для участников
     /// @param _tokenIds Список id-шников цифровых работ, которые будут включены в это предложение
     /// @param _price Цена для всех цифровых работ, включенных в это предложение
     /// @param _offerTo Адрес, кому выставляется данное предложение
@@ -242,10 +259,6 @@ contract SnarkMarket is SnarkBase {
         onlyNoneStatus(_tokenIds)
         onlyFirstSale(_tokenIds)
     {
-        // сюда могут прийти картины как на вторичную продажу, так и как на первичную
-        // для вторичной - у картины уже заданы параметры распределения
-        // для первичной - необходимо задать и апрувнуть
-        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!        
         // создание оффера и получение его id
         uint256 offerId = offers.push(Offer({
             price: _price,
@@ -357,7 +370,7 @@ contract SnarkMarket is SnarkBase {
     /// @param _offerId Id-шник offer-а
     function declineOfferApprove(uint256 _offerId) public onlyOfferParticipator(_offerId) {
         // в этом случае мы только можем только оповестить владельца об отказе
-        emit DeclineApproveEvent(_offerId, msg.sender);
+        emit DeclineApproveEvent(_offerId, offerToOwnerMap[_offerId], msg.sender);
     }
     
     /// @dev Удаление offer-а. Вызывается также после продажи последней картины, включенной в оффер.
@@ -781,7 +794,7 @@ contract SnarkMarket is SnarkBase {
             duration: _duration,
             participants: new address[](0),
             countOfDigitalWorks: _tokenIds.length,
-            saleStatus: SaleStatus.Preparing
+            saleStatus: SaleStatus.NotActive
         })) - 1;
         // для всех цифровых работ выполняем следующее:
         for (uint8 i = 0; i < _tokenIds.length; i++) {
@@ -794,8 +807,52 @@ contract SnarkMarket is SnarkBase {
         auctionToOwnerMap[auctionId] = msg.sender;
         // увеличиваем количество аукционов, принадлежащих овнеру
         ownerToCountAuctionsMap[msg.sender]++;
-        // кричим, что был создан аукцион
+        // сообщаем, что был создан аукцион
         emit AuctionCreatedEvent(auctionId);
+    }
+
+    /// @dev Участник прибыли подтверждает свое согласие на выставленные условия
+    /// @param _auctionId id-шник аукциона
+    function approveAuction(uint256 _auctionId) public onlyAuctionParticipator(_auctionId) {
+        Auction storage auction = auctions[_auctionId];
+        // отмечаем текущего участники, как согласного с условиями
+        auction.participantToApproveMap[msg.sender] = true;
+        // проверяем все ли участники согласились или нет
+        bool isAllApproved = true;
+        uint8[] memory parts = new uint8[](auction.participants.length);
+        for (uint8 i = 0; i < auction.participants.length; i++) {
+            isAllApproved = isAllApproved && auction.participantToApproveMap[auction.participants[i]];
+            parts[i] = auction.participantToPercentageAmountMap[auction.participants[i]];
+        }
+        // если все согласны, то копируем условия в сами картины, дабы каждая картина имела возможность,
+        // в последствие, знать условия распределения прибыли
+        if (isAllApproved) {
+            uint256[] memory tokens = getDigitalWorksAuctionsList(_auctionId);
+            for (i = 0; i < tokens.length; i++) {
+                applySchemaOfProfitDivision(tokens[i], auction.participants, parts);
+            }
+        }
+        // и только теперь помечаем, что аукцион может выставляться на продажу
+        if (isAllApproved) auction.saleStatus = SaleStatus.NotActive;
+        // сообщаем, что был создан аукцион
+        emit AuctionCreatedEvent(_auctionId);
+    }
+
+    /// @dev Функция получения всех картин, принадлежащих аукциону
+    /// @param _auctionId Id-шник аукциона
+    function getDigitalWorksAuctionsList(uint256 _auctionId) public view correctAuctionId(_auctionId) returns (uint256[]) {
+        // выделяем массив размерности, заданной в аукционе
+        uint256[] memory auctionDigitalWorksList = new uint256[](auctions[_auctionId].countOfDigitalWorks);
+        uint256 index = 0;
+        for (uint256 i = 0; i < digitalWorks.length; i++) {
+            // если текущая работа принадлежит уже какому-то аукциону и этот аукцион тот, 
+            // что нас инетересует, то добавляем его индекс в возвращаемую таблицу
+            if (digitalWorkToAuctionMap[i] == _auctionId &&
+                digitalWorks[i].saleType == SaleType.Auction) {
+                auctionDigitalWorksList[index++] = i;
+            }
+        }
+        return auctionDigitalWorksList;
     }
 
     /// @dev Применяем схему к аукциону
