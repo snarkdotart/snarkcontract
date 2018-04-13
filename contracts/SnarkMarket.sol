@@ -15,7 +15,9 @@ contract SnarkMarket is SnarkBase {
     // событие, оповещающее об отклонении offerTo чуваков данный оффер
     event OfferToDeclinedEvent(uint256 _offerId, address indexed _offerTo);
     // событие, оповещающее, что участник прибыли не согласен с условиями
-    event DeclineApproveEvent(uint256 _offerId, address indexed _offerOwner, address indexed _participant);
+    event DeclineApproveOfferEvent(uint256 _offerId, address indexed _offerOwner, address indexed _participant);
+    // событие, оповещающее, что участник прибыли не согласен с условиями
+    event DeclineApproveAuctionEvent(uint256 _auctionId, address indexed _offerOwner, address indexed _participant);
     // событие, оповещающее, что offer был удален
     event OfferDeletedEvent(uint256 _offerId);
     // событие, оповещающее об установке нового bid-а
@@ -23,11 +25,15 @@ contract SnarkMarket is SnarkBase {
     // событие, оповещающее, что был отменен бид для цифровой работы
     event BidCanceledEvent(uint256 _digitalWorkId);
     // событие, возникающие после продажи работы
-    event digitalWorkBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
+    event DigitalWorkBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
     // событие, оповещающее, что был создан новый аукцион
     event AuctionCreatedEvent(uint256 _auctionId);
     // оповещает участника о необходимости подтвердить согласие на его долю в продаже картины
     event NeedApproveAuctionEvent(uint256 _auctionId, address indexed _participant, uint8 _percentAmount);
+    // события, оповещающие, что закончился аукцион (продались все картины)
+    event AuctonEnded(uint256 _auctionId);
+    // события, оповещающие, что закончился оффер (продались все картины)
+    event OfferEnded(uint256 _offerId);
 
     // предполагаем 4 состояния у Offer-ов и Аукционов:
     // Preparing - "подготавливается", только создался и не апрувнут участниками
@@ -115,7 +121,6 @@ contract SnarkMarket is SnarkBase {
     // содержит счетчик аукционов, принадлежащих одному владельцу
     mapping(address => uint256) internal ownerToCountAuctionsMap;
 
-
     /// @dev Модификатор, пропускающий только участников дохода для этого оффера
     modifier onlyOfferParticipator(uint256 _offerId) {
         bool isItParticipant = false;
@@ -176,6 +181,7 @@ contract SnarkMarket is SnarkBase {
         _;
     }
 
+    /// @dev Модификатор, проверяющий переданный id аукциона на попадание в интервал
     modifier correctAuctionId(uint256 _auctionId) {
         require(auctions.length > 0);
         require(_auctionId < auctions.length);
@@ -370,7 +376,7 @@ contract SnarkMarket is SnarkBase {
     /// @param _offerId Id-шник offer-а
     function declineOfferApprove(uint256 _offerId) public onlyOfferParticipator(_offerId) {
         // в этом случае мы только можем только оповестить владельца об отказе
-        emit DeclineApproveEvent(_offerId, offerToOwnerMap[_offerId], msg.sender);
+        emit DeclineApproveOfferEvent(_offerId, offerToOwnerMap[_offerId], msg.sender);
     }
     
     /// @dev Удаление offer-а. Вызывается также после продажи последней картины, включенной в оффер.
@@ -586,7 +592,7 @@ contract SnarkMarket is SnarkBase {
                 deleteOffer(offerId);
         }
         // оповещаем, что картина была продана
-        emit digitalWorkBoughtEvent(_tokenId, _price, _from, _to);
+        emit DigitalWorkBoughtEvent(_tokenId, _price, _from, _to);
     }
 
     /// @dev Функция распределения прибыли
@@ -687,7 +693,7 @@ contract SnarkMarket is SnarkBase {
         // удаляем аукцион, удаляем его
         /*********************************************************************************************/
         // геренируем событие, оповещающее, что совершена покупка
-        emit digitalWorkBoughtEvent(_tokenId, msg.value, _from, _to);
+        emit DigitalWorkBoughtEvent(_tokenId, msg.value, _from, _to);
     }
 
     /// @dev Просмотреть все свои биды
@@ -836,6 +842,11 @@ contract SnarkMarket is SnarkBase {
         if (isAllApproved) auction.saleStatus = SaleStatus.NotActive;
         // сообщаем, что был создан аукцион
         emit AuctionCreatedEvent(_auctionId);
+    }
+
+    function declineAuctionApprove(uint256 _auctionId) public onlyAuctionParticipator(_auctionId) {
+        // уведомляем создателя аукциона, что народ не хочет на такие условия подписываться
+        emit DeclineApproveAuctionEvent(_auctionId, auctionToOwnerMap[_auctionId], msg.sender);
     }
 
     /// @dev Функция получения всех картин, принадлежащих аукциону
