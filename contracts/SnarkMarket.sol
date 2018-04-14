@@ -34,6 +34,10 @@ contract SnarkMarket is SnarkBase {
     event AuctonEnded(uint256 _auctionId);
     // события, оповещающие, что закончился оффер (продались все картины)
     event OfferEnded(uint256 _offerId);
+    // событие, оповещающее, что произошла переоценка аукциона
+    event AuctionPriceChanged(uint256 _auctionId, uint256 newPrice);
+    // событие, оповещающее, что аукцион был завершен
+    event AuctionFinishedEvent(uint256 _auctionId);
 
     // предполагаем 4 состояния у Offer-ов и Аукционов:
     // Preparing - "подготавливается", только создался и не апрувнут участниками
@@ -73,6 +77,8 @@ contract SnarkMarket is SnarkBase {
         uint256 startingPrice;
         // конечная цена в wei
         uint256 endingPrice;
+        // будет содержать "суточную" цену
+        uint256 workingPrice;
         // дата и время начала аукциона
         uint64 startingDate;
         // продолжительность аукциона в сутках
@@ -144,6 +150,12 @@ contract SnarkMarket is SnarkBase {
         _;
     }
 
+    /// @dev Модификатор, пропускающий только владельца аукциона
+    modifier onlyAuctionOwner(uint256 _auctionId) {
+        require(msg.sender == auctionToOwnerMap[_auctionId]);
+        _;
+    }
+    
     /// @dev Модификатор, проверяющий, чтобы работы не участвовали в продажах где-то еще
     modifier onlyNoneStatus(uint256[] _tokenIds) {
         bool isStatusNone = true;
@@ -374,7 +386,7 @@ contract SnarkMarket is SnarkBase {
 
     /// @dev Отказ участника прибыли с предложенными условиями
     /// @param _offerId Id-шник offer-а
-    function declineOfferApprove(uint256 _offerId) public onlyOfferParticipator(_offerId) {
+    function declineOfferApprove(uint256 _offerId) public view onlyOfferParticipator(_offerId) {
         // в этом случае мы только можем только оповестить владельца об отказе
         emit DeclineApproveOfferEvent(_offerId, offerToOwnerMap[_offerId], msg.sender);
     }
@@ -386,7 +398,8 @@ contract SnarkMarket is SnarkBase {
         uint256[] memory tokens = getDigitalWorksOffersList(_offerId);
         for (uint8 i = 0; i < tokens.length; i++) {
             // "отвязываем" картину от оффера
-            digitalWorks[tokens[i]].saleType = SaleType.None;
+            if (digitalWorks[tokens[i]].saleType == SaleType.Offer)
+                digitalWorks[tokens[i]].saleType = SaleType.None;
             // удаляем связь цифровой работы с оффером
             delete digitalWorkToOfferMap[tokens[i]];
         }
@@ -663,7 +676,10 @@ contract SnarkMarket is SnarkBase {
             require(offers[offerId].offerTo == address(0) || offers[offerId].offerTo == _to);
         } else {
             // если это таки был Auction
-            /*********************************************************************************************/
+            uint256 auctionId = digitalWorkToAuctionMap[_tokenId];
+            _from = auctionToOwnerMap[auctionId];
+            _to = msg.sender;
+            _price = auctions[auctionId].workingPrice;
         }
         // переданное количество денег не должно быть меньше установленной цены
         require(msg.value >= _price); 
@@ -685,12 +701,20 @@ contract SnarkMarket is SnarkBase {
             // предыдущему бидеру нужно вернуть его сумму
             bidder.transfer(bidValue);
         }
-        // удаляем offer, если есть
+
         if (isTypeOffer) {
-            if (getDigitalWorksOffersList(offerId).length == 0)
+            // продали - уменьшили общее количество работ в офере
+            offers[offerId].countOfDigitalWorks--;
+            // удаляем offer, если там ничего не осталось
+            if (offers[offerId].countOfDigitalWorks == 0)
                 deleteOffer(offerId);
+        } else {
+            // также - уменьшаем количество работ в аукционе
+            auctions[auctionId].countOfDigitalWorks--;
+            // удаляем аукцион, если там все распродалось
+            if (auctions[auctionId].countOfDigitalWorks == 0)
+                deleteAuction(auctionId);
         }
-        // удаляем аукцион, удаляем его
         /*********************************************************************************************/
         // геренируем событие, оповещающее, что совершена покупка
         emit DigitalWorkBoughtEvent(_tokenId, msg.value, _from, _to);
@@ -749,6 +773,7 @@ contract SnarkMarket is SnarkBase {
         uint256 auctionId = auctions.push(Auction({
             startingPrice: _startingPrice,
             endingPrice: _endingPrice,
+            workingPrice: _startingPrice,
             startingDate: _startingDate,
             duration: _duration,
             participants: new address[](0),
@@ -796,6 +821,7 @@ contract SnarkMarket is SnarkBase {
         uint256 auctionId = auctions.push(Auction({
             startingPrice: _startingPrice,
             endingPrice: _endingPrice,
+            workingPrice: _startingPrice,
             startingDate: _startingDate,
             duration: _duration,
             participants: new address[](0),
@@ -844,7 +870,9 @@ contract SnarkMarket is SnarkBase {
         emit AuctionCreatedEvent(_auctionId);
     }
 
-    function declineAuctionApprove(uint256 _auctionId) public onlyAuctionParticipator(_auctionId) {
+    /// @dev Отказ участника прибыли с предложенными условиями
+    /// @param _auctionId Id-шник offer-а
+    function declineAuctionApprove(uint256 _auctionId) public view onlyAuctionParticipator(_auctionId) {
         // уведомляем создателя аукциона, что народ не хочет на такие условия подписываться
         emit DeclineApproveAuctionEvent(_auctionId, auctionToOwnerMap[_auctionId], msg.sender);
     }
@@ -864,6 +892,29 @@ contract SnarkMarket is SnarkBase {
             }
         }
         return auctionDigitalWorksList;
+    }
+
+    /// @dev Функция модификации участников и их долей для аукциона, в случае отклонения одним из участников
+    /// @param _auctionId Id-шник аукциона
+    /// @param _participants Массив адресов участников прибыли
+    /// @param _percentAmounts Массив долей участников прибыли
+    function setNewSchemaOfProfitDivisionForAuction(
+        uint256 _auctionId,
+        address[] _participants,
+        uint8[] _percentAmounts
+    )
+        public
+        onlyAuctionOwner(_auctionId)
+    {
+        // длины массивов должны совпадать
+        require(_participants.length == _percentAmounts.length);
+        // применяем новую схему
+        applyNewSchemaOfProfitDivisionForAuction(_auctionId, _participants, _percentAmounts);
+        // т.к. изменения доли для одного затрагивает всех, то заново всех надо оповещать
+        for (uint256 i = 0; i < _participants.length; i++) {
+            // оповещаем адресно
+            emit NeedApproveAuctionEvent(_auctionId, _participants[i], _percentAmounts[i]);
+        }
     }
 
     /// @dev Применяем схему к аукциону
@@ -908,41 +959,65 @@ contract SnarkMarket is SnarkBase {
         auction.participantToApproveMap[snarkOwner] = true;
     }
 
-    // 1. !!!!!!! ПОСЛЕ УДАЛЕНИЯ БИДОВ, ОФФЕРОВ и АУКЦИОНОВ - не будут ли нарушены связи в ассоциативных массивах ???
-    // скажем оффер имел 5 записей и id-шник - это порядковый номер в массиве... после удаления элемента из массива,
-    // скажем 3-элемент, то 4-ой станет 3-им, а 5-ый - 4-м, т.е. id-шники сместятся, 
-    // а значит если в ассоциативном массиве была связь на 4 и 5, то она (связь) херится !!!!!!!
-    // !!!!! ВИДИМО НАДО ТАКЖЕ ПЕРЕНАСТРАИВАТЬ АССОЦИАТИВНЫЕ МАССИВЫ ЛИБО МЕНЯТЬ ПОДХОД !!!!!!
+    /// @dev Дергаем функцию из-вне, для того, чтобы: - СКОРЕЕ ВСЕГО ЭТУ ФУНКЦИЮ НАДО ДЕЛАТЬ НА BACKEND-е, т.к. будет дешевле
+    /// либо запустить, либо остановить аукционы, либо цену снизить
+    function processingOfAuctions() external {
+        uint256 currentTimestamp = block.timestamp;
+        uint256 endDay = 0;
+        // пробегаемся по всем аукционам
+        for (uint256 i = 0; i < auctions.length; i++) {
+            if (auctions[i].saleStatus == SaleStatus.NotActive) {
+                // вычисляем конечную дату, когда должен аукцион закончится
+                // начальная дата в timestamp + (продолжительность в сутках + 1 
+                // т.к. надо будет выждать) * 86400 (timestamp одних суток)
+                endDay = auctions[i].startingDate + (auctions[i].duration + 1) * 86400;
+                // запускаем те, которым уже пора
+                if (auctions[i].startingDate <= currentTimestamp &&
+                    currentTimestamp < endDay) {
+                    auctions[i].saleStatus == SaleStatus.Active;
+                }
+            } else if (auctions[i].saleStatus == SaleStatus.Active) {
+                // останавливаем те, которым уже пора
+                if (currentTimestamp >= endDay) {
+                    auctions[i].saleStatus == SaleStatus.Finished;
+                    // и тут надо бы распустить удалить аукцион и "освободить" оставшиеся картины
+                    deleteAuction(i);
+                } else {
+                    // если мы тут, то аукцион еще работает и опускаем цену, если надо
+                    // шаг = (начальная цена, большая  - конечная цена, меньшая) / продолжительность
+                    uint256 step = (auctions[i].startingPrice - auctions[i].endingPrice) / auctions[i].duration;
+                    // вычисляем сколько длится аукцион, в сутках
+                    uint8 auctionLasts = uint8((block.timestamp - auctions[i].startingDate) / 86400);
+                    // вычисляем, какая на данный момент должна быть цена
+                    uint256 newPrice = uint256(auctions[i].startingPrice - step * auctionLasts);
+                    if (auctions[i].workingPrice > newPrice) {
+                        auctions[i].workingPrice = newPrice;
+                        emit AuctionPriceChanged(i, newPrice);
+                    }
+                }
+            }
+        }
+    }
 
-    // 2. !!!!!!! НАДО ОТЛИЧАТЬ OFFER и AUCTION первычиные или вторичные, 
-    // ибо задаваться участники прибыли должны только при первичной продаже
-
-    // !!!!! ПОЧЕМУ У ДАДЫ И КОТИКОВ ВО ВРЕМЯ АУКЦИОНА КАРТИНЫ ПРИНАДЛЕЖАТ АУКЦИОНУ САМОЙ ПЛОЩАДКЕ  ????
-
-    // 3. !!!!!!! РЕЖИМ ТО МОЖЕТ БЫТЬ ПАССИВНЫМ, ЧТО ОЗНАЧАЕТ НИЧЕГО ИЗ-ВНЕ МЕНЯТЬ НЕ НАДО
-    // ДОСТАТОЧНО ВЫЧИСЛЯТЬ СОСТОЯНИЕ И ЦЕНУ В МОМЕНТ ЗАПРОСА
-    // НЕДОСТАТОК: НЕ ПОЛУЧИТСЯ ГЕНЕРИТЬ СОБЫТИЯ (НАЧАЛА АУКЦИОНА, ЕГО ОКОНЧАНИЯ И ИЗМЕНЕНИЯ ЦЕНЫ)
-
-    // аукцион содерит:
-    // на сколько будет падать цена - вычисляется: (стартовая цена - конечная цена) / длительность аукциона
-    // при достижении конечной цены минус временной шаг, мы распускаем аукцион и оповещаем об этом
-
-    // функции: 
-    // 1. Создать аукцион. Для его запуска должно сработать 2 условия: 
-    //    а) все участники должны согласится с условиями доли в прибыли; 
-    //    б) должна наступить дата старта.
-    //    В случае, если до даты старта не успели все апрувнуть, то запуск должен будет произойти сразу же, 
-    //    как только будет апрувнут последний участник и при этом между временем старта и окончания аукциона 
-    //    должен быть как минимум один временной шаг (например - сутки). В этом случае, цена не успеет
-    //    достичь минимально заданного значения.
-    // 2. апрувнуть его всеми участниками прибыли
-    // 3. функция изменения цены работ, которая будет вызываться из-вне по таймеру Ethereum Alarm Clock
-    // 4. завершение аукциона и "роспуск" всех картин
-
-    // перенос id шника внутрь структуры - ничего не дает, 
-    // т.к. будут возникать моменты создания дубликатов id
-
-    // !!!!!!!!!!!! НИЧЕГО не удаляем из массивов offers, bids, auctions !!!!!!!!!!!!!!
-    // !!!!!!!!!!!! НЕ СМЕШИВАТЬ ПЕРВИЧНЫЕ ПРОДАЖИ И АУКЦИОНЫ СО ВТОРИЧНЫМИ !!!!!!!!!!!!
+    /// @dev Удаляет аукцион
+    /// @param _auctionId Id-шник аукциона
+    function deleteAuction(uint256 _auctionId) private {
+        uint256[] memory tokens = getDigitalWorksAuctionsList(_auctionId);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            // освобождаем все картины
+            if (digitalWorks[tokens[i]].saleType == SaleType.Auction)
+                digitalWorks[tokens[i]].saleType = SaleType.None;
+            delete digitalWorkToAuctionMap[tokens[i]];
+        }
+        address owner = auctionToOwnerMap[_auctionId];
+        // удаляем связь аукциона с владельцем
+        delete auctionToOwnerMap[_auctionId];
+        // уменьшаем счетчик аукционов у владельца
+        ownerToCountAuctionsMap[owner]--;
+        // помечаем аукцион, как завершившийся
+        auctions[_auctionId].saleStatus = SaleStatus.Finished;
+        // генерим событие о том, что удален аукцион
+        emit AuctionFinishedEvent(_auctionId);
+    }
 
 }
