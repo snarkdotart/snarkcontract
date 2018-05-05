@@ -1,7 +1,7 @@
 pragma solidity ^0.4.21;
 
 
-import "zeppelin-solidity/contracts/token/ERC721/ERC721.sol";
+import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
 
 
 contract SnarkOwnership is ERC721 {
@@ -34,7 +34,7 @@ contract SnarkOwnership is ERC721 {
     }
 
     // конструктор, где запоминаем адрес Snark аккаунта
-    function SnarkOwnership() public {
+    constructor() public {
         snarkOwner = msg.sender;
     }
 
