@@ -217,8 +217,13 @@ contract SnarkMarket is SnarkBase {
         _;        
     }
 
-    // @dev Возвращает количество офферов
-    // @param _status Интересуемый статус SaleStatus
+    /// @dev Функция уничтожения контракты в сети блокчейн
+    function killSnarkMarket() external onlyOwner {
+        selfdestruct(snarkOwner);
+    }
+
+    /// @dev Возвращает количество офферов
+    /// @param _status Интересуемый статус SaleStatus
     function getCountOfOffers(uint8 _status) public view returns (uint256) {
         require(uint8(SaleStatus.Finished) >= _status);
         uint256 count = 0;
