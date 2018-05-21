@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
@@ -7,14 +7,15 @@ import "./SnarkOwnership.sol";
 
 
 contract SnarkBase is Ownable, SnarkOwnership { 
+    
     // тип продажи, в которой участвует цифровая работа
-    enum SaleType { None, Offer, Auction }
+    enum SaleType { None, Offer, Auction, Renting }
 
     // значение в процентах доли Snark
     uint8 internal snarkPercentageAmount = 5;
 
     struct DigitalWork {
-        // название работы
+        // название работы - 
         string digitalWorkTitle;
 
         // имя художника (до 32 bytes)

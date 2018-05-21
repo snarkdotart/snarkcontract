@@ -1,10 +1,10 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
 
 import "./SnarkBase.sol";
 
 
-contract SnarkMarket is SnarkBase {
+contract SnarkArtMarket is SnarkBase {
 
     // событие, оповещающее о созданни нового оффера
     event OfferCreatedEvent(uint256 offerId);
@@ -218,7 +218,7 @@ contract SnarkMarket is SnarkBase {
     }
 
     /// @dev Функция уничтожения контракты в сети блокчейн
-    function killSnarkMarket() external onlyOwner {
+    function kill() external onlyOwner {
         selfdestruct(snarkOwner);
     }
 
@@ -504,7 +504,7 @@ contract SnarkMarket is SnarkBase {
         // цифровая работа выставлена на аукцион
         require(digitalWorks[_tokenId].saleType != SaleType.Auction);
         // токен не должен принадлежать тому, кто выставляет bid
-        require(tokenToOwner[_tokenId] != msg.sender);
+        require(tokenOwner[_tokenId] != msg.sender);
         require(msg.sender != address(0));
 
         uint256 bidId;
@@ -593,7 +593,7 @@ contract SnarkMarket is SnarkBase {
         // сохраняем сумму
         uint256 _price = bids[_bidId].price;
         // устанавливаем владельцем текущего пользователя
-        tokenToOwner[_tokenId] = _to;
+        tokenOwner[_tokenId] = _to;
         // т.к. деньги уже были перечислены за бид, то просто передаем токен новому владельцу
         _transfer(_from, _to, _tokenId);
         // был ли оффер?
@@ -691,7 +691,7 @@ contract SnarkMarket is SnarkBase {
         // нельзя продать самому себе
         require(ownerOf(_tokenId) != _to);
         // устанавливаем владельцем текущего пользователя
-        tokenToOwner[_tokenId] = _to;
+        tokenOwner[_tokenId] = _to;
         // производим передачу токена (смотри SnarkOwnership)
         _transfer(_from, _to, _tokenId); 
         // распределяем прибыль
@@ -1024,5 +1024,4 @@ contract SnarkMarket is SnarkBase {
         // генерим событие о том, что удален аукцион
         emit AuctionFinishedEvent(_auctionId);
     }
-
 }
