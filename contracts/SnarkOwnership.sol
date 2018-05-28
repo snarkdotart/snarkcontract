@@ -1,14 +1,12 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 
+import "./SnarkStorehouse.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
 import "./ERC165.sol";
 
 
 contract SnarkOwnership is ERC721, ERC165 {
-
-    // An array keeps a list of all the ERC721 tokens created in that contract
-    uint256[] internal allTokens;
 
     // A tokens list belong to an owner
     mapping (address => uint256[]) internal ownedTokens;
@@ -37,8 +35,6 @@ contract SnarkOwnership is ERC721, ERC165 {
     // содержит список адресов новых владельцев, которых апрувнули владельцы токенов
     mapping (uint256 => address) internal digitalWorkApprovals;
     
-    // содержит адрес Snark аккаунта
-    address internal snarkOwner;
 
     // модификатор, фильтрующий по принадлежности к токену
     modifier onlyOwnerOf(uint256 _tokenId) {
@@ -56,9 +52,6 @@ contract SnarkOwnership is ERC721, ERC165 {
         _;
     }
 
-    constructor() public {
-        snarkOwner = msg.sender;
-    }
 
 /***********************************************************************************/
 
@@ -93,7 +86,7 @@ contract SnarkOwnership is ERC721, ERC165 {
     }
 
     function totalSupply() public view returns (uint256) {
-        return allTokens.length;
+        return digitalWorks.length;
     }
 
     function tokenOfOwnerByIndex(address _owner, uint256 _index) public view returns (uint256 _tokenId) {
@@ -110,6 +103,7 @@ contract SnarkOwnership is ERC721, ERC165 {
     /// @param _owner An address for whom to query the balance
     /// @return The number of NFTs owned by `_owner`, possibly zero
     function balanceOf(address _owner) public view returns (uint256) {
+        require(_owner != address(0));
         return ownedTokensCount[_owner];
     }
 

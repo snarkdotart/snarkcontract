@@ -1,30 +1,19 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./SnarkOwnership.sol";
 
 
-contract SnarkBase is Ownable, SnarkOwnership { 
+contract SnarkStorehouse is Ownable { 
     
-    // тип продажи, в которой участвует цифровая работа
-    enum SaleType { None, Offer, Auction, Renting }
-
-    // значение в процентах доли Snark
-    uint8 internal snarkPercentageAmount = 5;
 
     struct DigitalWork {
-        // название работы - 
-        string digitalWorkTitle;
-
-        // имя художника (до 32 bytes)
-        string artistName; 
 
         // hash файла SHA3 (32 bytes)
         bytes32 hashOfDigitalWork;
 
-        // общее количество экземпляров данной работы, доступных для продажи (2 bytes)
+        // a total number of copies available for sale
         uint16 limitedEdition; 
         
         // номер копии экземпляра или id копии (2 bytes)
@@ -40,30 +29,30 @@ contract SnarkBase is Ownable, SnarkOwnership {
         // признак первичной продажи
         bool isItFirstSelling;
 
-        // картина может находиться только в одном из трех состояний:
-        // 1. либо не продаваться
-        // 2. либо продаваться через обычное предложение
-        // 3. либо продаваться через аукцион
-        // Это необходимо для исключения возможности двойной продажи 
-        SaleType saleType;
-        
-        // schema of profit division
-        mapping(address => uint8) participantToPercentMap;
+        // ссылка для доступа к картине
+        string digitalWorkUrl;
 
         // список адресов участников, задействованных в распределении дохода
         address[] participants;
-
-        // ссылка для доступа к картине
-        string digitalWorkUrl;
+        
+        // schema of profit division
+        mapping(address => uint8) participantToPercentMap;
     }
 
-    // массив, содержащий абсолютно все цифровые работы в нашей системе
+    // An array keeps a list of all the ERC721 tokens created in that contract
     DigitalWork[] internal digitalWorks;
 
-    /// @dev Возвращает адрес и долю Snark-а
-    function getSnarkParticipation() public view returns (address, uint8) {
-        return (snarkOwner, snarkPercentageAmount);
+    // address of contract owner
+    address internal snarkOwner;
+
+    //  значение в процентах доли Snark
+    uint8 internal snarkPercentageAmount = 5;
+
+
+    constructor() public {
+        snarkOwner = msg.sender;
     }
+
 
     /// @dev Фукнция добавления нового цифрового полотна в блокчейн
     /// @param _digitalWorkTitle Название цифрового полотна
@@ -169,6 +158,11 @@ contract SnarkBase is Ownable, SnarkOwnership {
         for (uint8 i = 0; i < _addrIncomeParticipants.length; i++) {
             digitalWorks[_tokenId].participantToPercentMap[_addrIncomeParticipants[i]] = _percentageParts[i];
         }
+    }
+
+    /// @dev Возвращает адрес и долю Snark-а
+    function getSnarkParticipation() public view returns (address, uint8) {
+        return (snarkOwner, snarkPercentageAmount);
     }
 
     /// @dev Функция проверки существования картины по хешу

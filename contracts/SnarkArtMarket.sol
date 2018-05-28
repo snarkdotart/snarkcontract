@@ -1,7 +1,7 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 
-import "./SnarkBase.sol";
+import "./SnarkStorehouse.sol";
 
 
 contract SnarkArtMarket is SnarkBase {
@@ -45,6 +45,9 @@ contract SnarkArtMarket is SnarkBase {
     // Active - активный, когда начал участвовать в продаже картин
     // Finished - завершенный, когда все картины проданы
     enum SaleStatus { Preparing, NotActive, Active, Finished }
+
+    // тип продажи, в которой участвует цифровая работа
+    enum SaleType { None, Offer, Auction, Renting }
 
     struct Offer {
         // предлагаемая цена в ether для всех работ
@@ -126,6 +129,14 @@ contract SnarkArtMarket is SnarkBase {
     mapping(uint256 => address) internal auctionToOwnerMap;
     // содержит счетчик аукционов, принадлежащих одному владельцу
     mapping(address => uint256) internal ownerToCountAuctionsMap;
+
+    // картина может находиться только в одном из четырех состояний:
+    // 1. либо не продаваться
+    // 2. либо продаваться через обычное предложение
+    // 3. либо продаваться через аукцион
+    // 4. либо сдаваться в аренду
+    // Это необходимо для исключения возможности двойной продажи 
+    mapping(uint256 => SaleType) internal digitalWorkToSaleTypeMap;
 
     /// @dev Модификатор, пропускающий только участников дохода для этого оффера
     modifier onlyOfferParticipator(uint256 _offerId) {
