@@ -75,21 +75,16 @@ contract SnarkOfferBid is SnarkBase {
     mapping (address => uint256[]) internal ownerToOffersMap;
     // Mapping status to count
     mapping (uint8 => uint256[]) internal saleStatusToOffersMap;
-
     // содержит связку бида с его владельцем
     mapping (uint256 => address) internal bidToOwnerMap;
     // Mapping from address to Bids list
     mapping (address => uint256[]) internal ownerToBidsMap;
     // содержит связку token с bid
     mapping (uint256 => uint256) internal tokenToBidMap; 
-    // счетчик количества бидов для каждого овнера
-    // mapping (address => uint256) internal bidderToCountBidsMap;
-    /**!!!! не уверен, что нужно, ибо можно прочитать из tokenToBidMap */
     // содержит признак наличия выставленного бида для цифровой работы
     mapping (uint256 => bool) internal digitalWorkToIsExistBidMap;
     // содержит связку адреса с его балансом
     mapping (address => uint256) public pendingWithdrawals;
-
     // картина может находиться только в одном из четырех состояний:
     // 1. либо не продаваться
     // 2. либо продаваться через обычное предложение
