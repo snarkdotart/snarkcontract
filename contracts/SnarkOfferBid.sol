@@ -94,6 +94,7 @@ contract SnarkOfferBid is SnarkBase {
     mapping (uint256 => SaleType) internal tokenToSaleTypeMap;
 
     /// @dev Модификатор, пропускающий только участников дохода для этого оффера
+    /// @param _offerId Id of offer
     modifier onlyOfferParticipator(uint256 _offerId) {
         bool isItParticipant = false;
         address[] storage p = offers[_offerId].participants;
@@ -105,18 +106,21 @@ contract SnarkOfferBid is SnarkBase {
     }
 
     /// @dev Модификатор, отсекающий чужих offerTo
+    /// @param _offerId Id of offer
     modifier onlyOfferTo(uint256 _offerId) {
         require(msg.sender == offers[_offerId].offerTo);
         _;
     }
 
     /// @dev Модификатор, пропускающий только владельца оффера
+    /// @param _offerId Id of offer
     modifier onlyOfferOwner(uint256 _offerId) {
         require(msg.sender == offerToOwnerMap[_offerId]);
         _;
     }
     
     /// @dev Модификатор, проверяющий, чтобы работы не участвовали в продажах где-то еще
+    /// @param _tokenIds Array of tokens
     modifier onlyNoneStatus(uint256[] _tokenIds) {
         bool isStatusNone = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
@@ -127,6 +131,7 @@ contract SnarkOfferBid is SnarkBase {
     }
 
     // @dev Модификатор, проверяющий картины на соответствие первичной продажи
+    /// @param _tokenIds Array of tokens
     modifier onlyFirstSale(uint256[] _tokenIds) {
         bool isFistSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
@@ -137,6 +142,7 @@ contract SnarkOfferBid is SnarkBase {
     }
 
     // @dev Модификатор, проверяющий картины на соответствие вторичной продажи
+    /// @param _tokenIds Array of tokens
     modifier onlySecondSale(uint256[] _tokenIds) {
         bool isSecondSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
@@ -147,6 +153,7 @@ contract SnarkOfferBid is SnarkBase {
     }    
 
     /// @dev Модификатор, проверяющий переданный id оффера на попадание в интервал
+    /// @param _offerId Id of offer
     modifier correctOfferId(uint256 _offerId) {
         require(offers.length > 0);
         require(_offerId < offers.length);
@@ -154,6 +161,7 @@ contract SnarkOfferBid is SnarkBase {
     }
 
     /// @dev Модификатор, пропускающий только владельца бида
+    /// @param _bidId Id of bid
     modifier onlyBidOwner(uint256 _bidId) {
         require(msg.sender == bidToOwnerMap[_bidId]);
         _;
