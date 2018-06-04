@@ -6,13 +6,11 @@ import "./SnarkBase.sol";
 contract SnarkOfferBid is SnarkBase {
 
     // событие, оповещающее о созданни нового оффера
-    event OfferCreatedEvent(uint256 offerId);
+    event OfferCreatedEvent(uint256 offerId, address indexed _offerTo);
     // событие на подтверждение согласия участников с их долями
     event NeedApproveOfferEvent(uint256 offerId, address indexed _participant, uint8 _percentAmount);
     // событие, оповещающее, что участник прибыли не согласен с условиями
     event DeclineApproveOfferEvent(uint256 _offerId, address indexed _offerOwner, address indexed _participant);
-    // событие, оповещающее о выставленном предложении выбранного участника системы
-    event OfferToAddressEvent(uint256 offerId, address indexed _offerTo);
     // событие, оповещающее об отклонении offerTo чуваков данный оффер
     event OfferToAddressDeclinedEvent(uint256 _offerId, address indexed _offerTo);
     // событие, оповещающее, что offer был удален
@@ -54,7 +52,7 @@ contract SnarkOfferBid is SnarkBase {
 
     struct Bid {
         // id полотна
-        // uint digitalWorkId;
+        uint digitalWorkId;
         // предложенная цена за полотно
         uint price;
         // статус предложения (используем только 2 состояния: Active, Finished)
@@ -80,11 +78,12 @@ contract SnarkOfferBid is SnarkBase {
 
     // содержит связку бида с его владельцем
     mapping (uint256 => address) internal bidToOwnerMap;
+    // Mapping from address to Bids list
+    mapping (address => uint256[]) internal ownerToBidsMap;
     // содержит связку token с bid
     mapping (uint256 => uint256) internal tokenToBidMap; 
-
     // счетчик количества бидов для каждого овнера
-    mapping (address => uint256) internal bidderToCountBidsMap;
+    // mapping (address => uint256) internal bidderToCountBidsMap;
     /**!!!! не уверен, что нужно, ибо можно прочитать из tokenToBidMap */
     // содержит признак наличия выставленного бида для цифровой работы
     mapping (uint256 => bool) internal digitalWorkToIsExistBidMap;
@@ -220,9 +219,9 @@ contract SnarkOfferBid is SnarkBase {
             tokenToOfferMap[_tokenIds[i]] = offerId;
             // add token to offer list
             offerToTokensMap[offerId].push(_tokenIds[i]);
-            // count offers with saleType = Offer
-            saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
         }
+        // count offers with saleType = Offer
+        saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
         // записываем владельца данного оффера
         offerToOwnerMap[offerId] = msg.sender;
         // увеличиваем количество офферов принадлежащих овнеру
@@ -265,15 +264,15 @@ contract SnarkOfferBid is SnarkBase {
             tokenToOfferMap[_tokenIds[i]] = offerId;
             // add token to offer list
             offerToTokensMap[offerId].push(_tokenIds[i]);
-            // count offers with saleType = Offer
-            saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
         }
+        // count offers with saleType = Offer
+        saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
         // записываем владельца данного оффера
         offerToOwnerMap[offerId] = msg.sender;
         // увеличиваем количество офферов принадлежащих овнеру
         ownerToOffersMap[msg.sender].push(offerId);
         // сообщаем, что был создан новый оффер
-        emit OfferCreatedEvent(offerId);
+        emit OfferCreatedEvent(offerId, offers[offerId].offerTo);
     }
 
     /// @dev Участник прибыли подтверждает свое согласие на выставленные условия
@@ -299,13 +298,7 @@ contract SnarkOfferBid is SnarkBase {
         }
         // и только теперь помечаем, что оффер может выставляться на продажу
         if (isAllApproved) _moveOfferToNextStatus(_offerId);
-        // если offerTo не пустой и все участники согласны с условиями, 
-        // то оповещаем того, для кого это предложение предназначено, либо всех,
-        // если нет offerTo
-        if (offer.offerTo != address(0) && isAllApproved) {
-            emit OfferToAddressEvent(_offerId, offer.offerTo);
-        } else 
-            emit OfferCreatedEvent(_offerId);
+        emit OfferCreatedEvent(_offerId, offer.offerTo);
     }
 
     /// @dev Получили отказ от offerTo на наше предложение
@@ -342,7 +335,6 @@ contract SnarkOfferBid is SnarkBase {
         uint256[] storage ownerOffers = ownerToOffersMap[owner];
         for (i = 0; i < ownerOffers.length; i++) {
             if (ownerOffers[i] == _offerId) {
-                delete ownerOffers[i];
                 ownerOffers[i] = ownerOffers[ownerOffers.length - 1];
                 ownerOffers.length--;
                 break;
@@ -406,17 +398,16 @@ contract SnarkOfferBid is SnarkBase {
             if (bid.price > 0) {
                 // записываем сумму ему же на "вексель", которые позже он сам может изъять
                 pendingWithdrawals[bidToOwnerMap[bidId]] += bid.price;
-
-                // или возвращаем денежку предыдущему биддеру ????
-                // bidToOwnerMap[bidId].transfer(bid.price);
-
-                // уменьшаем счетчик количества бидов у биддера
-                bidderToCountBidsMap[bidToOwnerMap[bidId]]--;
+                // delete the bid from the bidder
+                for (uint8 i = 0; i < ownerToBidsMap[msg.sender].length; i++) {
+                    if (ownerToBidsMap[msg.sender][i] == bidId) {
+                        ownerToBidsMap[msg.sender][i] = 
+                            ownerToBidsMap[msg.sender][ownerToBidsMap[msg.sender].length - 1];
+                        ownerToBidsMap[msg.sender].length--;
+                        break;
+                    }
+                }
             }
-            
-            // если такой бид уже существует у нас, то выполняем проверки
-            if (bid.digitalWorkId == _tokenId) {
-            } 
             // теперь устанавливаем новую цену
             bid.price = msg.value;
         } else {
@@ -433,37 +424,26 @@ contract SnarkOfferBid is SnarkBase {
         }
         // устанавливаем нового владельца этого бида
         bidToOwnerMap[bidId] = msg.sender;
-        // увеличиваем количество бидов у биддера
-        bidderToCountBidsMap[msg.sender]++;
+        ownerToBidsMap[msg.sender].push(bidId);
         // формируем событие о создании нового бида для токена
         emit BidSettedUpEvent(bidId, msg.sender, msg.value);
     }
     
-    /// @dev отмена своего бида
+    /// @dev Allows to decline your own bid
     /// @param _bidId Id bid
     function cancelBid(uint256 _bidId) public onlyBidOwner(_bidId) {
-        // получаем адрес, кто являлся владельцев бида
         address bidder = bidToOwnerMap[_bidId];
         uint256 bidValue = bids[_bidId].price;
         uint256 digitalWorkId = bids[_bidId].digitalWorkId;
-        // удаляем бид
         _deleteBid(_bidId);
-        // предыдущему бидеру нужно вернуть его сумму
         bidder.transfer(bidValue);
-        // генерим событие о том, что бид был удален
         emit BidCanceledEvent(digitalWorkId);
     }
 
     /// @dev Просмотреть все свои биды
     /// @param _owner Адрес, для которого хотим получить список всех бидов
-    function getBidList(address _owner) public view returns (uint256[]) {        
-        uint256[] memory bidIdList = new uint256[](bidderToCountBidsMap[_owner]);
-        uint256 index = 0;
-        for (uint256 i = 0; i < bids.length; i++) {
-            if (bidToOwnerMap[i] == _owner && bids[i].saleStatus == SaleStatus.Active)
-                bidIdList[index++] = i;
-        }
-        return bidIdList;
+    function getBidList(address _owner) public view returns (uint256[]) {
+        return ownerToBidsMap[_owner];
     }
 
     /// @dev Просмотреть сколько у чувака есть денег тут у нас в контракте, чтобы мог вывести себе на кошелек
@@ -485,8 +465,8 @@ contract SnarkOfferBid is SnarkBase {
     /// @dev Switch sale status to the next
     /// @param _offerId Offer Id
     function _moveOfferToNextStatus(uint256 _offerId) internal {
-        uint8 prevStatus = offers[_offerId].saleStatus;
-        if (prevStatus < SaleStatus.Finished) {
+        uint8 prevStatus = uint8(offers[_offerId].saleStatus);
+        if (prevStatus < uint8(SaleStatus.Finished)) {
             for (uint8 i = 0; i < saleStatusToOffersMap[prevStatus].length; i++) {
                 if (saleStatusToOffersMap[prevStatus][i] == _offerId) {
                     saleStatusToOffersMap[prevStatus][i] =
@@ -497,7 +477,7 @@ contract SnarkOfferBid is SnarkBase {
             }
             uint8 newStatus = (prevStatus == 0) ? prevStatus + 2 : prevStatus + 1;
             saleStatusToOffersMap[newStatus].push(_offerId);
-            offers[_offerId].saleStatus = newStatus;
+            offers[_offerId].saleStatus = SaleStatus(newStatus);
         }
     }
 
@@ -546,8 +526,16 @@ contract SnarkOfferBid is SnarkBase {
     /// @dev Удаление бида из основной таблицы бидов
     /// @param _bidId Id bid
     function _deleteBid(uint256 _bidId) private {
-        // уменьшаем счетчик количества бидов у биддера
-        bidderToCountBidsMap[bidToOwnerMap[_bidId]]--;
+        // delete the bid from the bidder
+        address bidder = bidToOwnerMap[_bidId];
+        for (uint8 i = 0; i < ownerToBidsMap[bidder].length; i++) {
+            if (ownerToBidsMap[bidder][i] == _bidId) {
+                ownerToBidsMap[bidder][i] = 
+                    ownerToBidsMap[bidder][ownerToBidsMap[bidder].length - 1];
+                ownerToBidsMap[bidder].length--;
+                break;
+            }
+        }
         // удаляем привязку цифровой работы с бидом
         delete tokenToBidMap[bids[_bidId].digitalWorkId];
         // удаляем привязку бида с владельцем
@@ -598,6 +586,6 @@ contract SnarkOfferBid is SnarkBase {
         // запоминаем цену, по которой продались, в lastPrice в картине
         digitalWork.lastPrice = _price;
         // помечаем, что не имеет никаких статусов продажи
-        digitalWork.saleType = SaleType.None;
+        tokenToSaleTypeMap[_tokenId] = SaleType.None;
     }
 }
