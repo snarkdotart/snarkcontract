@@ -214,6 +214,12 @@ contract SnarkOfferBid is SnarkBase {
         })) - 1;
         // применяем новую схему распределения прибыли
         _applyNewSchemaOfProfitDivisionForOffer(offerId, _participants, _percentAmounts);
+        // count offers with saleType = Offer
+        saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
+        // записываем владельца данного оффера
+        offerToOwnerMap[offerId] = msg.sender;
+        // увеличиваем количество офферов принадлежащих овнеру
+        ownerToOffersMap[msg.sender].push(offerId);
         // для всех цифровых работ выполняем следующее
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в offer
@@ -222,13 +228,9 @@ contract SnarkOfferBid is SnarkBase {
             tokenToOfferMap[_tokenIds[i]] = offerId;
             // add token to offer list
             offerToTokensMap[offerId].push(_tokenIds[i]);
+            // move token to Snark
+            _lockOffersToken(offerId, _tokenIds[i]);
         }
-        // count offers with saleType = Offer
-        saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
-        // записываем владельца данного оффера
-        offerToOwnerMap[offerId] = msg.sender;
-        // увеличиваем количество офферов принадлежащих овнеру
-        ownerToOffersMap[msg.sender].push(offerId);
         // генерим ивент для всех участников, участвующих в дележке прибыли.
         // передаем туда: id текущего оффера, по которому участник сможет получить и просмотреть
         // список картин, а также выставленную цену
@@ -590,5 +592,39 @@ contract SnarkOfferBid is SnarkBase {
         digitalWork.lastPrice = _price;
         // помечаем, что не имеет никаких статусов продажи
         tokenToSaleTypeMap[_tokenId] = SaleType.None;
+    }
+
+    /// @dev Lock Token
+    /// @param _offerId Offer Id
+    /// @param _tokenId Token Id
+    function _lockOffersToken(uint256 _offerId, uint256 _tokenId) private {
+        address realOwner = offerToOwnerMap[_offerId];
+        tokenToOwnerMap[_tokenId] = owner;
+        for (uint8 i = 0; i < ownerToTokensMap[realOwner].length; i++) {
+            if (ownerToTokensMap[realOwner][i] == _tokenId) {
+                ownerToTokensMap[realOwner][i] = 
+                    ownerToTokensMap[realOwner][ownerToTokensMap[realOwner].length - 1];
+                ownerToTokensMap[realOwner].length--;    
+                break;
+            }
+        }
+        ownerToTokensMap[owner].push(_tokenId);
+    }
+
+    /// @dev Unlock Token
+    /// @param _offerId Offer Id
+    /// @param _tokenId Token Id
+    function _unlockOffersToken(uint256 _offerId, uint256 _tokenId) private {
+        address realOwner = offerToOwnerMap[_offerId];
+        tokenToOwnerMap[_tokenId] = realOwner;
+        for (uint256 i = 0; i < ownerToTokensMap[owner].length; i++) {
+            if (ownerToTokensMap[owner][i] == _tokenId) {
+                ownerToTokensMap[owner][i] = 
+                    ownerToTokensMap[owner][ownerToTokensMap[owner].length - 1];
+                ownerToTokensMap[owner].length--;    
+                break;
+            }
+        }
+        ownerToTokensMap[realOwner].push(_tokenId);
     }
 }
