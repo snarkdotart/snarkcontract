@@ -3,22 +3,18 @@ pragma solidity ^0.4.24;
 import "./SnarkOfferBid.sol";
 
 
-contract SnarkAuction is SnarkArtMarket {
+contract SnarkAuction is SnarkOfferBid {
 
     // событие, оповещающее, что участник прибыли не согласен с условиями
     event DeclineApproveAuctionEvent(uint256 _auctionId, address indexed _offerOwner, address indexed _participant);
     // событие, оповещающее, что был создан новый аукцион
     event AuctionCreatedEvent(uint256 _auctionId);
-
     // оповещает участника о необходимости подтвердить согласие на его долю в продаже картины
     event NeedApproveAuctionEvent(uint256 _auctionId, address indexed _participant, uint8 _percentAmount);
-    
     // события, оповещающие, что закончился аукцион (продались все картины)
     event AuctonEnded(uint256 _auctionId);
-    
     // событие, оповещающее, что произошла переоценка аукциона
     event AuctionPriceChanged(uint256 _auctionId, uint256 newPrice);
-    
     // событие, оповещающее, что аукцион был завершен
     event AuctionFinishedEvent(uint256 _auctionId);
 
@@ -49,19 +45,21 @@ contract SnarkAuction is SnarkArtMarket {
     Auction[] internal auctions;
 
     // содержит связь цифровой работы с аукционом, в котором она участвует
-    mapping(uint256 => uint256) internal digitalWorkToAuctionMap;
+    mapping(uint256 => uint256) internal tokenToAuctionMap;
     // содержит связь аукциона с его владельцем
     mapping(uint256 => address) internal auctionToOwnerMap;
     // содержит счетчик аукционов, принадлежащих одному владельцу
     mapping(address => uint256) internal ownerToCountAuctionsMap;
 
     /// @dev Модификатор, пропускающий только владельца аукциона
+    /// @param _auctionId Auction Id
     modifier onlyAuctionOwner(uint256 _auctionId) {
         require(msg.sender == auctionToOwnerMap[_auctionId]);
         _;
     }
 
     /// @dev Модификатор, проверяющий переданный id аукциона на попадание в интервал
+    /// @param _auctionId Auction Id
     modifier correctAuctionId(uint256 _auctionId) {
         require(auctions.length > 0);
         require(_auctionId < auctions.length);
@@ -69,6 +67,7 @@ contract SnarkAuction is SnarkArtMarket {
     }
 
     /// @dev Модификатор, пропускающий только участников дохода для этого аукциона
+    /// @param _auctionId Auction Id
     modifier onlyAuctionParticipator(uint256 _auctionId) {
         bool isItParticipant = false;
         address[] storage p = auctions[_auctionId].participants;
@@ -101,7 +100,7 @@ contract SnarkAuction is SnarkArtMarket {
                 if (currentTimestamp >= endDay) {
                     auctions[i].saleStatus == SaleStatus.Finished;
                     // и тут надо бы распустить удалить аукцион и "освободить" оставшиеся картины
-                    deleteAuction(i);
+                    _deleteAuction(i);
                 } else {
                     // если мы тут, то аукцион еще работает и опускаем цену, если надо
                     // шаг = (начальная цена, большая  - конечная цена, меньшая) / продолжительность
@@ -152,13 +151,13 @@ contract SnarkAuction is SnarkArtMarket {
             saleStatus: SaleStatus.Preparing
         })) - 1;
         // применяем схему распределения пока для самого аукциона (не для цифровых работ)
-        applyNewSchemaOfProfitDivisionForAuction(auctionId, _participants, _percentAmounts);
+        _applyNewSchemaOfProfitDivisionForAuction(auctionId, _participants, _percentAmounts);
         // для всех цифровых работ выполняем следующее:
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в аукционе
-            digitalWorks[_tokenIds[i]].saleType = SaleType.Auction;
+            tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Auction;
             // помечаем к какому аукциону она принадлежит
-            digitalWorkToAuctionMap[_tokenIds[i]] = auctionId;
+            tokenToAuctionMap[_tokenIds[i]] = auctionId;
         }
         // записываем владельца данного аукциона
         auctionToOwnerMap[auctionId] = msg.sender;
@@ -202,9 +201,9 @@ contract SnarkAuction is SnarkArtMarket {
         // для всех цифровых работ выполняем следующее:
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в аукционе
-            digitalWorks[_tokenIds[i]].saleType = SaleType.Auction;
+            tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Auction;
             // помечаем к какому аукциону она принадлежит
-            digitalWorkToAuctionMap[_tokenIds[i]] = auctionId;
+            tokenToAuctionMap[_tokenIds[i]] = auctionId;
         }
         // записываем владельца данного аукциона
         auctionToOwnerMap[auctionId] = msg.sender;
@@ -229,7 +228,7 @@ contract SnarkAuction is SnarkArtMarket {
         // длины массивов должны совпадать
         require(_participants.length == _percentAmounts.length);
         // применяем новую схему
-        applyNewSchemaOfProfitDivisionForAuction(_auctionId, _participants, _percentAmounts);
+        _applyNewSchemaOfProfitDivisionForAuction(_auctionId, _participants, _percentAmounts);
         // т.к. изменения доли для одного затрагивает всех, то заново всех надо оповещать
         for (uint256 i = 0; i < _participants.length; i++) {
             // оповещаем адресно
@@ -255,7 +254,7 @@ contract SnarkAuction is SnarkArtMarket {
         if (isAllApproved) {
             uint256[] memory tokens = getDigitalWorksAuctionsList(_auctionId);
             for (i = 0; i < tokens.length; i++) {
-                applySchemaOfProfitDivision(tokens[i], auction.participants, parts);
+                _applySchemaOfProfitDivision(tokens[i], auction.participants, parts);
             }
         }
         // и только теперь помечаем, что аукцион может выставляться на продажу
@@ -285,8 +284,8 @@ contract SnarkAuction is SnarkArtMarket {
         for (uint256 i = 0; i < digitalWorks.length; i++) {
             // если текущая работа принадлежит уже какому-то аукциону и этот аукцион тот, 
             // что нас инетересует, то добавляем его индекс в возвращаемую таблицу
-            if (digitalWorkToAuctionMap[i] == _auctionId &&
-                digitalWorks[i].saleType == SaleType.Auction) {
+            if (tokenToAuctionMap[i] == _auctionId &&
+                tokenToSaleTypeMap[i] == SaleType.Auction) {
                 auctionDigitalWorksList[index++] = i;
             }
         }
@@ -322,17 +321,17 @@ contract SnarkAuction is SnarkArtMarket {
             // а затем его долю
             auction.participantToPercentageAmountMap[_participants[i]] = _percentAmounts[i];
             // на тот случай, если с клиента уже будет приходить информация о доле Snark
-            if (_participants[i] == snarkOwner) isSnarkDelivered = true;
+            if (_participants[i] == owner) isSnarkDelivered = true;
         }
         // ну и не забываем про себя любимых, т.е. Snark, если он чуть выше не был передан и обработан
         if (isSnarkDelivered == false) {
             // записываем адрес Snark
-            auction.participants.push(snarkOwner); 
+            auction.participants.push(owner); 
             // записываем долю Snark
-            auction.participantToPercentageAmountMap[snarkOwner] = snarkPercentageAmount;
+            auction.participantToPercentageAmountMap[owner] = snarkPercentageAmount;
         }
         // и сразу апруваем Snark
-        auction.participantToApproveMap[snarkOwner] = true;
+        auction.participantToApproveMap[owner] = true;
     }
 
     /// @dev Удаляет аукцион
@@ -341,9 +340,9 @@ contract SnarkAuction is SnarkArtMarket {
         uint256[] memory tokens = getDigitalWorksAuctionsList(_auctionId);
         for (uint256 i = 0; i < tokens.length; i++) {
             // освобождаем все картины
-            if (digitalWorks[tokens[i]].saleType == SaleType.Auction)
-                digitalWorks[tokens[i]].saleType = SaleType.None;
-            delete digitalWorkToAuctionMap[tokens[i]];
+            if (tokenToSaleTypeMap[tokens[i]] == SaleType.Auction)
+                tokenToSaleTypeMap[tokens[i]] = SaleType.None;
+            delete tokenToAuctionMap[tokens[i]];
         }
         address owner = auctionToOwnerMap[_auctionId];
         // удаляем связь аукциона с владельцем
@@ -356,7 +355,39 @@ contract SnarkAuction is SnarkArtMarket {
         emit AuctionFinishedEvent(_auctionId);
     }
 
+    /// @dev Lock Token
+    /// @param _offerId Offer Id
+    /// @param _tokenId Token Id
+    function _lockAuctionsToken(uint256 _auctionId, uint256 _tokenId) private {
+        address realOwner = auctionToOwnerMap[_auctionId];
+        tokenToOwnerMap[_tokenId] = owner;
+        for (uint8 i = 0; i < ownerToTokensMap[realOwner].length; i++) {
+            if (ownerToTokensMap[realOwner][i] == _tokenId) {
+                ownerToTokensMap[realOwner][i] = 
+                    ownerToTokensMap[realOwner][ownerToTokensMap[realOwner].length - 1];
+                ownerToTokensMap[realOwner].length--;    
+                break;
+            }
+        }
+        ownerToTokensMap[owner].push(_tokenId);        
+    }
 
+    /// @dev Unlock Token
+    /// @param _offerId Offer Id
+    /// @param _tokenId Token Id
+    function _unlockAuctionsToken(uint256 _auctionId, uint256 _tokenId) private {
+        address realOwner = auctionToOwnerMap[_auctionId];
+        tokenToOwnerMap[_tokenId] = realOwner;
+        for (uint256 i = 0; i < ownerToTokensMap[owner].length; i++) {
+            if (ownerToTokensMap[owner][i] == _tokenId) {
+                ownerToTokensMap[owner][i] = 
+                    ownerToTokensMap[owner][ownerToTokensMap[owner].length - 1];
+                ownerToTokensMap[owner].length--;    
+                break;
+            }
+        }
+        ownerToTokensMap[realOwner].push(_tokenId);        
+    }
 }
 
 
