@@ -82,7 +82,7 @@ contract SnarkOfferBid is SnarkBase {
     // содержит связку token с bid
     mapping (uint256 => uint256) internal tokenToBidMap; 
     // содержит признак наличия выставленного бида для цифровой работы
-    mapping (uint256 => bool) internal digitalWorkToIsExistBidMap;
+    mapping (uint256 => bool) internal tokenToIsExistBidMap;
     // содержит связку адреса с его балансом
     mapping (address => uint256) public pendingWithdrawals;
     // картина может находиться только в одном из четырех состояний:
@@ -262,6 +262,13 @@ contract SnarkOfferBid is SnarkBase {
             countOfDigitalWorks: _tokenIds.length,
             saleStatus: SaleStatus.Preparing
         })) - 1;
+        // count offers with saleType = Offer
+        saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
+        // записываем владельца данного оффера
+        offerToOwnerMap[offerId] = msg.sender;
+        // увеличиваем количество офферов принадлежащих овнеру
+        ownerToOffersMap[msg.sender].push(offerId);
+        // для всех цифровых работ выполняем следующее
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в offer
             tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Offer;
@@ -269,13 +276,9 @@ contract SnarkOfferBid is SnarkBase {
             tokenToOfferMap[_tokenIds[i]] = offerId;
             // add token to offer list
             offerToTokensMap[offerId].push(_tokenIds[i]);
+            // move token to Snark
+            _lockOffersToken(offerId, _tokenIds[i]);            
         }
-        // count offers with saleType = Offer
-        saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
-        // записываем владельца данного оффера
-        offerToOwnerMap[offerId] = msg.sender;
-        // увеличиваем количество офферов принадлежащих овнеру
-        ownerToOffersMap[msg.sender].push(offerId);
         // сообщаем, что был создан новый оффер
         emit OfferCreatedEvent(offerId, offers[offerId].offerTo);
     }
@@ -332,8 +335,9 @@ contract SnarkOfferBid is SnarkBase {
             tokenToSaleTypeMap[tokens[i]] = SaleType.None;
             // удаляем связь цифровой работы с оффером
             delete tokenToOfferMap[tokens[i]];
+            // unlock token
+            _unlockOffersToken(_offerId, tokens[i]);
         }
-        address owner = offerToOwnerMap[_offerId];
         // удаляем связь оффера с владельцем
         delete offerToOwnerMap[_offerId];
         // delete the offer from owner
@@ -392,7 +396,7 @@ contract SnarkOfferBid is SnarkBase {
         require(msg.sender != address(0));
 
         uint256 bidId;
-        if (digitalWorkToIsExistBidMap[_tokenId]) {
+        if (tokenToIsExistBidMap[_tokenId]) {
             // если для выбранной цифровой работы bid уже был задан, то получаем его id-шник 
             bidId = tokenToBidMap[_tokenId];
             // получаем сам бид по его id-шнику
@@ -425,7 +429,7 @@ contract SnarkOfferBid is SnarkBase {
             // т.к. для работы может быть выставлен только один бид, то его мы и присваиваем этой работе
             tokenToBidMap[_tokenId] = bidId;
             // помечаем, что для данной работы бид был выставлен
-            digitalWorkToIsExistBidMap[_tokenId] = true;
+            tokenToIsExistBidMap[_tokenId] = true;
         }
         // устанавливаем нового владельца этого бида
         bidToOwnerMap[bidId] = msg.sender;
@@ -546,7 +550,7 @@ contract SnarkOfferBid is SnarkBase {
         // удаляем привязку бида с владельцем
         delete bidToOwnerMap[_bidId];
         // помечаем, что цифровая работа не имеет бидов
-        digitalWorkToIsExistBidMap[bids[_bidId].digitalWorkId] = false;
+        tokenToIsExistBidMap[bids[_bidId].digitalWorkId] = false;
         // помечаем, что этот бид завершил свою работу
         bids[_bidId].saleStatus = SaleStatus.Finished;
     }
