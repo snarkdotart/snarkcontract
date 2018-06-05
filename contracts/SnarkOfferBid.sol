@@ -338,10 +338,11 @@ contract SnarkOfferBid is SnarkBase {
             // unlock token
             _unlockOffersToken(_offerId, tokens[i]);
         }
+        address offerOwner = offerToOwnerMap[_offerId];
         // удаляем связь оффера с владельцем
         delete offerToOwnerMap[_offerId];
         // delete the offer from owner
-        uint256[] storage ownerOffers = ownerToOffersMap[owner];
+        uint256[] storage ownerOffers = ownerToOffersMap[offerOwner];
         for (i = 0; i < ownerOffers.length; i++) {
             if (ownerOffers[i] == _offerId) {
                 ownerOffers[i] = ownerOffers[ownerOffers.length - 1];
