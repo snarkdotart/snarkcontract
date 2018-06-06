@@ -45,11 +45,13 @@ contract SnarkAuction is SnarkOfferBid {
     Auction[] internal auctions;
 
     // содержит связь цифровой работы с аукционом, в котором она участвует
-    mapping(uint256 => uint256) internal tokenToAuctionMap;
+    mapping (uint256 => uint256) internal tokenToAuctionMap;
+    // Mapping fron auction to Tokens
+    mapping (uint256 => uint256[]) internal auctionToTokensMap;
     // содержит связь аукциона с его владельцем
-    mapping(uint256 => address) internal auctionToOwnerMap;
+    mapping (uint256 => address) internal auctionToOwnerMap;
     // содержит счетчик аукционов, принадлежащих одному владельцу
-    mapping(address => uint256) internal ownerToCountAuctionsMap;
+    mapping (address => uint256) internal ownerToCountAuctionsMap;
 
     /// @dev Модификатор, пропускающий только владельца аукциона
     /// @param _auctionId Auction Id
@@ -78,18 +80,18 @@ contract SnarkAuction is SnarkOfferBid {
         _;        
     }
 
-    /// @dev Дергаем функцию из-вне, для того, чтобы: 
     /// СКОРЕЕ ВСЕГО ЭТУ ФУНКЦИЮ НАДО ДЕЛАТЬ НА BACKEND-е, т.к. будет дешевле
+    /// @dev Дергаем функцию из-вне, для того, чтобы: 
     /// либо запустить, либо остановить аукционы, либо цену снизить
     function processingOfAuctions() external {
         uint256 currentTimestamp = block.timestamp;
         uint256 endDay = 0;
         for (uint256 i = 0; i < auctions.length; i++) {
+            // вычисляем конечную дату, когда должен аукцион закончится
+            // начальная дата в timestamp + (продолжительность в сутках + 1 
+            // т.к. надо будет выждать) * 86400 (timestamp одних сутках, приблизительно)
+            endDay = auctions[i].startingDate + (auctions[i].duration + 1) * 86400;
             if (auctions[i].saleStatus == SaleStatus.NotActive) {
-                // вычисляем конечную дату, когда должен аукцион закончится
-                // начальная дата в timestamp + (продолжительность в сутках + 1 
-                // т.к. надо будет выждать) * 86400 (timestamp одних суток)
-                endDay = auctions[i].startingDate + (auctions[i].duration + 1) * 86400;
                 // запускаем те, которым уже пора
                 if (auctions[i].startingDate <= currentTimestamp &&
                     currentTimestamp < endDay) {
@@ -152,20 +154,23 @@ contract SnarkAuction is SnarkOfferBid {
         })) - 1;
         // применяем схему распределения пока для самого аукциона (не для цифровых работ)
         _applyNewSchemaOfProfitDivisionForAuction(auctionId, _participants, _percentAmounts);
+        // записываем владельца данного аукциона
+        auctionToOwnerMap[auctionId] = msg.sender;
+        // увеличиваем количество аукционов, принадлежащих овнеру
+        ownerToCountAuctionsMap[msg.sender]++;
         // для всех цифровых работ выполняем следующее:
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в аукционе
             tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Auction;
             // помечаем к какому аукциону она принадлежит
             tokenToAuctionMap[_tokenIds[i]] = auctionId;
+            // сохраняем информацию о том, какие токены принадлежать данному оферу
+            auctionToTokensMap[auctionId].push(_tokenIds[i]);
+            // move token to Snark
+            _lockAuctionsToken(auctionId, _tokenIds[i]);
         }
-        // записываем владельца данного аукциона
-        auctionToOwnerMap[auctionId] = msg.sender;
-        // увеличиваем количество аукционов, принадлежащих овнеру
-        ownerToCountAuctionsMap[msg.sender]++;
-
+        // адресно оповещаем каждого из участиков
         for (i = 0; i < _participants.length; i++) {
-            // адресно оповещаем каждого из участиков
             emit NeedApproveAuctionEvent(auctionId, _participants[i], _percentAmounts[i]);
         }
     }
@@ -198,17 +203,21 @@ contract SnarkAuction is SnarkOfferBid {
             countOfDigitalWorks: _tokenIds.length,
             saleStatus: SaleStatus.NotActive
         })) - 1;
+        // записываем владельца данного аукциона
+        auctionToOwnerMap[auctionId] = msg.sender;
+        // увеличиваем количество аукционов, принадлежащих овнеру
+        ownerToCountAuctionsMap[msg.sender]++;
         // для всех цифровых работ выполняем следующее:
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в аукционе
             tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Auction;
             // помечаем к какому аукциону она принадлежит
             tokenToAuctionMap[_tokenIds[i]] = auctionId;
+            // сохраняем информацию о том, какие токены принадлежать данному оферу
+            auctionToTokensMap[auctionId].push(_tokenIds[i]);
+            // move token to Snark
+            _lockAuctionsToken(auctionId, _tokenIds[i]);
         }
-        // записываем владельца данного аукциона
-        auctionToOwnerMap[auctionId] = msg.sender;
-        // увеличиваем количество аукционов, принадлежащих овнеру
-        ownerToCountAuctionsMap[msg.sender]++;
         // сообщаем, что был создан аукцион
         emit AuctionCreatedEvent(auctionId);
     }
@@ -278,18 +287,7 @@ contract SnarkAuction is SnarkOfferBid {
         correctAuctionId(_auctionId) 
         returns (uint256[]) 
     {
-        // выделяем массив размерности, заданной в аукционе
-        uint256[] memory auctionDigitalWorksList = new uint256[](auctions[_auctionId].countOfDigitalWorks);
-        uint256 index = 0;
-        for (uint256 i = 0; i < digitalWorks.length; i++) {
-            // если текущая работа принадлежит уже какому-то аукциону и этот аукцион тот, 
-            // что нас инетересует, то добавляем его индекс в возвращаемую таблицу
-            if (tokenToAuctionMap[i] == _auctionId &&
-                tokenToSaleTypeMap[i] == SaleType.Auction) {
-                auctionDigitalWorksList[index++] = i;
-            }
-        }
-        return auctionDigitalWorksList;
+        return auctionToTokensMap[_auctionId];
     }
 
     /// @dev Применяем схему к аукциону
@@ -337,18 +335,22 @@ contract SnarkAuction is SnarkOfferBid {
     /// @dev Удаляет аукцион
     /// @param _auctionId Id-шник аукциона
     function _deleteAuction(uint256 _auctionId) private {
-        uint256[] memory tokens = getDigitalWorksAuctionsList(_auctionId);
+        uint256[] memory tokens = auctionToTokensMap[_auctionId];
         for (uint256 i = 0; i < tokens.length; i++) {
             // освобождаем все картины
             if (tokenToSaleTypeMap[tokens[i]] == SaleType.Auction)
                 tokenToSaleTypeMap[tokens[i]] = SaleType.None;
             delete tokenToAuctionMap[tokens[i]];
+            _unlockAuctionsToken(_auctionId, tokens[i]);
         }
-        address owner = auctionToOwnerMap[_auctionId];
+        // delete an array of tokens from current auction
+        delete auctionToTokensMap[_auctionId];
+        // get a aucton owner
+        address auctionOwner = auctionToOwnerMap[_auctionId];
         // удаляем связь аукциона с владельцем
         delete auctionToOwnerMap[_auctionId];
         // уменьшаем счетчик аукционов у владельца
-        ownerToCountAuctionsMap[owner]--;
+        ownerToCountAuctionsMap[auctionOwner]--;
         // помечаем аукцион, как завершившийся
         auctions[_auctionId].saleStatus = SaleStatus.Finished;
         // генерим событие о том, что удален аукцион
