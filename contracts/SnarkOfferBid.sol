@@ -21,8 +21,6 @@ contract SnarkOfferBid is SnarkBase {
     event BidSettedUpEvent(uint256 _bidId, address indexed _bidder, uint256 _value);
     // событие, оповещающее, что был отменен бид для цифровой работы
     event BidCanceledEvent(uint256 _digitalWorkId);
-    // событие, возникающие после продажи работы
-    event DigitalWorkBoughtEvent(uint256 _tokenId, uint256 price, address seller, address buyer);
 
     // There are 4 states for an Offer and an Auction:
     // Preparing - "подготавливается", только создался и не апрувнут участниками
@@ -36,18 +34,18 @@ contract SnarkOfferBid is SnarkBase {
     struct Offer {
         // предлагаемая цена в ether для всех работ
         uint256 price;
+        // количество работ в данном предложении. Уменьшаем при продаже картины
+        uint256 countOfDigitalWorks;
         // адрес коллекционера, кому явно выставляется предложение
         address offerTo;
         // адреса участников прибыли
         address[] participants;
+        // offer status (we use 3 states only: Preparing, Active, Finished)
+        SaleStatus saleStatus;
         // содержит связь участника с размером его доли
         mapping (address => uint8) participantToPercentageAmountMap;
         // содержит связь участника с его подтверждением
         mapping (address => bool) participantToApproveMap;
-        // количество работ в данном предложении. Уменьшаем при продаже картины
-        uint256 countOfDigitalWorks;
-        // offer status (we use 3 states only: Preparing, Active, Finished)
-        SaleStatus saleStatus;
     }
 
     struct Bid {
@@ -187,31 +185,46 @@ contract SnarkOfferBid is SnarkBase {
     }
 
     /// @dev Функция создания офера первичной продажи. вызывает событие апрува для участников
-    /// @param _tokenIds Список id-шников цифровых работ, которые будут включены в это предложение
     /// @param _price Цена для всех цифровых работ, включенных в это предложение
     /// @param _offerTo Адрес, кому выставляется данное предложение
+    /// @param _tokenIds Список id-шников цифровых работ, которые будут включены в это предложение
     /// @param _participants Список участников прибыли
     /// @param _percentAmounts Список процентных долей участников
     function createOffer(
-        uint256[] _tokenIds, 
         uint256 _price, 
         address _offerTo, 
+        uint256[] _tokenIds, 
         address[] _participants,
         uint8[] _percentAmounts
     ) 
         public 
         onlyOwnerOfMany(_tokenIds)
-        onlyNoneStatus(_tokenIds)
-        onlyFirstSale(_tokenIds)
+        // onlyNoneStatus(_tokenIds)
+        // onlyFirstSale(_tokenIds)
     {
+        // из-за ошибки компилятора перенес проверку двух модификаторов в саму функцию
+        bool isStatusNone = true;
+        bool isFistSale = true;
+        for (uint8 i = 0; i < _tokenIds.length; i++) {
+            isStatusNone = (isStatusNone && (tokenToSaleTypeMap[_tokenIds[i]] == SaleType.None));
+            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isItFirstSelling);
+        }
+        require(isStatusNone);
+        require(isFistSale);
+
         // создание оффера и получение его id
-        uint256 offerId = offers.push(Offer({
+        Offer memory _offer = Offer({
             price: _price,
+            countOfDigitalWorks: _tokenIds.length,
             offerTo: _offerTo,
             participants: new address[](0),
-            countOfDigitalWorks: _tokenIds.length,
             saleStatus: SaleStatus.Preparing
-        })) - 1;
+        });
+        // _offer.price = _price;
+        // _offer.offerTo = _offerTo;
+        // uint256 _count = _tokenIds.length;
+        // _offer.countOfDigitalWorks = _count;
+        uint256 offerId = offers.push(_offer) - 1;
         // применяем новую схему распределения прибыли
         _applyNewSchemaOfProfitDivisionForOffer(offerId, _participants, _percentAmounts);
         // count offers with saleType = Offer
@@ -221,7 +234,7 @@ contract SnarkOfferBid is SnarkBase {
         // увеличиваем количество офферов принадлежащих овнеру
         ownerToOffersMap[msg.sender].push(offerId);
         // для всех цифровых работ выполняем следующее
-        for (uint8 i = 0; i < _tokenIds.length; i++) {
+        for (i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в offer
             tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Offer;
             // помечаем к какому offer она принадлежит
@@ -255,13 +268,16 @@ contract SnarkOfferBid is SnarkBase {
         onlySecondSale(_tokenIds)
     {
         // создание оффера и получение его id
-        uint256 offerId = offers.push(Offer({
-            price: _price,
+        Offer memory _offer = Offer({
+            price: 0,
             offerTo: _offerTo,
             participants: new address[](0),
-            countOfDigitalWorks: _tokenIds.length,
+            countOfDigitalWorks: 0,
             saleStatus: SaleStatus.Preparing
-        })) - 1;
+        });
+        _offer.price = _price;
+        _offer.countOfDigitalWorks = _tokenIds.length;
+        uint256 offerId = offers.push(_offer) - 1;
         // count offers with saleType = Offer
         saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
         // записываем владельца данного оффера
@@ -271,13 +287,14 @@ contract SnarkOfferBid is SnarkBase {
         // для всех цифровых работ выполняем следующее
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в offer
-            tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Offer;
+            uint256 _t = _tokenIds[i];
+            tokenToSaleTypeMap[_t] = SaleType.Offer;
             // помечаем к какому offer она принадлежит
-            tokenToOfferMap[_tokenIds[i]] = offerId;
+            tokenToOfferMap[_t] = offerId;
             // add token to offer list
-            offerToTokensMap[offerId].push(_tokenIds[i]);
+            offerToTokensMap[offerId].push(_t);
             // move token to Snark
-            _lockOffersToken(offerId, _tokenIds[i]);            
+            _lockOffersToken(offerId, _t);            
         }
         // сообщаем, что был создан новый оффер
         emit OfferCreatedEvent(offerId, offers[offerId].offerTo);
@@ -357,7 +374,7 @@ contract SnarkOfferBid is SnarkBase {
     }
 
     /// @dev Получение списка всех активных offers (которые Approved)
-    /// @param status
+    /// @param _status Offer sale status
     function getOffersListByStatus(uint8 _status) public view returns(uint256[]) {
         return saleStatusToOffersMap[_status];
     }
@@ -491,6 +508,72 @@ contract SnarkOfferBid is SnarkBase {
         }
     }
 
+    /// @dev Удаление бида из основной таблицы бидов
+    /// @param _bidId Id bid
+    function _deleteBid(uint256 _bidId) internal {
+        // delete the bid from the bidder
+        address bidder = bidToOwnerMap[_bidId];
+        for (uint8 i = 0; i < ownerToBidsMap[bidder].length; i++) {
+            if (ownerToBidsMap[bidder][i] == _bidId) {
+                ownerToBidsMap[bidder][i] = 
+                    ownerToBidsMap[bidder][ownerToBidsMap[bidder].length - 1];
+                ownerToBidsMap[bidder].length--;
+                break;
+            }
+        }
+        // удаляем привязку цифровой работы с бидом
+        delete tokenToBidMap[bids[_bidId].digitalWorkId];
+        // удаляем привязку бида с владельцем
+        delete bidToOwnerMap[_bidId];
+        // помечаем, что цифровая работа не имеет бидов
+        tokenToIsExistBidMap[bids[_bidId].digitalWorkId] = false;
+        // помечаем, что этот бид завершил свою работу
+        bids[_bidId].saleStatus = SaleStatus.Finished;
+    }
+
+    /// @dev Функция распределения прибыли
+    /// @param _price Цена, за которую продается цифровая работа
+    /// @param _tokenId Id цифровой работы
+    /// @param _from Адрес продавца
+    function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) internal {
+        // распределяем прибыль согласно схеме, содержащейся в самой картине
+        DigitalWork storage digitalWork = digitalWorks[_tokenId];
+        // вычисляем прибыль предварительно
+        if (digitalWork.lastPrice < _price && (_price - digitalWork.lastPrice) >= 100) {
+            uint256 profit = _price - digitalWork.lastPrice;
+            // проверяем первичная ли эта продажа или нет
+            if (digitalWork.isItFirstSelling) { 
+                // если да, то помечаем, что первичная продажа закончилась
+                digitalWork.isItFirstSelling = false;
+            } else {
+                // если вторичная продажа, то профит уменьшаем до заданного художником значения в процентах
+                // при этом же оставшая сумма должна перейти продавцу
+                uint256 amountToSeller = profit;
+                // сумма, которая будет распределяться
+                profit = profit * digitalWork.appropriationPercentForSecondTrade / 100;
+                // сумма, которая уйдет продавцу
+                amountToSeller -= profit;
+                pendingWithdrawals[_from] += amountToSeller;
+            }
+            uint256 residue = profit; // тут будем хранить остаток, после выплаты всем участникам
+            for (uint8 i = 0; i < digitalWork.participants.length; i++) { // по очереди обрабатываем участников выплат
+                // вычисляем сумму выплаты
+                uint256 payout = profit * digitalWork.participantToPercentMap[digitalWork.participants[i]] / 100;
+                pendingWithdrawals[digitalWork.participants[i]] += payout; // и переводим ему на "вексель"
+                residue -= payout; // вычисляем остаток после выплаты
+            }
+            // если вдруг что-то осталось после распределения, то остаток переводим продавцу
+            pendingWithdrawals[_from] += residue;
+        } else {
+            // если дохода нет, то все зачисляем продавцу
+            pendingWithdrawals[_from] += _price; 
+        }
+        // запоминаем цену, по которой продались, в lastPrice в картине
+        digitalWork.lastPrice = _price;
+        // помечаем, что не имеет никаких статусов продажи
+        tokenToSaleTypeMap[_tokenId] = SaleType.None;
+    }
+
     /// @dev Применяем схему к офферу
     /// @param _offerId Id-шник оффера
     /// @param _participants Массив адресов участников прибыли
@@ -533,87 +616,13 @@ contract SnarkOfferBid is SnarkBase {
         offer.participantToApproveMap[owner] = true;
     }
 
-    /// @dev Удаление бида из основной таблицы бидов
-    /// @param _bidId Id bid
-    function _deleteBid(uint256 _bidId) private {
-        // delete the bid from the bidder
-        address bidder = bidToOwnerMap[_bidId];
-        for (uint8 i = 0; i < ownerToBidsMap[bidder].length; i++) {
-            if (ownerToBidsMap[bidder][i] == _bidId) {
-                ownerToBidsMap[bidder][i] = 
-                    ownerToBidsMap[bidder][ownerToBidsMap[bidder].length - 1];
-                ownerToBidsMap[bidder].length--;
-                break;
-            }
-        }
-        // удаляем привязку цифровой работы с бидом
-        delete tokenToBidMap[bids[_bidId].digitalWorkId];
-        // удаляем привязку бида с владельцем
-        delete bidToOwnerMap[_bidId];
-        // помечаем, что цифровая работа не имеет бидов
-        tokenToIsExistBidMap[bids[_bidId].digitalWorkId] = false;
-        // помечаем, что этот бид завершил свою работу
-        bids[_bidId].saleStatus = SaleStatus.Finished;
-    }
-
-    /// @dev Функция распределения прибыли
-    /// @param _price Цена, за которую продается цифровая работа
-    /// @param _tokenId Id цифровой работы
-    /// @param _from Адрес продавца
-    function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) private {
-        // распределяем прибыль согласно схеме, содержащейся в самой картине
-        DigitalWork storage digitalWork = digitalWorks[_tokenId];
-        // вычисляем прибыль предварительно
-        if (digitalWork.lastPrice < _price && (_price - digitalWork.lastPrice) >= 100) {
-            uint256 profit = _price - digitalWork.lastPrice;
-            // проверяем первичная ли эта продажа или нет
-            if (digitalWork.isItFirstSelling) { 
-                // если да, то помечаем, что первичная продажа закончилась
-                digitalWork.isItFirstSelling = false;
-            } else {
-                // если вторичная продажа, то профит уменьшаем до заданного художником значения в процентах
-                // при этом же оставшая сумма должна перейти продавцу
-                uint256 amountToSeller = profit;
-                // сумма, которая будет распределяться
-                profit = profit * digitalWork.appropriationPercentForSecondTrade / 100;
-                // сумма, которая уйдет продавцу
-                amountToSeller -= profit;
-                pendingWithdrawals[_from] += amountToSeller;
-            }
-            uint256 residue = profit; // тут будем хранить остаток, после выплаты всем участникам
-            for (uint8 i = 0; i < digitalWork.participants.length; i++) { // по очереди обрабатываем участников выплат
-                // вычисляем сумму выплаты
-                uint256 payout = profit * digitalWork.participantToPercentMap[digitalWork.participants[i]] / 100;
-                pendingWithdrawals[digitalWork.participants[i]] += payout; // и переводим ему на "вексель"
-                residue -= payout; // вычисляем остаток после выплаты
-            }
-            // если вдруг что-то осталось после распределения, то остаток переводим продавцу
-            pendingWithdrawals[_from] += residue;
-        } else {
-            // если дохода нет, то все зачисляем продавцу
-            pendingWithdrawals[_from] += _price; 
-        }
-        // запоминаем цену, по которой продались, в lastPrice в картине
-        digitalWork.lastPrice = _price;
-        // помечаем, что не имеет никаких статусов продажи
-        tokenToSaleTypeMap[_tokenId] = SaleType.None;
-    }
-
     /// @dev Lock Token
     /// @param _offerId Offer Id
     /// @param _tokenId Token Id
     function _lockOffersToken(uint256 _offerId, uint256 _tokenId) private {
         address realOwner = offerToOwnerMap[_offerId];
-        tokenToOwnerMap[_tokenId] = owner;
-        for (uint8 i = 0; i < ownerToTokensMap[realOwner].length; i++) {
-            if (ownerToTokensMap[realOwner][i] == _tokenId) {
-                ownerToTokensMap[realOwner][i] = 
-                    ownerToTokensMap[realOwner][ownerToTokensMap[realOwner].length - 1];
-                ownerToTokensMap[realOwner].length--;    
-                break;
-            }
-        }
-        ownerToTokensMap[owner].push(_tokenId);
+        // move token from realOwner to Snark
+        _transfer(realOwner, owner, _tokenId);
     }
 
     /// @dev Unlock Token
@@ -621,15 +630,7 @@ contract SnarkOfferBid is SnarkBase {
     /// @param _tokenId Token Id
     function _unlockOffersToken(uint256 _offerId, uint256 _tokenId) private {
         address realOwner = offerToOwnerMap[_offerId];
-        tokenToOwnerMap[_tokenId] = realOwner;
-        for (uint256 i = 0; i < ownerToTokensMap[owner].length; i++) {
-            if (ownerToTokensMap[owner][i] == _tokenId) {
-                ownerToTokensMap[owner][i] = 
-                    ownerToTokensMap[owner][ownerToTokensMap[owner].length - 1];
-                ownerToTokensMap[owner].length--;    
-                break;
-            }
-        }
-        ownerToTokensMap[realOwner].push(_tokenId);
+        // move token from Snark to realOwner
+        _transfer(owner, realOwner, _tokenId);
     }
 }

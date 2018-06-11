@@ -1,5 +1,5 @@
-var SnarkTrade = artifacts.require("./SnarkTrade.sol");
+var SnarkArt = artifacts.require("./SnarkArt.sol");
 
 module.exports = function(deployer) {
-    deployer.deploy(SnarkTrade);
+    deployer.deploy(SnarkArt);
 };

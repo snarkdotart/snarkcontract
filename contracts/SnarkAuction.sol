@@ -138,10 +138,23 @@ contract SnarkAuction is SnarkOfferBid {
         uint8[] _percentAmounts
     ) 
         public
-        onlyOwnerOfMany(_tokenIds)
-        onlyNoneStatus(_tokenIds)
-        onlyFirstSale(_tokenIds)
+        // onlyOwnerOfMany(_tokenIds)
+        // onlyNoneStatus(_tokenIds)
+        // onlyFirstSale(_tokenIds)
     {
+        // из-за ошибки компилятора перенес проверку модификаторов в саму функцию
+        bool isOwnerOfAll = true;
+        bool isStatusNone = true;
+        bool isFistSale = true;
+        for (uint8 i = 0; i < _tokenIds.length; i++) {
+            isOwnerOfAll = isOwnerOfAll && (msg.sender == tokenToOwnerMap[_tokenIds[i]]);
+            isStatusNone = (isStatusNone && (tokenToSaleTypeMap[_tokenIds[i]] == SaleType.None));
+            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isItFirstSelling);
+        }
+        require(isOwnerOfAll);
+        require(isStatusNone);
+        require(isFistSale);
+
         uint256 auctionId = auctions.push(Auction({
             startingPrice: _startingPrice,
             endingPrice: _endingPrice,
@@ -159,7 +172,7 @@ contract SnarkAuction is SnarkOfferBid {
         // увеличиваем количество аукционов, принадлежащих овнеру
         ownerToCountAuctionsMap[msg.sender]++;
         // для всех цифровых работ выполняем следующее:
-        for (uint8 i = 0; i < _tokenIds.length; i++) {
+        for (i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в аукционе
             tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Auction;
             // помечаем к какому аукциону она принадлежит
@@ -190,9 +203,19 @@ contract SnarkAuction is SnarkOfferBid {
     ) 
         public
         onlyOwnerOfMany(_tokenIds)
-        onlyNoneStatus(_tokenIds)
-        onlySecondSale(_tokenIds)
+        // onlyNoneStatus(_tokenIds)
+        // onlySecondSale(_tokenIds)
     {
+        // из-за ошибки компилятора перенес проверку двух модификаторов в саму функцию
+        bool isStatusNone = true;
+        bool isSecondSale = true;
+        for (uint8 i = 0; i < _tokenIds.length; i++) {
+            isStatusNone = (isStatusNone && (tokenToSaleTypeMap[_tokenIds[i]] == SaleType.None));
+            isSecondSale = (isSecondSale && !digitalWorks[_tokenIds[i]].isItFirstSelling);
+        }
+        require(isStatusNone);
+        require(isSecondSale);
+
         uint256 auctionId = auctions.push(Auction({
             startingPrice: _startingPrice,
             endingPrice: _endingPrice,
@@ -208,7 +231,7 @@ contract SnarkAuction is SnarkOfferBid {
         // увеличиваем количество аукционов, принадлежащих овнеру
         ownerToCountAuctionsMap[msg.sender]++;
         // для всех цифровых работ выполняем следующее:
-        for (uint8 i = 0; i < _tokenIds.length; i++) {
+        for (i = 0; i < _tokenIds.length; i++) {
             // в самой работе помечаем, что она участвует в аукционе
             tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Auction;
             // помечаем к какому аукциону она принадлежит
@@ -290,6 +313,31 @@ contract SnarkAuction is SnarkOfferBid {
         return auctionToTokensMap[_auctionId];
     }
 
+    /// @dev Удаляет аукцион
+    /// @param _auctionId Id-шник аукциона
+    function _deleteAuction(uint256 _auctionId) internal {
+        uint256[] memory tokens = auctionToTokensMap[_auctionId];
+        for (uint256 i = 0; i < tokens.length; i++) {
+            // освобождаем все картины
+            if (tokenToSaleTypeMap[tokens[i]] == SaleType.Auction)
+                tokenToSaleTypeMap[tokens[i]] = SaleType.None;
+            delete tokenToAuctionMap[tokens[i]];
+            _unlockAuctionsToken(_auctionId, tokens[i]);
+        }
+        // delete an array of tokens from current auction
+        delete auctionToTokensMap[_auctionId];
+        // get a aucton owner
+        address auctionOwner = auctionToOwnerMap[_auctionId];
+        // удаляем связь аукциона с владельцем
+        delete auctionToOwnerMap[_auctionId];
+        // уменьшаем счетчик аукционов у владельца
+        ownerToCountAuctionsMap[auctionOwner]--;
+        // помечаем аукцион, как завершившийся
+        auctions[_auctionId].saleStatus = SaleStatus.Finished;
+        // генерим событие о том, что удален аукцион
+        emit AuctionFinishedEvent(_auctionId);
+    }
+
     /// @dev Применяем схему к аукциону
     /// @param _auctionId Id-шник аукциона
     /// @param _participants Массив адресов участников прибыли
@@ -332,64 +380,21 @@ contract SnarkAuction is SnarkOfferBid {
         auction.participantToApproveMap[owner] = true;
     }
 
-    /// @dev Удаляет аукцион
-    /// @param _auctionId Id-шник аукциона
-    function _deleteAuction(uint256 _auctionId) private {
-        uint256[] memory tokens = auctionToTokensMap[_auctionId];
-        for (uint256 i = 0; i < tokens.length; i++) {
-            // освобождаем все картины
-            if (tokenToSaleTypeMap[tokens[i]] == SaleType.Auction)
-                tokenToSaleTypeMap[tokens[i]] = SaleType.None;
-            delete tokenToAuctionMap[tokens[i]];
-            _unlockAuctionsToken(_auctionId, tokens[i]);
-        }
-        // delete an array of tokens from current auction
-        delete auctionToTokensMap[_auctionId];
-        // get a aucton owner
-        address auctionOwner = auctionToOwnerMap[_auctionId];
-        // удаляем связь аукциона с владельцем
-        delete auctionToOwnerMap[_auctionId];
-        // уменьшаем счетчик аукционов у владельца
-        ownerToCountAuctionsMap[auctionOwner]--;
-        // помечаем аукцион, как завершившийся
-        auctions[_auctionId].saleStatus = SaleStatus.Finished;
-        // генерим событие о том, что удален аукцион
-        emit AuctionFinishedEvent(_auctionId);
-    }
-
     /// @dev Lock Token
-    /// @param _offerId Offer Id
+    /// @param _auctionId Auction Id
     /// @param _tokenId Token Id
     function _lockAuctionsToken(uint256 _auctionId, uint256 _tokenId) private {
         address realOwner = auctionToOwnerMap[_auctionId];
-        tokenToOwnerMap[_tokenId] = owner;
-        for (uint8 i = 0; i < ownerToTokensMap[realOwner].length; i++) {
-            if (ownerToTokensMap[realOwner][i] == _tokenId) {
-                ownerToTokensMap[realOwner][i] = 
-                    ownerToTokensMap[realOwner][ownerToTokensMap[realOwner].length - 1];
-                ownerToTokensMap[realOwner].length--;    
-                break;
-            }
-        }
-        ownerToTokensMap[owner].push(_tokenId);        
+        // move token from realOwner to Snark
+        _transfer(realOwner, owner, _tokenId);
     }
 
     /// @dev Unlock Token
-    /// @param _offerId Offer Id
+    /// @param _auctionId Auction Id
     /// @param _tokenId Token Id
     function _unlockAuctionsToken(uint256 _auctionId, uint256 _tokenId) private {
         address realOwner = auctionToOwnerMap[_auctionId];
-        tokenToOwnerMap[_tokenId] = realOwner;
-        for (uint256 i = 0; i < ownerToTokensMap[owner].length; i++) {
-            if (ownerToTokensMap[owner][i] == _tokenId) {
-                ownerToTokensMap[owner][i] = 
-                    ownerToTokensMap[owner][ownerToTokensMap[owner].length - 1];
-                ownerToTokensMap[owner].length--;    
-                break;
-            }
-        }
-        ownerToTokensMap[realOwner].push(_tokenId);        
+        // move token from Snark to realOwner
+        _transfer(owner, realOwner, _tokenId);
     }
 }
-
-
