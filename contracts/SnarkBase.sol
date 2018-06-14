@@ -36,10 +36,10 @@ contract SnarkBase is Ownable {
 
         // Profit share % during secondary sale going back to the artist and their list of participants (1 bytes)
         // Assume 20% by default
-        uint8 appropriationPercentForSecondTrade;
+        uint8 profitShareFromSecondarySale;
 
         // Check if it is the first sale of the artwork
-        bool isItFirstSelling;
+        bool isFirstSale;
 
         // URL link to the artwork
         string digitalWorkUrl;
@@ -94,7 +94,7 @@ contract SnarkBase is Ownable {
 
     /// @dev Return details about token
     /// @param _tokenId Token Id of digital work
-    function getDetailsForToken(uint256 _tokenId) 
+    function getTokenDetails(uint256 _tokenId) 
         public 
         view 
         returns (
@@ -102,8 +102,8 @@ contract SnarkBase is Ownable {
             uint16 limitedEdition, 
             uint16 copyNumber, 
             uint256 lastPrice, 
-            uint8 appropriationPercentForSecondTrade, 
-            bool isItFirstSelling, 
+            uint8 profitShareFromSecondarySale, 
+            bool isFirstSale, 
             address[] participants, 
             string digitalWorkUrl
         ) 
@@ -114,8 +114,8 @@ contract SnarkBase is Ownable {
             dw.limitedEdition,
             dw.copyNumber,
             dw.lastPrice,
-            dw.appropriationPercentForSecondTrade,
-            dw.isItFirstSelling,
+            dw.profitShareFromSecondarySale,
+            dw.isFirstSale,
             dw.participants,
             dw.digitalWorkUrl
         );
@@ -124,13 +124,13 @@ contract SnarkBase is Ownable {
     /// @dev Function to add a new digital artwork to blockchain
     /// @param _hashOfDigitalWork Unique hash of the artwork
     /// @param _limitedEdition Number of artwork edititons
-    /// @param _appropriationPercent Profit share % during secondary sale
+    /// @param _profitShare Profit share % during secondary sale
     ///        going back to the artist and their list of participants
     /// @param _digitalWorkUrl IPFS URL to digital work
     function addDigitalWork(
         bytes32 _hashOfDigitalWork,
         uint8 _limitedEdition,
-        uint8 _appropriationPercent,
+        uint8 _profitShare,
         string _digitalWorkUrl
     ) 
         public
@@ -149,8 +149,8 @@ contract SnarkBase is Ownable {
                 limitedEdition: _limitedEdition,
                 copyNumber: i + 1,
                 lastPrice: 0,
-                appropriationPercentForSecondTrade: _appropriationPercent,
-                isItFirstSelling: true,
+                profitShareFromSecondarySale: _profitShare,
+                isFirstSale: true,
                 participants: new address[](0),
                 digitalWorkUrl: _digitalWorkUrl
             })) - 1;
@@ -172,51 +172,51 @@ contract SnarkBase is Ownable {
 
     /// @dev Change in profit sharing. Change can only be to the percentages for already registered wallet addresses.
     /// @param _tokenId Token to which a change in profit sharing will be applied.
-    /// @param _addrIncomeParticipants An array of digital wallet addresses that will participate in profit sharing.
-    /// @param _percentageParts Profit share % that correspond to digital wallet addresses.    
+    /// @param _profitShareParticipants An array of digital wallet addresses that will participate in profit sharing.
+    /// @param _profitSharePartPercentage Profit share % that correspond to digital wallet addresses.    
     function changePercentageParticipation(
         uint256 _tokenId,        
-        address[] _addrIncomeParticipants,
-        uint8[] _percentageParts
+        address[] _profitShareParticipants,
+        uint8[] _profitSharePartPercentage
     ) 
         public
         onlyOwnerOf(_tokenId) 
     {
         // Lengths of two arrays should be equal
-        require(_addrIncomeParticipants.length == _percentageParts.length);
+        require(_profitShareParticipants.length == _profitSharePartPercentage.length);
         // Change a percentage for existing profit sharing participants only
-        for (uint8 i = 0; i < _addrIncomeParticipants.length; i++) {
-            digitalWorks[_tokenId].participantToPercentMap[_addrIncomeParticipants[i]] = _percentageParts[i];
+        for (uint8 i = 0; i < _profitShareParticipants.length; i++) {
+            digitalWorks[_tokenId].participantToPercentMap[_profitShareParticipants[i]] = _profitSharePartPercentage[i];
         }
     }
 
     /// @dev Apply the profit sharing mapping for a digital artwork, during Offer or Auction sale.
     /// @param _tokenId Token to which a change in profit sharing will be applied.
-    /// @param _addrIncomeParticipants An array of digital wallet addresses that will participate in profit sharing.
-    /// @param _percentageParts Profit share % that correspond to digital wallet addresses.    
-    function _applySchemaOfProfitDivision(
+    /// @param _profitShareParticipants An array of digital wallet addresses that will participate in profit sharing.
+    /// @param _profitSharePartPercentage Profit share % that correspond to digital wallet addresses.    
+    function _applyProfitShare(
         uint _tokenId, 
-        address[] _addrIncomeParticipants, 
-        uint8[] _percentageParts
+        address[] _profitShareParticipants, 
+        uint8[] _profitSharePartPercentage
     ) 
         internal 
         onlyOwnerOf(_tokenId)
     {
         // Arrays of participants and their shares should be equal in length.
-        require(_addrIncomeParticipants.length == _percentageParts.length);
+        require(_profitShareParticipants.length == _profitSharePartPercentage.length);
         // Delete if the Profit Sharing mapping already exists
-        _deleteSchemaOfProfitDivision(_tokenId);
+        _deleteProfitShare(_tokenId);
         // Save the list of participants in profit sharing and their share %
         // except for Snark, since it was already set in the addDigitalWork function        
-        for (uint8 i = 0; i < _addrIncomeParticipants.length; i++) {
-            digitalWorks[_tokenId].participants.push(_addrIncomeParticipants[i]);
-            digitalWorks[_tokenId].participantToPercentMap[_addrIncomeParticipants[i]] = _percentageParts[i];
+        for (uint8 i = 0; i < _profitShareParticipants.length; i++) {
+            digitalWorks[_tokenId].participants.push(_profitShareParticipants[i]);
+            digitalWorks[_tokenId].participantToPercentMap[_profitShareParticipants[i]] = _profitSharePartPercentage[i];
         }
     }
 
     /// @dev Delete the profit sharing mapping for a selected digital artwork
     /// @param _tokenId ID of a digital artwork    
-    function _deleteSchemaOfProfitDivision(uint256 _tokenId) internal {
+    function _deleteProfitShare(uint256 _tokenId) internal {
         for (uint8 i = 0; i < digitalWorks[_tokenId].participants.length; i++) {
             delete digitalWorks[_tokenId].participantToPercentMap[digitalWorks[_tokenId].participants[i]];
         }

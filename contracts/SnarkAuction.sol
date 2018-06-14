@@ -149,7 +149,7 @@ contract SnarkAuction is SnarkOfferBid {
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             isOwnerOfAll = isOwnerOfAll && (msg.sender == tokenToOwnerMap[_tokenIds[i]]);
             isStatusNone = (isStatusNone && (tokenToSaleTypeMap[_tokenIds[i]] == SaleType.None));
-            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isItFirstSelling);
+            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isFirstSale);
         }
         require(isOwnerOfAll);
         require(isStatusNone);
@@ -211,7 +211,7 @@ contract SnarkAuction is SnarkOfferBid {
         bool isSecondSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             isStatusNone = (isStatusNone && (tokenToSaleTypeMap[_tokenIds[i]] == SaleType.None));
-            isSecondSale = (isSecondSale && !digitalWorks[_tokenIds[i]].isItFirstSelling);
+            isSecondSale = (isSecondSale && !digitalWorks[_tokenIds[i]].isFirstSale);
         }
         require(isStatusNone);
         require(isSecondSale);
@@ -286,7 +286,7 @@ contract SnarkAuction is SnarkOfferBid {
         if (isAllApproved) {
             uint256[] memory tokens = getDigitalWorksAuctionsList(_auctionId);
             for (i = 0; i < tokens.length; i++) {
-                _applySchemaOfProfitDivision(tokens[i], auction.participants, parts);
+                _applyProfitShare(tokens[i], auction.participants, parts);
             }
         }
         // и только теперь помечаем, что аукцион может выставляться на продажу

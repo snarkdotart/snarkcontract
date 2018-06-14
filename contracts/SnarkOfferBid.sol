@@ -133,7 +133,7 @@ contract SnarkOfferBid is SnarkBase {
     modifier onlyFirstSale(uint256[] _tokenIds) {
         bool isFistSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
-            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isItFirstSelling);
+            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isFirstSale);
         }
         require(isFistSale);
         _;
@@ -144,7 +144,7 @@ contract SnarkOfferBid is SnarkBase {
     modifier onlySecondSale(uint256[] _tokenIds) {
         bool isSecondSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
-            isSecondSale = (isSecondSale && !digitalWorks[_tokenIds[i]].isItFirstSelling);
+            isSecondSale = (isSecondSale && !digitalWorks[_tokenIds[i]].isFirstSale);
         }
         require(isSecondSale);
         _;
@@ -207,7 +207,7 @@ contract SnarkOfferBid is SnarkBase {
         bool isFistSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             isStatusNone = (isStatusNone && (tokenToSaleTypeMap[_tokenIds[i]] == SaleType.None));
-            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isItFirstSelling);
+            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isFirstSale);
         }
         require(isStatusNone);
         require(isFistSale);
@@ -318,7 +318,7 @@ contract SnarkOfferBid is SnarkBase {
         if (isAllApproved) {
             uint256[] memory tokens = getDigitalWorksOffersList(_offerId);
             for (i = 0; i < tokens.length; i++) {
-                _applySchemaOfProfitDivision(tokens[i], offer.participants, parts);
+                _applyProfitShare(tokens[i], offer.participants, parts);
             }
         }
         // и только теперь помечаем, что оффер может выставляться на продажу
@@ -542,15 +542,15 @@ contract SnarkOfferBid is SnarkBase {
         if (digitalWork.lastPrice < _price && (_price - digitalWork.lastPrice) >= 100) {
             uint256 profit = _price - digitalWork.lastPrice;
             // проверяем первичная ли эта продажа или нет
-            if (digitalWork.isItFirstSelling) { 
+            if (digitalWork.isFirstSale) { 
                 // если да, то помечаем, что первичная продажа закончилась
-                digitalWork.isItFirstSelling = false;
+                digitalWork.isFirstSale = false;
             } else {
                 // если вторичная продажа, то профит уменьшаем до заданного художником значения в процентах
                 // при этом же оставшая сумма должна перейти продавцу
                 uint256 amountToSeller = profit;
                 // сумма, которая будет распределяться
-                profit = profit * digitalWork.appropriationPercentForSecondTrade / 100;
+                profit = profit * digitalWork.profitShareFromSecondarySale / 100;
                 // сумма, которая уйдет продавцу
                 amountToSeller -= profit;
                 pendingWithdrawals[_from] += amountToSeller;
