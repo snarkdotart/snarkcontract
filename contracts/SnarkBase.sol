@@ -11,7 +11,7 @@ contract SnarkBase is Ownable {
     using SafeMath for uint256;
     using AddressUtils for address;
 
-    /// @dev This emits when a new token creates
+    /// @dev This emits when a new token is created
     event TokenCreatedEvent(address indexed _owner, uint256 _tokenId);
 
     /// @dev This emits when ownership of any NFT changes by any mechanism.
@@ -22,57 +22,57 @@ contract SnarkBase is Ownable {
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
 
     struct DigitalWork {
-        // hash of file SHA3 (32 bytes)
+        // Hash of file SHA3 (32 bytes)
         bytes32 hashOfDigitalWork;
 
-        // a total number of copies available for sale
+        // A total number of copies available for sale
         uint16 limitedEdition; 
 
-        // номер копии экземпляра или id копии (2 bytes)
+        // Edition number or id (2 bytes)
         uint16 copyNumber;
 
-        // стоимость предыдущей продажи (32 bytes)
+        // Last sale price (32 bytes)
         uint256 lastPrice;
 
-        // доля дохода при вторичной продаже, идущая художнику и его списку участников (1 bytes)
-        // по умолчанию предполагаем - 20%
+        // Profit share % during secondary sale going back to the artist and their list of participants (1 bytes)
+        // Assume 20% by default
         uint8 appropriationPercentForSecondTrade;
 
-        // признак первичной продажи
+        // Check if it is the first sale of the artwork
         bool isItFirstSelling;
 
-        // ссылка для доступа к картине
+        // URL link to the artwork
         string digitalWorkUrl;
 
-        // список адресов участников, задействованных в распределении дохода
+        // Address list of all participants involved in profit sharing
         address[] participants;
         
-        // schema of profit division
+        // Mapping of profit sharing participant to their share %
         mapping (address => uint8) participantToPercentMap;
     }
 
-    // percentage of Snark
+    // Snark profit share %, default = 5%
     uint8 internal snarkPercentageAmount = 5;
     // An array keeps a list of all the ERC721 tokens created in that contract
     DigitalWork[] internal digitalWorks;
     // Mapping from token ID to owner
     mapping (uint256 => address) internal tokenToOwnerMap;
-    // Tokens list belongs to an owner
+    // Mapping from owner to their Token IDs
     mapping (address => uint256[]) internal ownerToTokensMap;
-    // Mapping from hash to owner
+    // Mapping from hash to an availability indicator
     mapping (bytes32 => bool) internal hashToIsExistMap;
     // Mapping from owner to operator approvals
     mapping (address => mapping (address => bool)) internal operatorToApprovalsMap;
     // Mapping from token ID to approved address
     mapping (uint256 => address) internal tokenToApprovalsMap;
 
-    // модификатор, фильтрующий по принадлежности к токену
+    // Modifier that checks that an owner has a specific token
     modifier onlyOwnerOf(uint256 _tokenId) {
         require(msg.sender == tokenToOwnerMap[_tokenId]);
         _;
     }
 
-    // модификатор, проверяющий принадлежность токенов одному владельцу
+    // Modifier that checks that an owner possesses multiple tokens
     modifier onlyOwnerOfMany(uint256[] _tokenIds) {
         bool isOwnerOfAll = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
@@ -82,12 +82,12 @@ contract SnarkBase is Ownable {
         _;
     }
 
-    /// @dev Функция уничтожения контракты в сети блокчейн
+    /// @dev Function to destroy a contract in the blockchain
     function kill() external onlyOwner {
         selfdestruct(owner);
     }
 
-    /// @dev Возвращает адрес и долю Snark-а
+    /// @dev Returns address and share % of Snark
     function getSnarkParticipation() public view returns (address, uint8) {
         return (owner, snarkPercentageAmount);
     }
@@ -121,11 +121,11 @@ contract SnarkBase is Ownable {
         );
     }
 
-    /// @dev Фукнция добавления нового цифрового полотна в блокчейн
-    /// @param _hashOfDigitalWork Уникальный хэш картины
-    /// @param _limitedEdition Количество экземпляров данной цифровой работы
-    /// @param _appropriationPercent Доля в процентах для вторичной продажи, 
-    ///        которая будет задействована в распредлении прибыли
+    /// @dev Function to add a new digital artwork to blockchain
+    /// @param _hashOfDigitalWork Unique hash of the artwork
+    /// @param _limitedEdition Number of artwork edititons
+    /// @param _appropriationPercent Profit share % during secondary sale
+    ///        going back to the artist and their list of participants
     /// @param _digitalWorkUrl IPFS URL to digital work
     function addDigitalWork(
         bytes32 _hashOfDigitalWork,
@@ -135,14 +135,14 @@ contract SnarkBase is Ownable {
     ) 
         public
     {
-        // адрес не должен быть равен нулю
+        // Address can not be zero
         require(msg.sender != address(0));
-        // проверяем на существование картины с таким хэшем во избежание повторной загрузки
+        // Chack for an identical hash of the digital artwork in existence to prevent uploading a duplicate artwork
         require(hashToIsExistMap[_hashOfDigitalWork] == false);
-        // проверяем, что количество полотен было >= 1
+        // Check that the number of artwork editions is >= 1
         require(_limitedEdition >= 1);
-        // создаем столько экземпляров полотна, сколько задано в limitEdition
-        // сразу добавляем "интерес" Snark 
+        // Create the number of editions specified by the limitEdition
+        // Add Snark %
         for (uint8 i = 0; i < _limitedEdition; i++) {
             uint256 _tokenId = digitalWorks.push(DigitalWork({
                 hashOfDigitalWork: _hashOfDigitalWork,
@@ -156,24 +156,24 @@ contract SnarkBase is Ownable {
             })) - 1;
             // memoraze that a digital work with this hash already loaded
             hashToIsExistMap[_hashOfDigitalWork] = true;
-            // на всякий случай проверяем, что нет переполнения
+            // Check that there is no overflow
             require(_tokenId == uint256(uint32(_tokenId)));
-            // сразу же закладываем долю Snark
+            // Set the Snark %
             digitalWorks[_tokenId].participants.push(owner);
             digitalWorks[_tokenId].participantToPercentMap[owner] = snarkPercentageAmount;
-            // записываем нового владельца
+            // Enter the new owner
             tokenToOwnerMap[_tokenId] = msg.sender;
-            // add new token to tokens list of new owner
+            // Add new token to new owner's token list
             ownerToTokensMap[msg.sender].push(_tokenId);
-            // emits event 
+            // Emit token event 
             emit TokenCreatedEvent(msg.sender, _tokenId);
         }
     }
 
-    /// @dev Изменение долевого участия. Менять можно только процентные доли для уже записанных адресов
-    /// @param _tokenId Токен, для которого хотят поменять условия распределения прибыли
-    /// @param _addrIncomeParticipants Массив адресов, которые участвуют в распределении прибыли
-    /// @param _percentageParts Доли соответствующие адресам
+    /// @dev Change in profit sharing. Change can only be to the percentages for already registered wallet addresses.
+    /// @param _tokenId Token to which a change in profit sharing will be applied.
+    /// @param _addrIncomeParticipants An array of digital wallet addresses that will participate in profit sharing.
+    /// @param _percentageParts Profit share % that correspond to digital wallet addresses.    
     function changePercentageParticipation(
         uint256 _tokenId,        
         address[] _addrIncomeParticipants,
@@ -182,18 +182,18 @@ contract SnarkBase is Ownable {
         public
         onlyOwnerOf(_tokenId) 
     {
-        // lengths of two arrays should be equals
+        // Lengths of two arrays should be equal
         require(_addrIncomeParticipants.length == _percentageParts.length);
-        // change a percentage for existing participants only
+        // Change a percentage for existing profit sharing participants only
         for (uint8 i = 0; i < _addrIncomeParticipants.length; i++) {
             digitalWorks[_tokenId].participantToPercentMap[_addrIncomeParticipants[i]] = _percentageParts[i];
         }
     }
 
-    /// @dev применяем схему распределения дохода для цифровой работы, заданную для Offer или Auction
-    /// @param _tokenId Токен, к которому будем применять распределение
-    /// @param _addrIncomeParticipants Адреса участников прибыли
-    /// @param _percentageParts Процентные доли участников прибыли
+    /// @dev Apply the profit sharing mapping for a digital artwork, during Offer or Auction sale.
+    /// @param _tokenId Token to which a change in profit sharing will be applied.
+    /// @param _addrIncomeParticipants An array of digital wallet addresses that will participate in profit sharing.
+    /// @param _percentageParts Profit share % that correspond to digital wallet addresses.    
     function _applySchemaOfProfitDivision(
         uint _tokenId, 
         address[] _addrIncomeParticipants, 
@@ -202,35 +202,35 @@ contract SnarkBase is Ownable {
         internal 
         onlyOwnerOf(_tokenId)
     {
-        // массивы участников и их долей должны быть равны по длине
+        // Arrays of participants and their shares should be equal in length.
         require(_addrIncomeParticipants.length == _percentageParts.length);
-        // удаляем, если схема уже существует
+        // Delete if the Profit Sharing mapping already exists
         _deleteSchemaOfProfitDivision(_tokenId);
-        // теперь необходимо сохранить список участников, участвующих в дележке прибыли и их доли
-        // кроме Snark, т.к. оно было задано ранее в функции addDigitalWork
+        // Save the list of participants in profit sharing and their share %
+        // except for Snark, since it was already set in the addDigitalWork function        
         for (uint8 i = 0; i < _addrIncomeParticipants.length; i++) {
             digitalWorks[_tokenId].participants.push(_addrIncomeParticipants[i]);
             digitalWorks[_tokenId].participantToPercentMap[_addrIncomeParticipants[i]] = _percentageParts[i];
         }
     }
 
-    /// @dev Удаление схемы распределения дохода для выбранной цифровой работы
-    /// @param _tokenId Id цифровой работы
+    /// @dev Delete the profit sharing mapping for a selected digital artwork
+    /// @param _tokenId ID of a digital artwork    
     function _deleteSchemaOfProfitDivision(uint256 _tokenId) internal {
         for (uint8 i = 0; i < digitalWorks[_tokenId].participants.length; i++) {
             delete digitalWorks[_tokenId].participantToPercentMap[digitalWorks[_tokenId].participants[i]];
         }
-        // "схлопываем" массив с участниками
+        // Collapse the participant array
         digitalWorks[i].participants.length = 0;
     }
 
-    /// @dev Transfer a token from one to another address
+    /// @dev Transfer a token from one address to another 
     /// @param _from Address of previous owner
     /// @param _to Address of new owner
     /// @param _tokenId Token Id
     function _transfer(address _from, address _to, uint256 _tokenId) internal {
         if (_from != address(0)) {
-            // удаляем из массива токенов, принадлежащих владельцу
+            // Remove  the transferred token  from the array of tokens belonging to the owner
             for (uint i = 0; i < ownerToTokensMap[_from].length; i++) {
                 if (ownerToTokensMap[_from][i] == _tokenId) {
                     ownerToTokensMap[_from][i] = ownerToTokensMap[_from][ownerToTokensMap[_from].length - 1];
@@ -239,11 +239,11 @@ contract SnarkBase is Ownable {
                 }
             }
         }
-        // записываем нового владельца
+        // Enter the new owner
         tokenToOwnerMap[_tokenId] = _to;
-        // add to tokens list of new owner
+        // Add token to token list of new owner
         ownerToTokensMap[_to].push(_tokenId);
-        // вызов события по спецификации ERC721
+        // Emit ERC721 Transfer event
         emit Transfer(_from, _to, _tokenId);
     }
 }
