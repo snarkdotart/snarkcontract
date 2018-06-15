@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./SnarkRenting.sol";
+import "./SnarkLoan.sol";
 
 
 contract SnarkTrade is SnarkRenting {
