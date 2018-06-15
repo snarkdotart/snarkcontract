@@ -59,9 +59,9 @@ contract SnarkBase is Ownable {
     mapping (uint256 => address) internal tokenToOwnerMap;
     // Mapping from owner to their Token IDs
     mapping (address => uint256[]) internal ownerToTokensMap;
-    // Mapping from hash to an availability indicator
-    mapping (bytes32 => bool) internal hashToIsExistMap;
-    // Mapping from owner to operator approvals
+    // Mapping from hash to previously used indicator
+    mapping (bytes32 => bool) internal hashToUsedMap;
+    // Mapping from owner to approved operator
     mapping (address => mapping (address => bool)) internal operatorToApprovalsMap;
     // Mapping from token ID to approved address
     mapping (uint256 => address) internal tokenToApprovalsMap;
@@ -138,7 +138,7 @@ contract SnarkBase is Ownable {
         // Address can not be zero
         require(msg.sender != address(0));
         // Chack for an identical hash of the digital artwork in existence to prevent uploading a duplicate artwork
-        require(hashToIsExistMap[_hashOfDigitalWork] == false);
+        require(hashToUsedMap[_hashOfDigitalWork] == false);
         // Check that the number of artwork editions is >= 1
         require(_limitedEdition >= 1);
         // Create the number of editions specified by the limitEdition
@@ -155,7 +155,7 @@ contract SnarkBase is Ownable {
                 digitalWorkUrl: _digitalWorkUrl
             })) - 1;
             // memoraze that a digital work with this hash already loaded
-            hashToIsExistMap[_hashOfDigitalWork] = true;
+            hashToUsedMap[_hashOfDigitalWork] = true;
             // Check that there is no overflow
             require(_tokenId == uint256(uint32(_tokenId)));
             // Set the Snark %

@@ -5,52 +5,52 @@ import "./SnarkOfferBid.sol";
 
 contract SnarkAuction is SnarkOfferBid {
 
-    // событие, оповещающее, что участник прибыли не согласен с условиями
+    // Event notifying that the Auction participant does not agree with the terms of the Auction
     event DeclineApproveAuctionEvent(uint256 _auctionId, address indexed _offerOwner, address indexed _participant);
-    // событие, оповещающее, что был создан новый аукцион
+    // Event notifying of a new Auction    
     event AuctionCreatedEvent(uint256 _auctionId);
-    // оповещает участника о необходимости подтвердить согласие на его долю в продаже картины
+    // Event notifying the Auction participant to approve his share in the sale of artwork    
     event NeedApproveAuctionEvent(uint256 _auctionId, address indexed _participant, uint8 _percentAmount);
-    // события, оповещающие, что закончился аукцион (продались все картины)
+    // Event notifying that the Auction has ended (all artworks sold)    
     event AuctonEnded(uint256 _auctionId);
-    // событие, оповещающее, что произошла переоценка аукциона
+    // Event notifying that the Auction price has changed    
     event AuctionPriceChanged(uint256 _auctionId, uint256 newPrice);
-    // событие, оповещающее, что аукцион был завершен
+    // Event notifying that the Auction has finished    
     event AuctionFinishedEvent(uint256 _auctionId);
 
     struct Auction {
-        // начальная цена в wei
+        // Starting price in wei        
         uint256 startingPrice;
-        // конечная цена в wei
+        // Ending price in wei        
         uint256 endingPrice;
-        // будет содержать "суточную" текущую цену - надо ли, не проще ли вычислять на лету?
+        // Current price - is it necessary, may be easier to calculate during the process?        
         uint256 workingPrice;
-        // дата и время начала аукциона
+        // Block number when an auction should to start
         uint64 startingDate;
-        // продолжительность аукциона в сутках
+        // Auction duration in days
         uint16 duration;
-        // список картин, участвующих в аукционе
+        // List of artworks participating in the auction        
         address[] participants;
-        // содержит связь участника с размером его доли
+        // Mapping of Auction revenue participant to their share %        
         mapping(address => uint8) participantToPercentageAmountMap;
-        // содержит связь участника с его подтверждением
+        // Mapping of Auction revenue participant to their approval confirmation        
         mapping(address => bool) participantToApproveMap;
-        // количество работ в данном предложении. Уменьшаем при продаже картины
+        // Number of artworks offered in the Auction. Decrease the count as the artworks are sold.         
         uint256 countOfDigitalWorks;
-        // статус предложения (используем все 4 состояния)
+        // Status of the Auctioned artwork (4 possible states)        
         SaleStatus saleStatus;
     }
 
-    // список всех аукционов
+    // List of all auctions    
     Auction[] internal auctions;
 
-    // содержит связь цифровой работы с аукционом, в котором она участвует
+    // Mapping of the digital artwork to the auction in which it is participating    
     mapping (uint256 => uint256) internal tokenToAuctionMap;
-    // Mapping fron auction to Tokens
+    // Mapping of an auction to tokens    
     mapping (uint256 => uint256[]) internal auctionToTokensMap;
-    // содержит связь аукциона с его владельцем
+    // Mapping of an auction with its owner    
     mapping (uint256 => address) internal auctionToOwnerMap;
-    // содержит счетчик аукционов, принадлежащих одному владельцу
+    // Count of auctions belonging to the same owner    
     mapping (address => uint256) internal ownerToCountAuctionsMap;
 
     /// @dev Модификатор, пропускающий только владельца аукциона
