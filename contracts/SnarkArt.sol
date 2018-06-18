@@ -1,10 +1,9 @@
 pragma solidity ^0.4.24;
 
 import "./SnarkERC721.sol";
-import "./OpenZeppelin/ERC165.sol";
 
 
-contract SnarkArt is SnarkERC721, ERC165 {
+contract SnarkArt is SnarkERC721 {
 
     // solhint-disable-next-line
     bytes4 public constant InterfaceSignature_ERC165 = 0x01ffc9a7;
@@ -55,7 +54,7 @@ contract SnarkArt is SnarkERC721, ERC165 {
     ///   ERC-165. This function uses less than 30,000 gas.
     /// @return `true` if the contract implements `interfaceID` 
     ///   and `interfaceID` is not 0xffffffff, `false` otherwise
-    function supportsInterface(bytes4 _interfaceID) external view returns (bool)
+    function supportsInterface(bytes4 _interfaceID) external pure returns (bool)
     {
         return ((_interfaceID == InterfaceSignature_ERC165)
         || (_interfaceID == InterfaceSignature_ERC721)
