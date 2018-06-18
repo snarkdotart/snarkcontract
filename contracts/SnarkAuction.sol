@@ -80,46 +80,6 @@ contract SnarkAuction is SnarkOfferBid {
         _;        
     }
 
-    /// СКОРЕЕ ВСЕГО ЭТУ ФУНКЦИЮ НАДО ДЕЛАТЬ НА BACKEND-е, т.к. будет дешевле
-    /// @dev Дергаем функцию из-вне, для того, чтобы: 
-    /// либо запустить, либо остановить аукционы, либо цену снизить
-    function processingOfAuctions() external {
-        uint256 currentTimestamp = block.timestamp;
-        uint256 endDay = 0;
-        for (uint256 i = 0; i < auctions.length; i++) {
-            // вычисляем конечную дату, когда должен аукцион закончится
-            // начальная дата в timestamp + (продолжительность в сутках + 1 
-            // т.к. надо будет выждать) * 86400 (timestamp одних сутках, приблизительно)
-            endDay = auctions[i].startingDate + (auctions[i].duration + 1) * 86400;
-            if (auctions[i].saleStatus == SaleStatus.NotActive) {
-                // запускаем те, которым уже пора
-                if (auctions[i].startingDate <= currentTimestamp &&
-                    currentTimestamp < endDay) {
-                    auctions[i].saleStatus == SaleStatus.Active;
-                }
-            } else if (auctions[i].saleStatus == SaleStatus.Active) {
-                // останавливаем те, которым уже пора
-                if (currentTimestamp >= endDay) {
-                    auctions[i].saleStatus == SaleStatus.Finished;
-                    // и тут надо бы распустить удалить аукцион и "освободить" оставшиеся картины
-                    _deleteAuction(i);
-                } else {
-                    // если мы тут, то аукцион еще работает и опускаем цену, если надо
-                    // шаг = (начальная цена, большая  - конечная цена, меньшая) / продолжительность
-                    uint256 step = (auctions[i].startingPrice - auctions[i].endingPrice) / auctions[i].duration;
-                    // вычисляем сколько длится аукцион, в сутках
-                    uint8 auctionLasts = uint8((block.timestamp - auctions[i].startingDate) / 86400);
-                    // вычисляем, какая на данный момент должна быть цена
-                    uint256 newPrice = uint256(auctions[i].startingPrice - step * auctionLasts);
-                    if (auctions[i].workingPrice > newPrice) {
-                        auctions[i].workingPrice = newPrice;
-                        emit AuctionPriceChanged(i, newPrice);
-                    }
-                }
-            }
-        }
-    }
-
     /// @dev Функция создания аукциона для картин ПЕРВИЧНОЙ продажи. Вызывает событие апрува для участников
     /// @param _tokenIds Список id-шников цифровых работ, которые будут включены в это предложение
     /// @param _startingPrice Стартовая цена картин
@@ -397,4 +357,44 @@ contract SnarkAuction is SnarkOfferBid {
         // move token from Snark to realOwner
         _transfer(owner, realOwner, _tokenId);
     }
+
+    /// СКОРЕЕ ВСЕГО ЭТУ ФУНКЦИЮ НАДО ДЕЛАТЬ НА BACKEND-е, т.к. будет дешевле
+    /// @dev Дергаем функцию из-вне, для того, чтобы: 
+    /// либо запустить, либо остановить аукционы, либо цену снизить
+    // function processingOfAuctions() external {
+    //     uint256 currentTimestamp = block.timestamp;
+    //     uint256 endDay = 0;
+    //     for (uint256 i = 0; i < auctions.length; i++) {
+    //         // вычисляем конечную дату, когда должен аукцион закончится
+    //         // начальная дата в timestamp + (продолжительность в сутках + 1 
+    //         // т.к. надо будет выждать) * 86400 (timestamp одних сутках, приблизительно)
+    //         endDay = auctions[i].startingDate + (auctions[i].duration + 1) * 86400;
+    //         if (auctions[i].saleStatus == SaleStatus.NotActive) {
+    //             // запускаем те, которым уже пора
+    //             if (auctions[i].startingDate <= currentTimestamp &&
+    //                 currentTimestamp < endDay) {
+    //                 auctions[i].saleStatus == SaleStatus.Active;
+    //             }
+    //         } else if (auctions[i].saleStatus == SaleStatus.Active) {
+    //             // останавливаем те, которым уже пора
+    //             if (currentTimestamp >= endDay) {
+    //                 auctions[i].saleStatus == SaleStatus.Finished;
+    //                 // и тут надо бы распустить удалить аукцион и "освободить" оставшиеся картины
+    //                 _deleteAuction(i);
+    //             } else {
+    //                 // если мы тут, то аукцион еще работает и опускаем цену, если надо
+    //                 // шаг = (начальная цена, большая  - конечная цена, меньшая) / продолжительность
+    //                 uint256 step = (auctions[i].startingPrice - auctions[i].endingPrice) / auctions[i].duration;
+    //                 // вычисляем сколько длится аукцион, в сутках
+    //                 uint8 auctionLasts = uint8((block.timestamp - auctions[i].startingDate) / 86400);
+    //                 // вычисляем, какая на данный момент должна быть цена
+    //                 uint256 newPrice = uint256(auctions[i].startingPrice - step * auctionLasts);
+    //                 if (auctions[i].workingPrice > newPrice) {
+    //                     auctions[i].workingPrice = newPrice;
+    //                     emit AuctionPriceChanged(i, newPrice);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 }
