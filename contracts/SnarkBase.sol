@@ -1,4 +1,5 @@
-// solhint-disable-next-line
+/// @title Base contract for Snark. Holds all common structs, events and base variables.
+/// @dev See the Snark contract documentation to understand how the various contract facets are arranged.
 pragma solidity ^0.4.24;
 
 import "./OpenZeppelin/Ownable.sol";
@@ -11,68 +12,50 @@ contract SnarkBase is Ownable {
     using SafeMath for uint256;
     using AddressUtils for address;
 
-    /// @dev This emits when a new token is created
-    event TokenCreatedEvent(address indexed _owner, uint256 _tokenId);
+    /*** EVENTS ***/
 
-    /// @dev This emits when ownership of any NFT changes by any mechanism.
-    ///  This event emits when NFTs are created (`from` == 0) and destroyed
-    ///  (`to` == 0). Exception: during contract creation, any number of NFTs
-    ///  may be created and assigned without emitting Transfer. At the time of
-    ///  any transfer, the approved address for that NFT (if any) is reset to none.
+    /// @dev TokenCreatedEvent is executed when a new token is created.
+    event TokenCreatedEvent(address indexed _owner, uint256 _tokenId);
+    
+    /// @dev Transfer event as defined in current draft of ERC721.
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
 
+    /// @dev The main DigitalWork struct. Every digital artwork created by Snark 
+    /// is represented by a copy of this structure.
     struct DigitalWork {
-        // Hash of file SHA3 (32 bytes)
-        bytes32 hashOfDigitalWork;
-
-        // A total number of copies available for sale
-        uint16 limitedEdition; 
-
-        // Edition number or id (2 bytes)
-        uint16 copyNumber;
-
-        // Last sale price (32 bytes)
-        uint256 lastPrice;
-
-        // Profit share % during secondary sale going back to the artist and their list of participants (1 bytes)
-        // Assume 20% by default
-        uint8 profitShareFromSecondarySale;
-
-        // Check if it is the first sale of the artwork
-        bool isFirstSale;
-
-        // URL link to the artwork
-        string digitalWorkUrl;
-
-        // Address list of all participants involved in profit sharing
-        address[] participants;
-        
-        // Mapping of profit sharing participant to their share %
-        mapping (address => uint8) participantToPercentMap;
+        bytes32 hashOfDigitalWork;          /// Hash of file SHA3 (32 bytes)
+        uint16 limitedEdition;              /// Number of editions available for sale
+        uint16 editionNumber;               /// Edition number or id (2 bytes)
+        uint256 lastPrice;                  /// Last sale price (32 bytes)
+        uint8 profitShareFromSecondarySale; /// Profit share % during secondary sale going back to the artist and their list of participants (1 bytes)
+        bool isFirstSale;                   /// Check if it is the first sale of the artwork
+        string digitalWorkUrl;              /// URL link to the artwork
+        address[] participants;             /// Address list of all participants involved in profit sharing
+        mapping (address => uint8) participantToPercentMap; /// Mapping of profit sharing participant to their share %
     }
 
-    // Snark profit share %, default = 5%
-    uint8 internal snarkPercentageAmount = 5;
-    // An array keeps a list of all the ERC721 tokens created in that contract
-    DigitalWork[] internal digitalWorks;
-    // Mapping from token ID to owner
-    mapping (uint256 => address) internal tokenToOwnerMap;
-    // Mapping from owner to their Token IDs
-    mapping (address => uint256[]) internal ownerToTokensMap;
-    // Mapping from hash to previously used indicator
-    mapping (bytes32 => bool) internal hashToUsedMap;
-    // Mapping from owner to approved operator
-    mapping (address => mapping (address => bool)) internal operatorToApprovalsMap;
-    // Mapping from token ID to approved address
-    mapping (uint256 => address) internal tokenToApprovalsMap;
+    /*** CONSTANTS ***/
 
-    // Modifier that checks that an owner has a specific token
+    uint8 internal snarkPercentageAmount = 5;   /// Snark profit share %, default = 5%
+
+    /*** STORAGE ***/
+
+    /// @dev An array containing the DigitalWork struct for all digitalWorks.
+    DigitalWork[] internal digitalWorks;
+
+    mapping (uint256 => address) internal tokenToOwnerMap;                          /// Mapping from token ID to owner
+    mapping (address => uint256[]) internal ownerToTokensMap;                       /// Mapping from owner to their Token IDs
+    mapping (bytes32 => bool) internal hashToUsedMap;                               /// Mapping from hash to previously used indicator
+    mapping (address => mapping (address => bool)) internal operatorToApprovalsMap; /// Mapping from owner to approved operator
+    mapping (uint256 => address) internal tokenToApprovalsMap;                      /// Mapping from token ID to approved address
+
+    /// @dev Modifier that checks that an owner has a specific token
     modifier onlyOwnerOf(uint256 _tokenId) {
         require(msg.sender == tokenToOwnerMap[_tokenId]);
         _;
     }
 
-    // Modifier that checks that an owner possesses multiple tokens
+    /// @dev Modifier that checks that an owner possesses multiple tokens
     modifier onlyOwnerOfMany(uint256[] _tokenIds) {
         bool isOwnerOfAll = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
@@ -100,7 +83,7 @@ contract SnarkBase is Ownable {
         returns (
             bytes32 hashOfDigitalWork, 
             uint16 limitedEdition, 
-            uint16 copyNumber, 
+            uint16 editionNumber, 
             uint256 lastPrice, 
             uint8 profitShareFromSecondarySale, 
             bool isFirstSale, 
@@ -112,7 +95,7 @@ contract SnarkBase is Ownable {
         return (
             dw.hashOfDigitalWork,
             dw.limitedEdition,
-            dw.copyNumber,
+            dw.editionNumber,
             dw.lastPrice,
             dw.profitShareFromSecondarySale,
             dw.isFirstSale,
@@ -135,7 +118,7 @@ contract SnarkBase is Ownable {
     ) 
         public
     {
-        // Address can not be zero
+        // Address cannot be zero
         require(msg.sender != address(0));
         // Chack for an identical hash of the digital artwork in existence to prevent uploading a duplicate artwork
         require(hashToUsedMap[_hashOfDigitalWork] == false);
@@ -147,7 +130,7 @@ contract SnarkBase is Ownable {
             uint256 _tokenId = digitalWorks.push(DigitalWork({
                 hashOfDigitalWork: _hashOfDigitalWork,
                 limitedEdition: _limitedEdition,
-                copyNumber: i + 1,
+                editionNumber: i + 1,
                 lastPrice: 0,
                 profitShareFromSecondarySale: _profitShare,
                 isFirstSale: true,
@@ -172,9 +155,9 @@ contract SnarkBase is Ownable {
 
     /// @dev Change in profit sharing. Change can only be to the percentages for already registered wallet addresses.
     /// @param _tokenId Token to which a change in profit sharing will be applied.
-    /// @param _profitShareParticipants An array of digital wallet addresses that will participate in profit sharing.
-    /// @param _profitSharePartPercentage Profit share % that correspond to digital wallet addresses.    
-    function changePercentageParticipation(
+    /// @param _profitShareParticipants An array of addresses that will participate in profit sharing.
+    /// @param _profitSharePartPercentage Profit share % that correspond to participant addresses.    
+    function changeProfitShare(
         uint256 _tokenId,        
         address[] _profitShareParticipants,
         uint8[] _profitSharePartPercentage
@@ -192,8 +175,8 @@ contract SnarkBase is Ownable {
 
     /// @dev Apply the profit sharing mapping for a digital artwork, during Offer or Auction sale.
     /// @param _tokenId Token to which a change in profit sharing will be applied.
-    /// @param _profitShareParticipants An array of digital wallet addresses that will participate in profit sharing.
-    /// @param _profitSharePartPercentage Profit share % that correspond to digital wallet addresses.    
+    /// @param _profitShareParticipants An array of addresses that will participate in profit sharing.
+    /// @param _profitSharePartPercentage Profit share % that correspond to participant addresses.    
     function _applyProfitShare(
         uint _tokenId, 
         address[] _profitShareParticipants, 
@@ -230,7 +213,7 @@ contract SnarkBase is Ownable {
     /// @param _tokenId Token Id
     function _transfer(address _from, address _to, uint256 _tokenId) internal {
         if (_from != address(0)) {
-            // Remove  the transferred token  from the array of tokens belonging to the owner
+            // Remove the transferred token from the array of tokens belonging to the owner
             for (uint i = 0; i < ownerToTokensMap[_from].length; i++) {
                 if (ownerToTokensMap[_from][i] == _tokenId) {
                     ownerToTokensMap[_from][i] = ownerToTokensMap[_from][ownerToTokensMap[_from].length - 1];
