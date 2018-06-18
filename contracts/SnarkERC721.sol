@@ -1,11 +1,10 @@
 pragma solidity ^0.4.24;
 
 import "./SnarkTrade.sol";
-import "./OpenZeppelin/ERC721.sol";
 import "./OpenZeppelin/ERC721Holder.sol";
 
 
-contract SnarkERC721 is SnarkTrade, ERC721, ERC721Receiver {
+contract SnarkERC721 is SnarkTrade, ERC721Receiver {
 
     /// @dev This emits when the approved address for an NFT is changed or
     ///  reaffirmed. The zero address indicates there is no approved address.
@@ -27,11 +26,11 @@ contract SnarkERC721 is SnarkTrade, ERC721, ERC721Receiver {
     /********************/
     /** ERC721Metadata **/
     /********************/
-    function name() public view returns (string) {
+    function name() public pure returns (string) {
         return "Snark Art Token";
     }
 
-    function symbol() public view returns (string) {
+    function symbol() public pure returns (string) {
         return "SAT";
     }
 
