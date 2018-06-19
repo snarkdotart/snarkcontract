@@ -23,31 +23,32 @@ contract SnarkBase is Ownable {
     /// @dev The main DigitalWork struct. Every digital artwork created by Snark 
     /// is represented by a copy of this structure.
     struct DigitalWork {
-        bytes32 hashOfDigitalWork;          /// Hash of file SHA3 (32 bytes)
-        uint16 limitedEdition;              /// Number of editions available for sale
-        uint16 editionNumber;               /// Edition number or id (2 bytes)
-        uint256 lastPrice;                  /// Last sale price (32 bytes)
-        uint8 profitShareFromSecondarySale; /// Profit share % during secondary sale going back to the artist and their list of participants (1 bytes)
-        bool isFirstSale;                   /// Check if it is the first sale of the artwork
-        string digitalWorkUrl;              /// URL link to the artwork
-        address[] participants;             /// Address list of all participants involved in profit sharing
-        mapping (address => uint8) participantToPercentMap; /// Mapping of profit sharing participant to their share %
+        bytes32 hashOfDigitalWork;          // Hash of file SHA3 (32 bytes)
+        uint16 limitedEdition;              // Number of editions available for sale
+        uint16 editionNumber;               // Edition number or id (2 bytes)
+        uint256 lastPrice;                  // Last sale price (32 bytes)
+        uint8 profitShareFromSecondarySale; // Profit share % during secondary sale going back to the artist and 
+                                            // their list of participants (1 bytes)
+        bool isFirstSale;                   // Check if it is the first sale of the artwork
+        string digitalWorkUrl;              // URL link to the artwork
+        address[] participants;             // Address list of all participants involved in profit sharing
+        mapping (address => uint8) participantToPercentMap; // Mapping of profit sharing participant to their share %
     }
 
     /*** CONSTANTS ***/
 
-    uint8 internal snarkPercentageAmount = 5;   /// Snark profit share %, default = 5%
+    uint8 internal snarkPercentageAmount = 5;   // Snark profit share %, default = 5%
 
     /*** STORAGE ***/
 
     /// @dev An array containing the DigitalWork struct for all digitalWorks.
     DigitalWork[] internal digitalWorks;
 
-    mapping (uint256 => address) internal tokenToOwnerMap;                          /// Mapping from token ID to owner
-    mapping (address => uint256[]) internal ownerToTokensMap;                       /// Mapping from owner to their Token IDs
-    mapping (bytes32 => bool) internal hashToUsedMap;                               /// Mapping from hash to previously used indicator
-    mapping (address => mapping (address => bool)) internal operatorToApprovalsMap; /// Mapping from owner to approved operator
-    mapping (uint256 => address) internal tokenToApprovalsMap;                      /// Mapping from token ID to approved address
+    mapping (uint256 => address) internal tokenToOwnerMap;                          // Mapping from token ID to owner
+    mapping (address => uint256[]) internal ownerToTokensMap;                       // Mapping from owner to their Token IDs
+    mapping (bytes32 => bool) internal hashToUsedMap;                               // Mapping from hash to previously used indicator
+    mapping (address => mapping (address => bool)) internal operatorToApprovalsMap; // Mapping from owner to approved operator
+    mapping (uint256 => address) internal tokenToApprovalsMap;                      // Mapping from token ID to approved address
 
     /// @dev Modifier that checks that an owner has a specific token
     modifier onlyOwnerOf(uint256 _tokenId) {
