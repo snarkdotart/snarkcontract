@@ -73,7 +73,6 @@ contract SnarkTrade is SnarkLoan {
             uint256 offerId = tokenToOfferMap[_tokenId];
             require(_from == offerToOwnerMap[offerId]);
             _price = offers[offerId].price;
-            require(offers[offerId].offerTo == address(0) || offers[offerId].offerTo == _to);
         } else {
             uint256 auctionId = tokenToAuctionMap[_tokenId];
             require(_from == auctionToOwnerMap[auctionId]);
@@ -119,7 +118,6 @@ contract SnarkTrade is SnarkLoan {
     //         _from = offerToOwnerMap[offerId];
     //         _to = msg.sender;
     //         _price = offers[offerId].price;
-    //         require(offers[offerId].offerTo == address(0) || offers[offerId].offerTo == _to);
     //     } else {
     //         uint256 auctionId = tokenToAuctionMap[_tokenId];
     //         _from = auctionToOwnerMap[auctionId];

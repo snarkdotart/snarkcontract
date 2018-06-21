@@ -8,13 +8,11 @@ contract SnarkOfferBid is SnarkBase {
     /*** EVENTS ***/
 
     // New offer event
-    event OfferCreatedEvent(uint256 offerId, address indexed _offerTo);
+    event OfferCreatedEvent(uint256 offerId);
     // Approved profit share by participant event
     event NeedApproveOfferEvent(uint256 offerId, address indexed _participant, uint8 _percentAmount);
     // Declined profit share by participant event
     event DeclineApproveOfferEvent(uint256 _offerId, address indexed _offerOwner, address indexed _participant);
-    // Declined offerTo event
-    event OfferToAddressDeclinedEvent(uint256 _offerId, address indexed _offerTo);
     // Offer deleted event
     event OfferDeletedEvent(uint256 _offerId);
     // Offer ended (artworks sold) event
@@ -37,7 +35,6 @@ contract SnarkOfferBid is SnarkBase {
     struct Offer {
         uint256 price;                                              // Proposed sale price in Ether for all artworks
         uint256 countOfDigitalWorks;                                // Number of artworks offered. Decrease with every succesful sale.
-        address offerTo;                                            // Address of a collector to whom an offer is explicitly submitted
         address[] participants;                                     // Profit sharing participants' addresses
         SaleStatus saleStatus;                                      // Offer status (3 possible states: Preparing, Active, Finished)
         mapping (address => uint8) participantToPercentageAmountMap;// Mapping of participants to their profit share
@@ -81,13 +78,6 @@ contract SnarkOfferBid is SnarkBase {
             if (msg.sender == p[i]) isItParticipant = true;
         }
         require(isItParticipant);
-        _;
-    }
-
-    /// @dev Modifier that cuts off others' offerTo
-    /// @param _offerId Id of offer
-    modifier onlyOfferTo(uint256 _offerId) {
-        require(msg.sender == offers[_offerId].offerTo);
         _;
     }
 
@@ -167,13 +157,11 @@ contract SnarkOfferBid is SnarkBase {
 
     /// @dev Function to create an offer for the primary sale.  Requires approval of profit sharing participants. 
     /// @param _price The price for all artworks included in the offer
-    /// @param _offerTo The address to whom this offer is made
     /// @param _tokenIds List of artwork IDs included in the offer
     /// @param _participants List of profit sharing participants
     /// @param _percentAmounts List of profit share % of participants
     function createOffer(
         uint256 _price, 
-        address _offerTo, 
         uint256[] _tokenIds, 
         address[] _participants,
         uint8[] _percentAmounts
@@ -197,7 +185,6 @@ contract SnarkOfferBid is SnarkBase {
         Offer memory _offer = Offer({
             price: _price,
             countOfDigitalWorks: _tokenIds.length,
-            offerTo: _offerTo,
             participants: new address[](0),
             saleStatus: SaleStatus.Preparing
         });
@@ -233,11 +220,9 @@ contract SnarkOfferBid is SnarkBase {
     /// @dev Create an offer for the secondary sale
     /// @param _tokenIds List of artwork token IDs to be included in the offer
     /// @param _price Offer price for all artworks in the offer
-    /// @param _offerTo Address to whom the offer is made
     function createOffer(
         uint256[] _tokenIds, 
-        uint256 _price, 
-        address _offerTo
+        uint256 _price
     ) 
         public 
         onlyOwnerOfMany(_tokenIds)
@@ -247,7 +232,6 @@ contract SnarkOfferBid is SnarkBase {
         // Offer creation and return of the offer ID
         Offer memory _offer = Offer({
             price: 0,
-            offerTo: _offerTo,
             participants: new address[](0),
             countOfDigitalWorks: 0,
             saleStatus: SaleStatus.Preparing
@@ -274,7 +258,7 @@ contract SnarkOfferBid is SnarkBase {
             _lockOffersToken(offerId, _t);            
         }
         // emit an event that a new offer was created
-        emit OfferCreatedEvent(offerId, offers[offerId].offerTo);
+        emit OfferCreatedEvent(offerId);
     }
 
     /// @dev Profit sharing participants confirm consent to offer terms
@@ -300,16 +284,7 @@ contract SnarkOfferBid is SnarkBase {
         }
         // now mark the offer as having been created
         if (isAllApproved) _moveOfferToNextStatus(_offerId);
-        emit OfferCreatedEvent(_offerId, offer.offerTo);
-    }
-
-    /// @dev Profit sharing participants decline to offer terms
-    /// @param _offerId Offer ID
-    function declineFromOfferTo(uint256 _offerId) public onlyOfferTo(_offerId) {
-        // remove offerTo from the offer and leave it in general sale
-        offers[_offerId].offerTo = address(0);
-        // emit an event that offerTo was declined
-        emit OfferToAddressDeclinedEvent(_offerId, msg.sender);
+        emit OfferCreatedEvent(_offerId);
     }
 
     /// @dev Profit sharing participant declines the offered terms 

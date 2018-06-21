@@ -16,7 +16,6 @@ contract SnarkBase is Ownable {
 
     /// @dev TokenCreatedEvent is executed when a new token is created.
     event TokenCreatedEvent(address indexed _owner, uint256 _tokenId);
-    
     /// @dev Transfer event as defined in current draft of ERC721.
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
 
