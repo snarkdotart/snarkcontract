@@ -322,7 +322,7 @@ contract SnarkAuction is SnarkOfferBid {
             // Save Snark's address
             auction.participants.push(owner); 
             // Save Snark's revenue share %
-            auction.participantToPercentageAmountMap[owner] = snarkProfitShare;
+            auction.participantToPercentageAmountMap[owner] = platformProfitShare;
         }
         // Issue Snark's approval
         auction.participantToApproveMap[owner] = true;

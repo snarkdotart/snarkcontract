@@ -559,7 +559,7 @@ contract SnarkOfferBid is SnarkBase {
             // add Snark Address
             offer.participants.push(owner); 
             // add Snark profit share %
-            offer.participantToPercentageAmountMap[owner] = snarkProfitShare;
+            offer.participantToPercentageAmountMap[owner] = platformProfitShare;
         }
         // add Snark consent
         offer.participantToApproveMap[owner] = true;

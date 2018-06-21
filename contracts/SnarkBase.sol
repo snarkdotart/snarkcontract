@@ -35,7 +35,7 @@ contract SnarkBase is Ownable {
 
     /*** CONSTANTS ***/
 
-    uint8 public snarkProfitShare = 5; // Snark profit share %, default = 5%
+    uint8 public platformProfitShare = 5;   // Snark profit share %, default = 5%
 
     /*** STORAGE ***/
 
@@ -64,6 +64,10 @@ contract SnarkBase is Ownable {
         _;
     }
 
+    function setPlatformProfitShare(uint8 _platformProfitShare) external onlyOwner {
+        platformProfitShare = _platformProfitShare;
+    }
+
     /// @dev Function to destroy a contract in the blockchain
     function kill() external onlyOwner {
         selfdestruct(owner);
@@ -71,7 +75,7 @@ contract SnarkBase is Ownable {
 
     /// @dev Returns address and share % of Snark
     function getSnarkParticipation() public view returns (address, uint8) {
-        return (owner, snarkProfitShare);
+        return (owner, platformProfitShare);
     }
 
     /// @dev Return details about token
@@ -142,7 +146,7 @@ contract SnarkBase is Ownable {
             require(_tokenId == uint256(uint32(_tokenId)));
             // Set the Snark %
             digitalWorks[_tokenId].participants.push(owner);
-            digitalWorks[_tokenId].participantToPercentMap[owner] = snarkProfitShare;
+            digitalWorks[_tokenId].participantToPercentMap[owner] = platformProfitShare;
             // Enter the new owner
             tokenToOwnerMap[_tokenId] = msg.sender;
             // Add new token to new owner's token list
