@@ -5,62 +5,50 @@ import "./SnarkOfferBid.sol";
 
 contract SnarkAuction is SnarkOfferBid {
 
+    /*** EVENTS ***/
+    
     // Event notifying that the Auction participant does not agree with the terms of the Auction
     event DeclineApproveAuctionEvent(uint256 _auctionId, address indexed _offerOwner, address indexed _participant);
-    // Event notifying of a new Auction    
+    // Event notifying of a new Auction
     event AuctionCreatedEvent(uint256 _auctionId);
-    // Event notifying the Auction participant to approve his share in the sale of artwork    
+    // Event notifying the Auction participant to approve his share in the sale of artwork
     event NeedApproveAuctionEvent(uint256 _auctionId, address indexed _participant, uint8 _percentAmount);
-    // Event notifying that the Auction has ended (all artworks sold)    
+    // Event notifying that the Auction has ended (all artworks sold)
     event AuctonEnded(uint256 _auctionId);
-    // Event notifying that the Auction price has changed    
+    // Event notifying that the Auction price has changed
     event AuctionPriceChanged(uint256 _auctionId, uint256 newPrice);
-    // Event notifying that the Auction has finished    
+    // Event notifying that the Auction has finished
     event AuctionFinishedEvent(uint256 _auctionId);
 
     struct Auction {
-        // Starting price in wei        
-        uint256 startingPrice;
-        // Ending price in wei        
-        uint256 endingPrice;
-        // Current price - is it necessary, may be easier to calculate during the process?        
-        uint256 workingPrice;
-        // Block number when an auction should to start
-        uint64 startingDate;
-        // Auction duration in days
-        uint16 duration;
-        // List of artworks participating in the auction        
-        address[] participants;
-        // Mapping of Auction revenue participant to their share %        
-        mapping(address => uint8) participantToPercentageAmountMap;
-        // Mapping of Auction revenue participant to their approval confirmation        
-        mapping(address => bool) participantToApproveMap;
-        // Number of artworks offered in the Auction. Decrease the count as the artworks are sold.         
-        uint256 countOfDigitalWorks;
-        // Status of the Auctioned artwork (4 possible states)        
-        SaleStatus saleStatus;
+        uint256 startingPrice;                                      // Starting price in wei
+        uint256 endingPrice;                                        // Ending price in wei
+        uint256 workingPrice;                                       // Current price
+        uint64 startingDate;                                        // Block number when an auction should to start
+        uint16 duration;                                            // Auction duration in days
+        address[] participants;                                     // List of artworks participating in the auction
+        mapping(address => uint8) participantToPercentageAmountMap; // Mapping of Auction revenue participant to their share %
+        mapping(address => bool) participantToApproveMap;           // Mapping of Auction revenue participant to their approval confirmation
+        uint256 countOfDigitalWorks;                                // Number of artworks offered in the Auction
+        SaleStatus saleStatus;                                      // Status of the Auctioned artwork (4 possible states)
     }
 
     // List of all auctions    
     Auction[] internal auctions;
 
-    // Mapping of the digital artwork to the auction in which it is participating    
-    mapping (uint256 => uint256) internal tokenToAuctionMap;
-    // Mapping of an auction to tokens    
-    mapping (uint256 => uint256[]) internal auctionToTokensMap;
-    // Mapping of an auction with its owner    
-    mapping (uint256 => address) internal auctionToOwnerMap;
-    // Count of auctions belonging to the same owner    
-    mapping (address => uint256) internal ownerToCountAuctionsMap;
+    mapping (uint256 => uint256) internal tokenToAuctionMap;        // Mapping of the digital artwork to the auction in which it is participating
+    mapping (uint256 => uint256[]) internal auctionToTokensMap;     // Mapping of an auction to tokens
+    mapping (uint256 => address) internal auctionToOwnerMap;        // Mapping of an auction with its owner
+    mapping (address => uint256) internal ownerToCountAuctionsMap;  // Count of auctions belonging to the same owner
 
-    /// @dev Модификатор, пропускающий только владельца аукциона
+    /// @dev Modifier that allows only the Auction owner
     /// @param _auctionId Auction Id
     modifier onlyAuctionOwner(uint256 _auctionId) {
         require(msg.sender == auctionToOwnerMap[_auctionId]);
         _;
     }
 
-    /// @dev Модификатор, проверяющий переданный id аукциона на попадание в интервал
+    /// @dev Modifier that checks that the Auction ID is inside the Auction interval
     /// @param _auctionId Auction Id
     modifier correctAuctionId(uint256 _auctionId) {
         require(auctions.length > 0);
@@ -68,7 +56,7 @@ contract SnarkAuction is SnarkOfferBid {
         _;        
     }
 
-    /// @dev Модификатор, пропускающий только участников дохода для этого аукциона
+    /// @dev Modifier that allows only the profit sharing participants 
     /// @param _auctionId Auction Id
     modifier onlyAuctionParticipator(uint256 _auctionId) {
         bool isItParticipant = false;
@@ -80,14 +68,14 @@ contract SnarkAuction is SnarkOfferBid {
         _;        
     }
 
-    /// @dev Функция создания аукциона для картин ПЕРВИЧНОЙ продажи. Вызывает событие апрува для участников
-    /// @param _tokenIds Список id-шников цифровых работ, которые будут включены в это предложение
-    /// @param _startingPrice Стартовая цена картин
-    /// @param _endingPrice Конечная цена картин
-    /// @param _startingDate Дата начала аукциона (timestamp)
-    /// @param _duration Продолжительность аукциона (в сутках)
-    /// @param _participants Список участников прибыли
-    /// @param _percentAmounts Список процентных долей участников
+    /// @dev Function to create an Auction for the primary sale.  Calls for an approval event from profit sharing participants. 
+    /// @param _tokenIds List of artwork token IDs included in the Auction
+    /// @param _startingPrice Auction start price
+    /// @param _endingPrice Auction ending price
+    /// @param _startingDate Date of Auction start (timestamp)
+    /// @param _duration Auction duration (in days)
+    /// @param _participants List of profit sharing participants
+    /// @param _percentAmounts List of profit sharing %
     function createAuction(
         uint256[] _tokenIds,
         uint256 _startingPrice,
@@ -102,7 +90,7 @@ contract SnarkAuction is SnarkOfferBid {
         // onlyNoneStatus(_tokenIds)
         // onlyFirstSale(_tokenIds)
     {
-        // из-за ошибки компилятора перенес проверку модификаторов в саму функцию
+        // Due to an error during code compilation, the modifier check is placed directly into the function
         bool isOwnerOfAll = true;
         bool isStatusNone = true;
         bool isFistSale = true;
@@ -125,35 +113,35 @@ contract SnarkAuction is SnarkOfferBid {
             countOfDigitalWorks: _tokenIds.length,
             saleStatus: SaleStatus.Preparing
         })) - 1;
-        // применяем схему распределения пока для самого аукциона (не для цифровых работ)
+        // Apply profit sharing schedule to the auction (not to digital artworks)
         _applyNewSchemaOfProfitDivisionForAuction(auctionId, _participants, _percentAmounts);
-        // записываем владельца данного аукциона
+        // Assign the owner for the Auction
         auctionToOwnerMap[auctionId] = msg.sender;
-        // увеличиваем количество аукционов, принадлежащих овнеру
+        // Increase the number of auctions assigned to the owner
         ownerToCountAuctionsMap[msg.sender]++;
-        // для всех цифровых работ выполняем следующее:
+        // Perform the following for all digital artworks included in the Auction:
         for (i = 0; i < _tokenIds.length; i++) {
-            // в самой работе помечаем, что она участвует в аукционе
+            // Mark each artwork as participating in an auction
             tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Auction;
-            // помечаем к какому аукциону она принадлежит
+            // Mark to which auction the artwork belongs
             tokenToAuctionMap[_tokenIds[i]] = auctionId;
-            // сохраняем информацию о том, какие токены принадлежать данному оферу
+            // Mapping of auction to tokens
             auctionToTokensMap[auctionId].push(_tokenIds[i]);
-            // move token to Snark
+            // Move token to Snark
             _lockAuctionsToken(auctionId, _tokenIds[i]);
         }
-        // адресно оповещаем каждого из участиков
+        // Emit approval notification for all participants
         for (i = 0; i < _participants.length; i++) {
             emit NeedApproveAuctionEvent(auctionId, _participants[i], _percentAmounts[i]);
         }
     }
 
-    /// @dev Функция создания аукциона для картин ВТОРИЧНОЙ продажи.
-    /// @param _tokenIds Список id-шников цифровых работ, которые будут включены в это предложение
-    /// @param _startingPrice Стартовая цена картин
-    /// @param _endingPrice Конечная цена картин
-    /// @param _startingDate Дата начала аукциона (timestamp)
-    /// @param _duration Продолжительность аукциона (в сутках)
+    /// @dev Function to create an Auction for Secondary Sale. 
+    /// @param _tokenIds List of artwork token IDs to be included in the Auction
+    /// @param _startingPrice Auction start price
+    /// @param _endingPrice Auction ending price
+    /// @param _startingDate Date of Auction start (timestamp)
+    /// @param _duration Auction duration (in days)
     function createAuction(
         uint256[] _tokenIds,
         uint256 _startingPrice,
@@ -166,7 +154,7 @@ contract SnarkAuction is SnarkOfferBid {
         // onlyNoneStatus(_tokenIds)
         // onlySecondSale(_tokenIds)
     {
-        // из-за ошибки компилятора перенес проверку двух модификаторов в саму функцию
+        // Due to an error during code compilation, the modifier check is placed directly into the function
         bool isStatusNone = true;
         bool isSecondSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
@@ -186,29 +174,29 @@ contract SnarkAuction is SnarkOfferBid {
             countOfDigitalWorks: _tokenIds.length,
             saleStatus: SaleStatus.NotActive
         })) - 1;
-        // записываем владельца данного аукциона
+        // Assign the owner for the Auction
         auctionToOwnerMap[auctionId] = msg.sender;
-        // увеличиваем количество аукционов, принадлежащих овнеру
+        // Increase the number of auctions assigned to the owner
         ownerToCountAuctionsMap[msg.sender]++;
-        // для всех цифровых работ выполняем следующее:
+        // Perform the following for all digital artworks included in the Auction:
         for (i = 0; i < _tokenIds.length; i++) {
-            // в самой работе помечаем, что она участвует в аукционе
+            // Mark each artwork as participating in an auction
             tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Auction;
-            // помечаем к какому аукциону она принадлежит
+            // Mark to which auction the artwork belongs
             tokenToAuctionMap[_tokenIds[i]] = auctionId;
-            // сохраняем информацию о том, какие токены принадлежать данному оферу
+            // Mapping of auction to tokens
             auctionToTokensMap[auctionId].push(_tokenIds[i]);
-            // move token to Snark
+            // Move token to Snark
             _lockAuctionsToken(auctionId, _tokenIds[i]);
         }
-        // сообщаем, что был создан аукцион
+        // Emit notification that Auction was created
         emit AuctionCreatedEvent(auctionId);
     }
 
-    /// @dev Функция модификации участников и их долей для аукциона, в случае отклонения одним из участников
-    /// @param _auctionId Id-шник аукциона
-    /// @param _participants Массив адресов участников прибыли
-    /// @param _percentAmounts Массив долей участников прибыли
+    /// @dev Function of modifying profit sharing schedule for the auction, in the event of a decline by one of the participants
+    /// @param _auctionId Auction ID
+    /// @param _participants Array of profit sharing participants
+    /// @param _percentAmounts Array of participants' profit share %
     function setNewSchemaOfProfitDivisionForAuction(
         uint256 _auctionId,
         address[] _participants,
@@ -217,53 +205,53 @@ contract SnarkAuction is SnarkOfferBid {
         public
         onlyAuctionOwner(_auctionId)
     {
-        // длины массивов должны совпадать
+        // Length of arrays must match
         require(_participants.length == _percentAmounts.length);
-        // применяем новую схему
+        // Apply new profit sharing schedule
         _applyNewSchemaOfProfitDivisionForAuction(_auctionId, _participants, _percentAmounts);
-        // т.к. изменения доли для одного затрагивает всех, то заново всех надо оповещать
+        // Since a change in the profit share for one participant affects all other participants, everyone needs to be notified again
         for (uint256 i = 0; i < _participants.length; i++) {
-            // оповещаем адресно
+            // Emit approval notification for all participants
             emit NeedApproveAuctionEvent(_auctionId, _participants[i], _percentAmounts[i]);
         }
     }
 
-    /// @dev Участник прибыли подтверждает свое согласие на выставленные условия
-    /// @param _auctionId id-шник аукциона
+    /// @dev Profit sharing participant must approve Auction terms
+    /// @param _auctionId Auction id
     function approveAuction(uint256 _auctionId) public onlyAuctionParticipator(_auctionId) {
         Auction storage auction = auctions[_auctionId];
-        // отмечаем текущего участники, как согласного с условиями
+        // Mark approval of Auction terms by the current participant
         auction.participantToApproveMap[msg.sender] = true;
-        // проверяем все ли участники согласились или нет
+        // Check that all participants approved Auction terms
         bool isAllApproved = true;
         uint8[] memory parts = new uint8[](auction.participants.length);
         for (uint8 i = 0; i < auction.participants.length; i++) {
             isAllApproved = isAllApproved && auction.participantToApproveMap[auction.participants[i]];
             parts[i] = auction.participantToPercentageAmountMap[auction.participants[i]];
         }
-        // если все согласны, то копируем условия в сами картины, дабы каждая картина имела возможность,
-        // в последствие, знать условия распределения прибыли
+        // If all participants approved the terms, pass the Auction terms to the artworks, so that each artwork will contain
+        // the terms for the profit sharing
         if (isAllApproved) {
             uint256[] memory tokens = getDigitalWorksAuctionsList(_auctionId);
             for (i = 0; i < tokens.length; i++) {
                 _applyProfitShare(tokens[i], auction.participants, parts);
             }
         }
-        // и только теперь помечаем, что аукцион может выставляться на продажу
+        // Now mark the auction as active for sale
         if (isAllApproved) auction.saleStatus = SaleStatus.NotActive;
-        // сообщаем, что был создан аукцион
+        // Emit a notification that the Auction was created
         emit AuctionCreatedEvent(_auctionId);
     }
 
-    /// @dev Отказ участника прибыли с предложенными условиями
-    /// @param _auctionId Id-шник offer-а
-    function declineAuctionApprove(uint256 _auctionId) public view onlyAuctionParticipator(_auctionId) {
-        // уведомляем создателя аукциона, что народ не хочет на такие условия подписываться
+    /// @dev Function to decline the Auction terms by the profit sharing participant
+    /// @param _auctionId Auction ID
+    function declineAuctionApprove(uint256 _auctionId) public onlyAuctionParticipator(_auctionId) {
+        // Notify the Auction owner that the Auction terms were declined
         emit DeclineApproveAuctionEvent(_auctionId, auctionToOwnerMap[_auctionId], msg.sender);
     }
 
-    /// @dev Функция получения всех картин, принадлежащих аукциону
-    /// @param _auctionId Id-шник аукциона
+    /// @dev Function that returns all artworks belonging to the auction
+    /// @param _auctionId Auction ID
     function getDigitalWorksAuctionsList(uint256 _auctionId) 
         public 
         view 
@@ -273,35 +261,35 @@ contract SnarkAuction is SnarkOfferBid {
         return auctionToTokensMap[_auctionId];
     }
 
-    /// @dev Удаляет аукцион
-    /// @param _auctionId Id-шник аукциона
+    /// @dev Function to delete an Auction
+    /// @param _auctionId Auction ID
     function _deleteAuction(uint256 _auctionId) internal {
         uint256[] memory tokens = auctionToTokensMap[_auctionId];
         for (uint256 i = 0; i < tokens.length; i++) {
-            // освобождаем все картины
+            // Release all artworks
             if (tokenToSaleTypeMap[tokens[i]] == SaleType.Auction)
                 tokenToSaleTypeMap[tokens[i]] = SaleType.None;
             delete tokenToAuctionMap[tokens[i]];
             _unlockAuctionsToken(_auctionId, tokens[i]);
         }
-        // delete an array of tokens from current auction
+        // Delete an array of tokens from current auction
         delete auctionToTokensMap[_auctionId];
-        // get a aucton owner
+        // Get a aucton owner
         address auctionOwner = auctionToOwnerMap[_auctionId];
-        // удаляем связь аукциона с владельцем
+        // Delete the auction from the owner
         delete auctionToOwnerMap[_auctionId];
-        // уменьшаем счетчик аукционов у владельца
+        // Reduce the auction counter for the owner
         ownerToCountAuctionsMap[auctionOwner]--;
-        // помечаем аукцион, как завершившийся
+        // Mark the auction as finished
         auctions[_auctionId].saleStatus = SaleStatus.Finished;
-        // генерим событие о том, что удален аукцион
+        // Emit a notification that the auction was deleted
         emit AuctionFinishedEvent(_auctionId);
     }
 
-    /// @dev Применяем схему к аукциону
-    /// @param _auctionId Id-шник аукциона
-    /// @param _participants Массив адресов участников прибыли
-    /// @param _percentAmounts Массив долей участников прибыли
+    /// @dev Apply the new profit sharing schedule to the auction
+    /// @param _auctionId Auction ID
+    /// @param _participants Array of profit sharing participants
+    /// @param _percentAmounts Array of participants' profit share %
     function _applyNewSchemaOfProfitDivisionForAuction(
         uint256 _auctionId,
         address[] _participants,
@@ -309,34 +297,34 @@ contract SnarkAuction is SnarkOfferBid {
     ) 
         private
     {
-        // удаляем все, ибо могли исключить кого-то из участников и добавить новых
+        // Delete everything as some participants could have been removed and some new participants added
         Auction storage auction = auctions[_auctionId];
         for (uint8 i = 0; i < auction.participants.length; i++) {
-            // удаляем процентные доли
+            // Delete profit sharing %
             delete auction.participantToPercentageAmountMap[auction.participants[i]];
-            // удаляем "согласия", ибо уже изменились значения для всех
+            // Delete all approval consents since their values have already changed
             delete auction.participantToApproveMap[auction.participants[i]];
         }
         auction.participants.length = 0;
-        // применяем новую схему
+        // Apply new profit sharing schedule
         bool isSnarkDelivered = false;
-        // заполняем список участников прибыли
+        // Fill in the list of profit sharing participants
         for (i = 0; i < _participants.length; i++) {
-            // сначала сохраняем адрес участника
+            // Save the addresses of the profit sharing participants
             auction.participants.push(_participants[i]);
-            // а затем его долю
+            // Save the profit share % of the participants
             auction.participantToPercentageAmountMap[_participants[i]] = _percentAmounts[i];
-            // на тот случай, если с клиента уже будет приходить информация о доле Snark
+            // In the event that the client already receives information about Snark's share
             if (_participants[i] == owner) isSnarkDelivered = true;
         }
-        // ну и не забываем про себя любимых, т.е. Snark, если он чуть выше не был передан и обработан
+        // Enter Snark information, if it was not transmitted and processed above
         if (isSnarkDelivered == false) {
-            // записываем адрес Snark
+            // Save Snark's address
             auction.participants.push(owner); 
-            // записываем долю Snark
+            // Save Snark's revenue share %
             auction.participantToPercentageAmountMap[owner] = snarkPercentageAmount;
         }
-        // и сразу апруваем Snark
+        // Issue Snark's approval
         auction.participantToApproveMap[owner] = true;
     }
 
@@ -358,36 +346,35 @@ contract SnarkAuction is SnarkOfferBid {
         _transfer(owner, realOwner, _tokenId);
     }
 
-    /// СКОРЕЕ ВСЕГО ЭТУ ФУНКЦИЮ НАДО ДЕЛАТЬ НА BACKEND-е, т.к. будет дешевле
-    /// @dev Дергаем функцию из-вне, для того, чтобы: 
-    /// либо запустить, либо остановить аукционы, либо цену снизить
+    /// WE SHOULD PROBABLY PERFORM THIS STEP ON THE BACKEND TO REDUCE COST
+    /// @dev Call the function from the outside in order to: 
+    /// launch or end and auction, or lower the price
     // function processingOfAuctions() external {
     //     uint256 currentTimestamp = block.timestamp;
     //     uint256 endDay = 0;
     //     for (uint256 i = 0; i < auctions.length; i++) {
-    //         // вычисляем конечную дату, когда должен аукцион закончится
-    //         // начальная дата в timestamp + (продолжительность в сутках + 1 
-    //         // т.к. надо будет выждать) * 86400 (timestamp одних сутках, приблизительно)
+    //         // figure out the end date when the auction finishes 
+    //         // start date in timestamp + (duration in days + 1)* 86400 (timestamp in 1 day approximately)
     //         endDay = auctions[i].startingDate + (auctions[i].duration + 1) * 86400;
     //         if (auctions[i].saleStatus == SaleStatus.NotActive) {
-    //             // запускаем те, которым уже пора
+    //             // launch those that are ready
     //             if (auctions[i].startingDate <= currentTimestamp &&
     //                 currentTimestamp < endDay) {
     //                 auctions[i].saleStatus == SaleStatus.Active;
     //             }
     //         } else if (auctions[i].saleStatus == SaleStatus.Active) {
-    //             // останавливаем те, которым уже пора
+    //             // end those that should finish
     //             if (currentTimestamp >= endDay) {
     //                 auctions[i].saleStatus == SaleStatus.Finished;
-    //                 // и тут надо бы распустить удалить аукцион и "освободить" оставшиеся картины
+    //                 // release the auction and all remaining artworks
     //                 _deleteAuction(i);
     //             } else {
-    //                 // если мы тут, то аукцион еще работает и опускаем цену, если надо
-    //                 // шаг = (начальная цена, большая  - конечная цена, меньшая) / продолжительность
+    //                 // if we are here, the auction is still active and lower the price, if needed 
+    //                 // step = (higher start price  - lower ending price) / duration
     //                 uint256 step = (auctions[i].startingPrice - auctions[i].endingPrice) / auctions[i].duration;
-    //                 // вычисляем сколько длится аукцион, в сутках
+    //                 // figure out auction duration in days
     //                 uint8 auctionLasts = uint8((block.timestamp - auctions[i].startingDate) / 86400);
-    //                 // вычисляем, какая на данный момент должна быть цена
+    //                 // figure out what should be the current price
     //                 uint256 newPrice = uint256(auctions[i].startingPrice - step * auctionLasts);
     //                 if (auctions[i].workingPrice > newPrice) {
     //                     auctions[i].workingPrice = newPrice;

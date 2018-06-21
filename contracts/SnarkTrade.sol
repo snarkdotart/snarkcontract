@@ -3,9 +3,9 @@ pragma solidity ^0.4.24;
 import "./SnarkLoan.sol";
 
 
-contract SnarkTrade is SnarkRenting {
+contract SnarkTrade is SnarkLoan {
 
-    // модификатор, фильтрующий по принадлежности токенов одному владельцу
+    // Modifier that filters the token ownership to one
     modifier onlyOwnerOfMany(uint256[] _tokenIds) {
         bool isSenderOwner = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
@@ -15,59 +15,58 @@ contract SnarkTrade is SnarkRenting {
         _;
     }
 
-    /// @dev Передача токена новому владельцу, если предыдущий владелец утвердил нового владельца
-    /// @param _tokenId Токен, который будет передан новому владельцу
+    /// @dev Transfer function of artwork token ownership to a new owner if the previous owner approved this transfer to the new owner
+    /// @param _tokenId Token ID (artwork token for transfer to the new owner)
     function takeOwnership(uint256 _tokenId) public {
         require(tokenToApprovalsMap[_tokenId] == msg.sender);
         address owner = tokenToOwnerMap[_tokenId];
         _transfer(owner, msg.sender, _tokenId);
     }
 
-    /// @dev Возвращает общее количество цифровых работ в системе
+    /// @dev Function returns the count of artwork tokens in the system
     function getAmountOfTokens() public view returns(uint256) {
         return digitalWorks.length;
     }
 
-    /// @dev Возвращает список токенов по адресу
-    /// @param _owner Адрес, для которого хотим получить список токенов
+    /// @dev Function returns the list of artwork tokens belonging to a specific owner
+    /// @param _owner Owner address
     function getOwnerTokenList(address _owner) public view returns (uint256[]) {
         return ownerToTokensMap[_owner];
     }
 
-    /// @dev Функция принятия бида и продажи предложившему. снять все оферы и биды.
+    /// @dev Function to accept a bid and sale of the artwork to the bidder.  At the end removes all outstanding offers and bids.
     function acceptBid(uint256 _bidId) public onlyOwnerOf(_tokenId) {
-        // получаем id цифровой работы, которую владелец согласен продать по цене бида
+        // Retrieve the artwork token ID that the owner is willing to sell at the bid price
         uint256 _tokenId = bids[_bidId].digitalWorkId;
-        // запоминаем от кого и куда должна уйти цифровая работа
+        // Record from whom and to whom the artwork has moved
         address _from = msg.sender;
         address _to = bidToOwnerMap[_bidId];
-        // сохраняем сумму
+        // Record the new price based on the bid
         uint256 _price = bids[_bidId].price;
-        // устанавливаем владельцем текущего пользователя
+        // Record the new owner in the token to owner mapping
         tokenToOwnerMap[_tokenId] = _to;
-        // т.к. деньги уже были перечислены за бид, то просто передаем токен новому владельцу
+        // Since the money has already been transfered for accepted bid, move the token to the new owner
         _transfer(_from, _to, _tokenId);
-        // был ли оффер?
-        bool doesItHasOffer = (tokenToSaleTypeMap[_tokenId] == SaleType.Offer);
-        // распределяем прибыль
+        // Check if there was an offer
+        bool containsOffer = (tokenToSaleTypeMap[_tokenId] == SaleType.Offer);
+        // Distribute the profit
         _incomeDistribution(_price, _tokenId, _from);
-        // удаляем бид
+        // Delete the bid
         _deleteBid(_bidId);
-        // если есть оффер, то его также надо удалить
-        if (doesItHasOffer) {
+        // If there was an offer, delete it
+        if (containsOffer) {
             uint256 offerId = tokenToOfferMap[_tokenId];
-            // удаляем только, если у него не осталось картин для продажи
+            // Delete offer only if there are no more artworks contained in the offer
             if (getDigitalWorksOffersList(offerId).length == 0)
                 deleteOffer(offerId);
         }
     }
 
-    // функция продажи картины. снять все оферы и биды для картины.
-    /// @dev Фукнция совершения покупки полотна
-    /// @param _tokenId Токен, который покупают
+    /// Function for artwork sale.  Remove all outstanding offers and bids after sale.
+    /// @dev Function to complete the artwork sale.Фукнция совершения покупки полотна
+    /// @param _tokenId Artwork Token ID
     function buyToken(address _from, address _to, uint256 _tokenId) internal {
-        require(tokenToSaleTypeMap[_tokenId] == SaleType.Offer || 
-            tokenToSaleTypeMap[_tokenId] == SaleType.Auction);
+        require(tokenToSaleTypeMap[_tokenId] == SaleType.Offer || tokenToSaleTypeMap[_tokenId] == SaleType.Auction);
         bool isTypeOffer = (tokenToSaleTypeMap[_tokenId] == SaleType.Offer);
         uint256 _price;
         if (isTypeOffer) {
@@ -82,13 +81,13 @@ contract SnarkTrade is SnarkRenting {
         }
         require(msg.value >= _price); 
         require(_from != _to);
-        // устанавливаем владельцем текущего пользователя
+        // Record the new owner
         tokenToOwnerMap[_tokenId] = _to;
-        // производим передачу токена
+        // Move the token to the new owner
         _transfer(_from, _to, _tokenId); 
-        // распределяем прибыль
+        // Distribute the profit
         _incomeDistribution(msg.value, _tokenId, _from);
-        // удаляем бид, если есть
+        // Delete bid if there is a bid
         if (tokenToIsExistBidMap[_tokenId]) {
             uint256 bidId = tokenToBidMap[_tokenId];
             uint256 bidValue = bids[bidId].price;
@@ -96,7 +95,7 @@ contract SnarkTrade is SnarkRenting {
             _deleteBid(bidId);
             bidder.transfer(bidValue);
         }
-
+        // Delete Offer and Auction if there are offers and auctions for the artwork
         if (isTypeOffer) {
             offers[offerId].countOfDigitalWorks--;
             if (offers[offerId].countOfDigitalWorks == 0)

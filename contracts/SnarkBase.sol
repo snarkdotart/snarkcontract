@@ -27,8 +27,8 @@ contract SnarkBase is Ownable {
         uint16 limitedEdition;              // Number of editions available for sale
         uint16 editionNumber;               // Edition number or id (2 bytes)
         uint256 lastPrice;                  // Last sale price (32 bytes)
-        uint8 profitShareFromSecondarySale; // Profit share % during secondary sale going back to the artist and 
-                                            // their list of participants (1 bytes)
+        uint8 profitShareFromSecondarySale; // Profit share % during secondary sale going back to the artist and their list of participants
+        // bool isUsedProfitShareFromSecondarySale;// Contain
         bool isFirstSale;                   // Check if it is the first sale of the artwork
         string digitalWorkUrl;              // URL link to the artwork
         address[] participants;             // Address list of all participants involved in profit sharing

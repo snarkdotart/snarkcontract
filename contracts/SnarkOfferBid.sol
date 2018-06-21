@@ -5,94 +5,75 @@ import "./SnarkBase.sol";
 
 contract SnarkOfferBid is SnarkBase {
 
-    // событие, оповещающее о созданни нового оффера
+    /*** EVENTS ***/
+
+    // New offer event
     event OfferCreatedEvent(uint256 offerId, address indexed _offerTo);
-    // событие на подтверждение согласия участников с их долями
+    // Approved profit share by participant event
     event NeedApproveOfferEvent(uint256 offerId, address indexed _participant, uint8 _percentAmount);
-    // событие, оповещающее, что участник прибыли не согласен с условиями
+    // Declined profit share by participant event
     event DeclineApproveOfferEvent(uint256 _offerId, address indexed _offerOwner, address indexed _participant);
-    // событие, оповещающее об отклонении offerTo чуваков данный оффер
+    // Declined offerTo event
     event OfferToAddressDeclinedEvent(uint256 _offerId, address indexed _offerTo);
-    // событие, оповещающее, что offer был удален
+    // Offer deleted event
     event OfferDeletedEvent(uint256 _offerId);
-    // события, оповещающие, что закончился оффер (продались все картины)
+    // Offer ended (artworks sold) event
     event OfferEndedEvent(uint256 _offerId);
-    // событие, оповещающее об установке нового bid-а
+    // New bid event
     event BidSettedUpEvent(uint256 _bidId, address indexed _bidder, uint256 _value);
-    // событие, оповещающее, что был отменен бид для цифровой работы
+    // Canceled bid event
     event BidCanceledEvent(uint256 _digitalWorkId);
 
     // There are 4 states for an Offer and an Auction:
-    // Preparing - "подготавливается", только создался и не апрувнут участниками
-    // NotActive - апрувнут участниками, но не работает еще (это только у аукциона)
-    // Active - активный, когда начал участвовать в продаже картин
-    // Finished - завершенный, когда все картины проданы
+    // Preparing -recently created and not approved by participants
+    // NotActive - created and approved by participants, but is not yet active (auctions only) 
+    // Active - created, approved, and active 
+    // Finished - finished when the artwork has sold 
     enum SaleStatus { Preparing, NotActive, Active, Finished }
-    // тип продажи, в которой участвует цифровая работа
-    enum SaleType { None, Offer, Auction, Renting }
+
+    // Sale type (none, offer sale, auction, art loan)
+    enum SaleType { None, Offer, Auction, Loan }
 
     struct Offer {
-        // предлагаемая цена в ether для всех работ
-        uint256 price;
-        // количество работ в данном предложении. Уменьшаем при продаже картины
-        uint256 countOfDigitalWorks;
-        // адрес коллекционера, кому явно выставляется предложение
-        address offerTo;
-        // адреса участников прибыли
-        address[] participants;
-        // offer status (we use 3 states only: Preparing, Active, Finished)
-        SaleStatus saleStatus;
-        // содержит связь участника с размером его доли
-        mapping (address => uint8) participantToPercentageAmountMap;
-        // содержит связь участника с его подтверждением
-        mapping (address => bool) participantToApproveMap;
+        uint256 price;                                              // Proposed sale price in Ether for all artworks
+        uint256 countOfDigitalWorks;                                // Number of artworks offered. Decrease with every succesful sale.
+        address offerTo;                                            // Address of a collector to whom an offer is explicitly submitted
+        address[] participants;                                     // Profit sharing participants' addresses
+        SaleStatus saleStatus;                                      // Offer status (3 possible states: Preparing, Active, Finished)
+        mapping (address => uint8) participantToPercentageAmountMap;// Mapping of participants to their profit share
+        mapping (address => bool) participantToApproveMap;          // Mapping of participants to their approval indicators
     }
 
     struct Bid {
-        // id полотна
-        uint digitalWorkId;
-        // предложенная цена за полотно
-        uint price;
-        // статус предложения (используем только 2 состояния: Active, Finished)
-        SaleStatus saleStatus;
+        uint digitalWorkId;     // Artwork ID
+        uint price;             // Offered price for the digital artwork
+        SaleStatus saleStatus;  // Offer status (2 possible states: Active, Finished)
     }
 
-    // содержит список всех предложений
-    Offer[] internal offers;
+    Offer[] internal offers;    // List of all offers
+    Bid[] internal bids;        // List of all bids
 
-    // содержит список всех бидов ?????
-    Bid[] internal bids;
+    mapping (uint256 => uint256) internal tokenToOfferMap;      // Mapping of artwork to offers
+    mapping (uint256 => uint256[]) internal offerToTokensMap;   // Mapping of offer to tokens
+    mapping (uint256 => address) internal offerToOwnerMap;      // Mapping of offers to owner
+    mapping (address => uint256[]) internal ownerToOffersMap;   // Mapping of owner to offers
+    mapping (uint8 => uint256[]) internal saleStatusToOffersMap;// Mapping status to offers
+    mapping (uint256 => address) internal bidToOwnerMap;        // Mapping of bids to owner
+    mapping (address => uint256[]) internal ownerToBidsMap;     // Mapping of owner to bids
+    mapping (uint256 => uint256) internal tokenToBidMap;        // Mapping of artwork to bid
+    mapping (uint256 => bool) internal tokenToIsExistBidMap;    // Mapping of artwork to an indicator of an existing bid
+    mapping (address => uint256) public pendingWithdrawals;     // Mapping of an address with its balance
 
-    // содержит связь цифровой работы с его предложением
-    mapping (uint256 => uint256) internal tokenToOfferMap;
-    // Mapping lists of tokens to offers
-    mapping (uint256 => uint256[]) internal offerToTokensMap;
-    // владелец может делать много оферов, каждый из которых включает кучу разных картин
-    mapping (uint256 => address) internal offerToOwnerMap;
-    // Offers list belongs to owner
-    mapping (address => uint256[]) internal ownerToOffersMap;
-    // Mapping status to count
-    mapping (uint8 => uint256[]) internal saleStatusToOffersMap;
-    // содержит связку бида с его владельцем
-    mapping (uint256 => address) internal bidToOwnerMap;
-    // Mapping from address to Bids list
-    mapping (address => uint256[]) internal ownerToBidsMap;
-    // содержит связку token с bid
-    mapping (uint256 => uint256) internal tokenToBidMap; 
-    // содержит признак наличия выставленного бида для цифровой работы
-    mapping (uint256 => bool) internal tokenToIsExistBidMap;
-    // содержит связку адреса с его балансом
-    mapping (address => uint256) public pendingWithdrawals;
-    // картина может находиться только в одном из четырех состояний:
-    // 1. либо не продаваться
-    // 2. либо продаваться через обычное предложение
-    // 3. либо продаваться через аукцион
-    // 4. либо сдаваться в аренду
-    // Это необходимо для исключения возможности двойной продажи 
+    // Artwork can only be in one of four states:
+    // 1. Not being sold
+    // 2. Offered for sale at an offer price
+    // 3. Auction sale
+    // 4. Art loan
+    // Must avoid any possibility of a double sale
     mapping (uint256 => SaleType) internal tokenToSaleTypeMap;
 
-    /// @dev Модификатор, пропускающий только участников дохода для этого оффера
-    /// @param _offerId Id of offer
+    /// @dev Modifier that permits only the revenue sharing participants
+    /// @param _offerId Offer ID
     modifier onlyOfferParticipator(uint256 _offerId) {
         bool isItParticipant = false;
         address[] storage p = offers[_offerId].participants;
@@ -103,21 +84,21 @@ contract SnarkOfferBid is SnarkBase {
         _;
     }
 
-    /// @dev Модификатор, отсекающий чужих offerTo
+    /// @dev Modifier that cuts off others' offerTo
     /// @param _offerId Id of offer
     modifier onlyOfferTo(uint256 _offerId) {
         require(msg.sender == offers[_offerId].offerTo);
         _;
     }
 
-    /// @dev Модификатор, пропускающий только владельца оффера
+    /// @dev Modifier that allows only the owner of the offer
     /// @param _offerId Id of offer
     modifier onlyOfferOwner(uint256 _offerId) {
         require(msg.sender == offerToOwnerMap[_offerId]);
         _;
     }
     
-    /// @dev Модификатор, проверяющий, чтобы работы не участвовали в продажах где-то еще
+    /// @dev Modifier that checks the artwork is not involved in a sale somewhere else
     /// @param _tokenIds Array of tokens
     modifier onlyNoneStatus(uint256[] _tokenIds) {
         bool isStatusNone = true;
@@ -128,7 +109,7 @@ contract SnarkOfferBid is SnarkBase {
         _;
     }
 
-    // @dev Модификатор, проверяющий картины на соответствие первичной продажи
+    /// @dev Modifier that checks that the artworks had a primary sale
     /// @param _tokenIds Array of tokens
     modifier onlyFirstSale(uint256[] _tokenIds) {
         bool isFistSale = true;
@@ -139,7 +120,7 @@ contract SnarkOfferBid is SnarkBase {
         _;
     }
 
-    // @dev Модификатор, проверяющий картины на соответствие вторичной продажи
+    /// @dev Modifier that checks that the artworks had a secondary sale 
     /// @param _tokenIds Array of tokens
     modifier onlySecondSale(uint256[] _tokenIds) {
         bool isSecondSale = true;
@@ -150,46 +131,46 @@ contract SnarkOfferBid is SnarkBase {
         _;
     }    
 
-    /// @dev Модификатор, проверяющий переданный id оффера на попадание в интервал
-    /// @param _offerId Id of offer
+    /// @dev Modifier checks that the offer ID is in the offer interval 
+    /// @param _offerId Offer ID 
     modifier correctOfferId(uint256 _offerId) {
         require(offers.length > 0);
         require(_offerId < offers.length);
         _;
     }
 
-    /// @dev Модификатор, пропускающий только владельца бида
-    /// @param _bidId Id of bid
+    /// @dev Modifier that permits only the owner of the Bid 
+    /// @param _bidId Bid ID
     modifier onlyBidOwner(uint256 _bidId) {
         require(msg.sender == bidToOwnerMap[_bidId]);
         _;
     }
 
-    /// @dev Возвращает количество офферов с интересуемым статусом
-    /// @param _status Интересуемый статус SaleStatus
+    /// @dev Function returns the offer count with a specific status 
+    /// @param _status Sale status
     function getCountOfOffers(uint8 _status) public view returns (uint256) {        
         require(uint8(SaleStatus.Finished) >= _status);
         return saleStatusToOffersMap[_status].length;
     }
 
-    /// @dev Return a list of offers which belong to owner
+    /// @dev Function returns a list of offers which belong to a specific owner
     /// @param _owner Owner address
     function getOwnerOffersList(address _owner) public view returns (uint256[]) {
         return ownerToOffersMap[_owner];
     }
 
-    /// @dev Функция получения всех картин, принадлежащих оферу
-    /// @param _offerId Id-шник offer-a
+    /// @dev Function returns all artworks that belong to a specific offer 
+    /// @param _offerId Offer ID 
     function getDigitalWorksOffersList(uint256 _offerId) public view correctOfferId(_offerId) returns (uint256[]) {
         return offerToTokensMap[_offerId];
     }
 
-    /// @dev Функция создания офера первичной продажи. вызывает событие апрува для участников
-    /// @param _price Цена для всех цифровых работ, включенных в это предложение
-    /// @param _offerTo Адрес, кому выставляется данное предложение
-    /// @param _tokenIds Список id-шников цифровых работ, которые будут включены в это предложение
-    /// @param _participants Список участников прибыли
-    /// @param _percentAmounts Список процентных долей участников
+    /// @dev Function to create an offer for the primary sale.  Requires approval of profit sharing participants. 
+    /// @param _price The price for all artworks included in the offer
+    /// @param _offerTo The address to whom this offer is made
+    /// @param _tokenIds List of artwork IDs included in the offer
+    /// @param _participants List of profit sharing participants
+    /// @param _percentAmounts List of profit share % of participants
     function createOffer(
         uint256 _price, 
         address _offerTo, 
@@ -202,7 +183,7 @@ contract SnarkOfferBid is SnarkBase {
         // onlyNoneStatus(_tokenIds)
         // onlyFirstSale(_tokenIds)
     {
-        // из-за ошибки компилятора перенес проверку двух модификаторов в саму функцию
+        // Due to a problem during code compilation, placed the check of 2 modifiers into the function 
         bool isStatusNone = true;
         bool isFistSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
@@ -212,7 +193,7 @@ contract SnarkOfferBid is SnarkBase {
         require(isStatusNone);
         require(isFistSale);
 
-        // создание оффера и получение его id
+        // Offer creation and return of the offer ID
         Offer memory _offer = Offer({
             price: _price,
             countOfDigitalWorks: _tokenIds.length,
@@ -220,43 +201,39 @@ contract SnarkOfferBid is SnarkBase {
             participants: new address[](0),
             saleStatus: SaleStatus.Preparing
         });
-        // _offer.price = _price;
-        // _offer.offerTo = _offerTo;
-        // uint256 _count = _tokenIds.length;
-        // _offer.countOfDigitalWorks = _count;
         uint256 offerId = offers.push(_offer) - 1;
-        // применяем новую схему распределения прибыли
+        // apply new profit sharing schedule
         _applyNewSchemaOfProfitDivisionForOffer(offerId, _participants, _percentAmounts);
         // count offers with saleType = Offer
         saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
-        // записываем владельца данного оффера
+        // enter the owner of the offer
         offerToOwnerMap[offerId] = msg.sender;
-        // увеличиваем количество офферов принадлежащих овнеру
+        // increase the number of offers owned by the offer owner
         ownerToOffersMap[msg.sender].push(offerId);
-        // для всех цифровых работ выполняем следующее
+        // for all artworks perform the following:
         for (i = 0; i < _tokenIds.length; i++) {
-            // в самой работе помечаем, что она участвует в offer
+            // for each artwork mark that is part of an offer
             tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Offer;
-            // помечаем к какому offer она принадлежит
+            // mark also which specific offer it belongs to
             tokenToOfferMap[_tokenIds[i]] = offerId;
-            // add token to offer list
+            // add token to an offer list
             offerToTokensMap[offerId].push(_tokenIds[i]);
             // move token to Snark
             _lockOffersToken(offerId, _tokenIds[i]);
         }
-        // генерим ивент для всех участников, участвующих в дележке прибыли.
-        // передаем туда: id текущего оффера, по которому участник сможет получить и просмотреть
-        // список картин, а также выставленную цену
+        // Generate an event for all profit sharing participants that includes:
+        // offer ID, to give the ability to receive and view the offered
+        // artworks and their price
         for (i = 0; i < _participants.length; i++) {
-            // оповещаем адресно
+            // emit the event to each participant
             emit NeedApproveOfferEvent(offerId, _participants[i], _percentAmounts[i]);
         }
     }
 
-    /// @dev Функция создания офера для вторичной продажи
-    /// @param _tokenIds Список id-шников цифровых работ, которые будут включены в это предложение
-    /// @param _price Цена для всех цифровых работ, включенных в это предложение
-    /// @param _offerTo Адрес, кому выставляется данное предложение
+    /// @dev Create an offer for the secondary sale
+    /// @param _tokenIds List of artwork token IDs to be included in the offer
+    /// @param _price Offer price for all artworks in the offer
+    /// @param _offerTo Address to whom the offer is made
     function createOffer(
         uint256[] _tokenIds, 
         uint256 _price, 
@@ -267,7 +244,7 @@ contract SnarkOfferBid is SnarkBase {
         onlyNoneStatus(_tokenIds)
         onlySecondSale(_tokenIds)
     {
-        // создание оффера и получение его id
+        // Offer creation and return of the offer ID
         Offer memory _offer = Offer({
             price: 0,
             offerTo: _offerTo,
@@ -280,83 +257,83 @@ contract SnarkOfferBid is SnarkBase {
         uint256 offerId = offers.push(_offer) - 1;
         // count offers with saleType = Offer
         saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
-        // записываем владельца данного оффера
+        // enter the owner of the offer
         offerToOwnerMap[offerId] = msg.sender;
-        // увеличиваем количество офферов принадлежащих овнеру
+        // increase the number of offers owned by the offer owner
         ownerToOffersMap[msg.sender].push(offerId);
-        // для всех цифровых работ выполняем следующее
+        // for all artworks perform the following:
         for (uint8 i = 0; i < _tokenIds.length; i++) {
-            // в самой работе помечаем, что она участвует в offer
+            // for each artwork mark that is part of an offer
             uint256 _t = _tokenIds[i];
             tokenToSaleTypeMap[_t] = SaleType.Offer;
-            // помечаем к какому offer она принадлежит
+            // mark also which specific offer it belongs to
             tokenToOfferMap[_t] = offerId;
             // add token to offer list
             offerToTokensMap[offerId].push(_t);
             // move token to Snark
             _lockOffersToken(offerId, _t);            
         }
-        // сообщаем, что был создан новый оффер
+        // emit an event that a new offer was created
         emit OfferCreatedEvent(offerId, offers[offerId].offerTo);
     }
 
-    /// @dev Участник прибыли подтверждает свое согласие на выставленные условия
-    /// @param _offerId id-шник оффера
+    /// @dev Profit sharing participants confirm consent to offer terms
+    /// @param _offerId Offer ID
     function approveOffer(uint256 _offerId) public onlyOfferParticipator(_offerId) {
         Offer storage offer = offers[_offerId];
-        // отмечаем текущего участника, как согласного с условиями
+        // mark the current participant as approving offer terms
         offer.participantToApproveMap[msg.sender] = true;
-        // проверяем все ли согласились или нет, а за одно формируем массив долей для участников
+        // check whether all participants consented to and offer and form an array with profit sharing %
         bool isAllApproved = true;
         uint8[] memory parts = new uint8[](offer.participants.length);
         for (uint8 i = 0; i < offer.participants.length; i++) {
             isAllApproved = isAllApproved && offer.participantToApproveMap[offer.participants[i]];
             parts[i] = offer.participantToPercentageAmountMap[offer.participants[i]];
         }
-        // если все согласны, то копируем условия в сами картины, дабы каждая картина имела возможность,
-        // в последствие, знать условия распределения прибыли
+        // if all participants consent to the offer, copy the offer terms into the artwork tokens so that each token can contain
+        // information on profit sharing %
         if (isAllApproved) {
             uint256[] memory tokens = getDigitalWorksOffersList(_offerId);
             for (i = 0; i < tokens.length; i++) {
                 _applyProfitShare(tokens[i], offer.participants, parts);
             }
         }
-        // и только теперь помечаем, что оффер может выставляться на продажу
+        // now mark the offer as having been created
         if (isAllApproved) _moveOfferToNextStatus(_offerId);
         emit OfferCreatedEvent(_offerId, offer.offerTo);
     }
 
-    /// @dev Получили отказ от offerTo на наше предложение
-    /// @param _offerId Id-шник offer-а
+    /// @dev Profit sharing participants decline to offer terms
+    /// @param _offerId Offer ID
     function declineFromOfferTo(uint256 _offerId) public onlyOfferTo(_offerId) {
-        // убираем offerTo для данного офера и оставляем его в в общей продаже
+        // remove offerTo from the offer and leave it in general sale
         offers[_offerId].offerTo = address(0);
-        // генерим событие owner-у, что offerTo послал нафиг
+        // emit an event that offerTo was declined
         emit OfferToAddressDeclinedEvent(_offerId, msg.sender);
     }
 
-    /// @dev Отказ участника прибыли с предложенными условиями
-    /// @param _offerId Id-шник offer-а
-    function declineOfferApprove(uint256 _offerId) public view onlyOfferParticipator(_offerId) {
-        // в этом случае мы только можем только оповестить владельца об отказе
+    /// @dev Profit sharing participant declines the offered terms 
+    /// @param _offerId Offer ID
+    function declineOfferApprove(uint256 _offerId) public onlyOfferParticipator(_offerId) {
+        // in this case we only can inform the owner about the refusal
         emit DeclineApproveOfferEvent(_offerId, offerToOwnerMap[_offerId], msg.sender);
     }
     
-    /// @dev Удаление offer-а. Вызывается также после продажи последней картины, включенной в оффер.
-    /// @param _offerId Id-шник offer-а
+    /// @dev Delete offer. This is also done during the sale of the last artwork in the offer.  
+    /// @param _offerId Offer ID
     function deleteOffer(uint256 _offerId) public onlyOfferOwner(_offerId) {
-        // очищаем все данные в картинах
+        // clear all data in the artwork
         uint256[] memory tokens = getDigitalWorksOffersList(_offerId);
         for (uint8 i = 0; i < tokens.length; i++) {
-            // drop down a sale status to None
+            // change sale status to None
             tokenToSaleTypeMap[tokens[i]] = SaleType.None;
-            // удаляем связь цифровой работы с оффером
+            // delete the artwork from the offer
             delete tokenToOfferMap[tokens[i]];
             // unlock token
             _unlockOffersToken(_offerId, tokens[i]);
         }
         address offerOwner = offerToOwnerMap[_offerId];
-        // удаляем связь оффера с владельцем
+        // remove the connection of the offer from the owner
         delete offerToOwnerMap[_offerId];
         // delete the offer from owner
         uint256[] storage ownerOffers = ownerToOffersMap[offerOwner];
@@ -367,22 +344,22 @@ contract SnarkOfferBid is SnarkBase {
                 break;
             }
         }
-        // помечаем оффер, как завершившийся
+        // mark the offer as finished
         _moveOfferToNextStatus(_offerId);
-        // генерим событие о том, что удален оффер
+        // emit event that the offer has been deleted
         emit OfferDeletedEvent(_offerId);
     }
 
-    /// @dev Получение списка всех активных offers (которые Approved)
+    /// @dev Get a list of all active offers (which are Approved)
     /// @param _status Offer sale status
     function getOffersListByStatus(uint8 _status) public view returns(uint256[]) {
         return saleStatusToOffersMap[_status];
     }
 
-    /// @dev Функция модификации участников и их долей для offera, в случае отклонения одним из участников
-    /// @param _offerId Id-шник оффера
-    /// @param _participants Массив адресов участников прибыли
-    /// @param _percentAmounts Массив долей участников прибыли
+    /// @dev Function of modification of profit sharing participants and their %, in case of rejection of an offer by one of the participants
+    /// @param _offerId Offer ID
+    /// @param _participants Address array of profit sharing participants
+    /// @param _percentAmounts Array of profit share %
     function setNewSchemaOfProfitDivisionForOffer(
         uint256 _offerId,
         address[] _participants,
@@ -391,73 +368,72 @@ contract SnarkOfferBid is SnarkBase {
         public
         onlyOfferOwner(_offerId)
     {
-        // длины массивов должны совпадать
+        // array length must match
         require(_participants.length == _percentAmounts.length);
-        // применяем новую схему
+        // apply new profit sharing schedule
         _applyNewSchemaOfProfitDivisionForOffer(_offerId, _participants, _percentAmounts);
-        // т.к. изменения доли для одного затрагивает всех, то заново всех надо оповещать
+        // since change of profit shares applied to all participants, need to notify all profit sharing participants for their approval
         for (uint256 i = 0; i < _participants.length; i++) {
-            // оповещаем адресно
+            // emit the norification to each participant
             emit NeedApproveOfferEvent(_offerId, _participants[i], _percentAmounts[i]);
         }
     }
  
-    /// @dev Функция, выставляющая bid для выбранного токена
-    /// @param _tokenId Токен, который хотят приобрести
+    /// @dev Function to set bid for an artwork
+    /// @param _tokenId Artwork token ID
     function setBid(uint256 _tokenId) public payable {
-        // нам не важно, доступен ли токен для продажи, поэтому
-        // принимать bid мы можем всегда, за исключением, когда
-        // цифровая работа выставлена на аукцион
+        // it does not matter if the token is available for sale
+        // it is possible to accept a bid unless
+        // the artwork is part of an auction
         require(tokenToSaleTypeMap[_tokenId] != SaleType.Auction);
-        // токен не должен принадлежать тому, кто выставляет bid
+        // Artwork token cannot belong to the bidder
         require(tokenToOwnerMap[_tokenId] != msg.sender);
         require(msg.sender != address(0));
 
         uint256 bidId;
         if (tokenToIsExistBidMap[_tokenId]) {
-            // если для выбранной цифровой работы bid уже был задан, то получаем его id-шник 
+            // if the bid has already been specified for the selected artwork, retrieve its bid ID
             bidId = tokenToBidMap[_tokenId];
-            // получаем сам бид по его id-шнику
+            // get the bid by its bid ID
             Bid storage bid = bids[bidId];
-            // выставленный bid однозначно должен быть больше предыдущего, как минимум на 5%
+            // bid must be greater than an earlier bid by at least 5%
             require(msg.value >= bid.price + (bid.price * 5 / 100));
-            // предыдущему бидеру нужно вернуть его сумму
+            // earlier bidder needs to get back his bid
             if (bid.price > 0) {
-                // записываем сумму ему же на "вексель", которые позже он сам может изъять
+                // write the bid amount to the previous bidder to allow them to later withdraw
                 pendingWithdrawals[bidToOwnerMap[bidId]] += bid.price;
                 // delete the bid from the bidder
                 for (uint8 i = 0; i < ownerToBidsMap[msg.sender].length; i++) {
                     if (ownerToBidsMap[msg.sender][i] == bidId) {
-                        ownerToBidsMap[msg.sender][i] = 
-                            ownerToBidsMap[msg.sender][ownerToBidsMap[msg.sender].length - 1];
+                        ownerToBidsMap[msg.sender][i] = ownerToBidsMap[msg.sender][ownerToBidsMap[msg.sender].length - 1];
                         ownerToBidsMap[msg.sender].length--;
                         break;
                     }
                 }
             }
-            // теперь устанавливаем новую цену
+            // establish new bid price
             bid.price = msg.value;
         } else {
-            // бида с таким tokenId у нас небыло раньше, поэтому формируем
+            // in the event there was no prior bid for the artwork, we form a new bid
             bidId = bids.push(Bid({
                 digitalWorkId: _tokenId,
                 price: msg.value,
                 saleStatus: SaleStatus.Active
             })) - 1;
-            // т.к. для работы может быть выставлен только один бид, то его мы и присваиваем этой работе
+            // since there can only be 1 bid for an artwork, we add the new bid to the artwork token ID
             tokenToBidMap[_tokenId] = bidId;
-            // помечаем, что для данной работы бид был выставлен
+            // mark that a new bid was created for the artwork
             tokenToIsExistBidMap[_tokenId] = true;
         }
-        // устанавливаем нового владельца этого бида
+        // enter the new owner of the bid
         bidToOwnerMap[bidId] = msg.sender;
         ownerToBidsMap[msg.sender].push(bidId);
-        // формируем событие о создании нового бида для токена
+        // emit the bid creation event
         emit BidSettedUpEvent(bidId, msg.sender, msg.value);
     }
     
-    /// @dev Allows to decline your own bid
-    /// @param _bidId Id bid
+    /// @dev Function to allow the bidder to cancel their own bid
+    /// @param _bidId Bid ID
     function cancelBid(uint256 _bidId) public onlyBidOwner(_bidId) {
         address bidder = bidToOwnerMap[_bidId];
         uint256 bidValue = bids[_bidId].price;
@@ -467,21 +443,21 @@ contract SnarkOfferBid is SnarkBase {
         emit BidCanceledEvent(digitalWorkId);
     }
 
-    /// @dev Просмотреть все свои биды
-    /// @param _owner Адрес, для которого хотим получить список всех бидов
+    /// @dev Function to view bids by an address
+    /// @param _owner Address
     function getBidList(address _owner) public view returns (uint256[]) {
         return ownerToBidsMap[_owner];
     }
 
-    /// @dev Просмотреть сколько у чувака есть денег тут у нас в контракте, чтобы мог вывести себе на кошелек
-    /// @param _owner Адрес, для которого хотим получить баланс 
+    /// @dev Function to view the balance in our contract that an owner can withdraw 
+    /// @param _owner Address
     function getWithdrawBalance(address _owner) public view returns (uint256) {
         require(_owner != address(0));
         return pendingWithdrawals[_owner];
     }
 
-    /// @dev Функция вывода средств себе на кошелек withdraw funds
-    /// @param _owner Адрес, который хочет вывести средства
+    /// @dev Function to withdraw funds to the owners wallet 
+    /// @param _owner Address
     function withdrawFunds(address _owner) public {
         require(_owner != address(0));
         uint256 balance = pendingWithdrawals[_owner];
@@ -489,15 +465,14 @@ contract SnarkOfferBid is SnarkBase {
         _owner.transfer(balance);
     }
 
-    /// @dev Switch sale status to the next
-    /// @param _offerId Offer Id
+    /// @dev Function to change sale status 
+    /// @param _offerId Offer ID
     function _moveOfferToNextStatus(uint256 _offerId) internal {
         uint8 prevStatus = uint8(offers[_offerId].saleStatus);
         if (prevStatus < uint8(SaleStatus.Finished)) {
             for (uint8 i = 0; i < saleStatusToOffersMap[prevStatus].length; i++) {
                 if (saleStatusToOffersMap[prevStatus][i] == _offerId) {
-                    saleStatusToOffersMap[prevStatus][i] =
-                        saleStatusToOffersMap[prevStatus][saleStatusToOffersMap[prevStatus].length - 1];
+                    saleStatusToOffersMap[prevStatus][i] = saleStatusToOffersMap[prevStatus][saleStatusToOffersMap[prevStatus].length - 1];
                     saleStatusToOffersMap[prevStatus].length--;
                     break;
                 }
@@ -508,76 +483,75 @@ contract SnarkOfferBid is SnarkBase {
         }
     }
 
-    /// @dev Удаление бида из основной таблицы бидов
-    /// @param _bidId Id bid
+    /// @dev Function to delete bid from the bid array 
+    /// @param _bidId Bid ID
     function _deleteBid(uint256 _bidId) internal {
         // delete the bid from the bidder
         address bidder = bidToOwnerMap[_bidId];
         for (uint8 i = 0; i < ownerToBidsMap[bidder].length; i++) {
             if (ownerToBidsMap[bidder][i] == _bidId) {
-                ownerToBidsMap[bidder][i] = 
-                    ownerToBidsMap[bidder][ownerToBidsMap[bidder].length - 1];
+                ownerToBidsMap[bidder][i] = ownerToBidsMap[bidder][ownerToBidsMap[bidder].length - 1];
                 ownerToBidsMap[bidder].length--;
                 break;
             }
         }
-        // удаляем привязку цифровой работы с бидом
+        // delete the mapping between the artwork and the bid
         delete tokenToBidMap[bids[_bidId].digitalWorkId];
-        // удаляем привязку бида с владельцем
+        // delete the mapping between the bid and the owner
         delete bidToOwnerMap[_bidId];
-        // помечаем, что цифровая работа не имеет бидов
+        // mark that the artwork contains no bids
         tokenToIsExistBidMap[bids[_bidId].digitalWorkId] = false;
-        // помечаем, что этот бид завершил свою работу
+        // mark bid status as finished
         bids[_bidId].saleStatus = SaleStatus.Finished;
     }
 
-    /// @dev Функция распределения прибыли
-    /// @param _price Цена, за которую продается цифровая работа
-    /// @param _tokenId Id цифровой работы
-    /// @param _from Адрес продавца
+    /// @dev Function to distribute the profits to participants
+    /// @param _price Price at which artwork is sold
+    /// @param _tokenId Artwork token ID
+    /// @param _from Seller Address
     function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) internal {
-        // распределяем прибыль согласно схеме, содержащейся в самой картине
+        // distribute the profit according to the schedule contained in the artwork token
         DigitalWork storage digitalWork = digitalWorks[_tokenId];
-        // вычисляем прибыль предварительно
+        // calculate profit, in primary sale the lastPrice should be 0 while in a secondary it should be a prior sale price
         if (digitalWork.lastPrice < _price && (_price - digitalWork.lastPrice) >= 100) {
             uint256 profit = _price - digitalWork.lastPrice;
-            // проверяем первичная ли эта продажа или нет
+            // check whether this sale is primary or secondary
             if (digitalWork.isFirstSale) { 
-                // если да, то помечаем, что первичная продажа закончилась
+                // if it is a primary sale, then mark that the primary sale is over
                 digitalWork.isFirstSale = false;
             } else {
-                // если вторичная продажа, то профит уменьшаем до заданного художником значения в процентах
-                // при этом же оставшая сумма должна перейти продавцу
-                uint256 amountToSeller = profit;
-                // сумма, которая будет распределяться
+                // if it is a secondary sale, reduce the profit by the profit sharing % specified by the artist 
+                // the remaining amount goes back to the seller
+                uint256 amountToSeller = _price;
+                // the amount to be distributed
                 profit = profit * digitalWork.profitShareFromSecondarySale / 100;
-                // сумма, которая уйдет продавцу
+                // the amount that will go to the seller
                 amountToSeller -= profit;
                 pendingWithdrawals[_from] += amountToSeller;
             }
-            uint256 residue = profit; // тут будем хранить остаток, после выплаты всем участникам
-            for (uint8 i = 0; i < digitalWork.participants.length; i++) { // по очереди обрабатываем участников выплат
-                // вычисляем сумму выплаты
+            uint256 residue = profit; // hold any uncollected amount in residue after paying out all of the participants
+            for (uint8 i = 0; i < digitalWork.participants.length; i++) { // one by one go through each profit sharing participant
+                // calculate the payout amount
                 uint256 payout = profit * digitalWork.participantToPercentMap[digitalWork.participants[i]] / 100;
-                pendingWithdrawals[digitalWork.participants[i]] += payout; // и переводим ему на "вексель"
-                residue -= payout; // вычисляем остаток после выплаты
+                pendingWithdrawals[digitalWork.participants[i]] += payout; // move the payout amount to each participant
+                residue -= payout; // recalculate the uncollected amount after the payout
             }
-            // если вдруг что-то осталось после распределения, то остаток переводим продавцу
+            // if there is any uncollected amounts after distribution, move the amount to the seller
             pendingWithdrawals[_from] += residue;
         } else {
-            // если дохода нет, то все зачисляем продавцу
+            // if there is no profit, then all goes back to the seller
             pendingWithdrawals[_from] += _price; 
         }
-        // запоминаем цену, по которой продались, в lastPrice в картине
+        // mark the price for which the artwork sold
         digitalWork.lastPrice = _price;
-        // помечаем, что не имеет никаких статусов продажи
+        // mark the sale type to None after sale
         tokenToSaleTypeMap[_tokenId] = SaleType.None;
     }
 
-    /// @dev Применяем схему к офферу
-    /// @param _offerId Id-шник оффера
-    /// @param _participants Массив адресов участников прибыли
-    /// @param _percentAmounts Массив долей участников прибыли
+    /// @dev Apply new profit sharing schedule to an offer 
+    /// @param _offerId Offer ID
+    /// @param _participants Address array of profit sharing participants
+    /// @param _percentAmounts Array of profit share %
     function _applyNewSchemaOfProfitDivisionForOffer(
         uint256 _offerId,
         address[] _participants,
@@ -585,34 +559,34 @@ contract SnarkOfferBid is SnarkBase {
     ) 
         private
     {
-        // удаляем все, ибо могли исключить кого-то из участников и добавить новых
+        // delete all participants to avoid misentry
         Offer storage offer = offers[_offerId];
         for (uint8 i = 0; i < offer.participants.length; i++) {
-            // удаляем процентные доли
+            // delete profit sharing %
             delete offer.participantToPercentageAmountMap[offer.participants[i]];
-            // удаляем "согласия", ибо уже изменились значения для всех
+            // delete the participant consents
             delete offer.participantToApproveMap[offer.participants[i]];
         }
         offer.participants.length = 0;
-        // применяем новую схему
+        // apply a new profit sharing schedule
         bool isSnarkDelivered = false;
-        // заполняем список участников прибыли
+        // add the list of profit sharing participants
         for (i = 0; i < _participants.length; i++) {
-            // сначала сохраняем адрес участника
+            // add participant address
             offer.participants.push(_participants[i]);
-            // а затем его долю
+            // add participant profit share %
             offer.participantToPercentageAmountMap[_participants[i]] = _percentAmounts[i];
-            // на тот случай, если с клиента уже будет приходить информация о доле Snark
+            // in the event that the participant already receives information about the Snark share
             if (_participants[i] == owner) isSnarkDelivered = true;
         }
-        // ну и не забываем про себя любимых, т.е. Snark, если он чуть выше не был передан и обработан
+        // Snark share addition
         if (isSnarkDelivered == false) {
-            // записываем адрес Snark
+            // add Snark Address
             offer.participants.push(owner); 
-            // записываем долю Snark
+            // add Snark profit share %
             offer.participantToPercentageAmountMap[owner] = snarkPercentageAmount;
         }
-        // и сразу апруваем Snark
+        // add Snark consent
         offer.participantToApproveMap[owner] = true;
     }
 
@@ -621,7 +595,7 @@ contract SnarkOfferBid is SnarkBase {
     /// @param _tokenId Token Id
     function _lockOffersToken(uint256 _offerId, uint256 _tokenId) private {
         address realOwner = offerToOwnerMap[_offerId];
-        // move token from realOwner to Snark
+        // move token from artwork Owner to Snark
         _transfer(realOwner, owner, _tokenId);
     }
 
@@ -630,7 +604,7 @@ contract SnarkOfferBid is SnarkBase {
     /// @param _tokenId Token Id
     function _unlockOffersToken(uint256 _offerId, uint256 _tokenId) private {
         address realOwner = offerToOwnerMap[_offerId];
-        // move token from Snark to realOwner
+        // move token from Snark to artwork Owner
         _transfer(owner, realOwner, _tokenId);
     }
 }
