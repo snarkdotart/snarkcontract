@@ -20,7 +20,7 @@ contract SnarkOfferBid is SnarkBase {
     // New bid event
     event BidSettedUpEvent(uint256 _bidId, address indexed _bidder, uint256 _value);
     // Canceled bid event
-    event BidCanceledEvent(uint256 _digitalWorkId);
+    event BidCanceledEvent(uint256 _artworkId);
 
     // There are 4 states for an Offer and an Auction:
     // Preparing -recently created and not approved by participants
@@ -34,7 +34,7 @@ contract SnarkOfferBid is SnarkBase {
 
     struct Offer {
         uint256 price;                                              // Proposed sale price in Ether for all artworks
-        uint256 countOfDigitalWorks;                                // Number of artworks offered. Decrease with every succesful sale.
+        uint256 countOfArtworks;                                // Number of artworks offered. Decrease with every succesful sale.
         address[] participants;                                     // Profit sharing participants' addresses
         SaleStatus saleStatus;                                      // Offer status (3 possible states: Preparing, Active, Finished)
         mapping (address => uint8) participantToPercentageAmountMap;// Mapping of participants to their profit share
@@ -42,7 +42,7 @@ contract SnarkOfferBid is SnarkBase {
     }
 
     struct Bid {
-        uint digitalWorkId;     // Artwork ID
+        uint artworkId;     // Artwork ID
         uint price;             // Offered price for the digital artwork
         SaleStatus saleStatus;  // Offer status (2 possible states: Active, Finished)
     }
@@ -104,7 +104,7 @@ contract SnarkOfferBid is SnarkBase {
     modifier onlyFirstSale(uint256[] _tokenIds) {
         bool isFistSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
-            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isFirstSale);
+            isFistSale = (isFistSale && artworks[_tokenIds[i]].isFirstSale);
         }
         require(isFistSale);
         _;
@@ -115,7 +115,7 @@ contract SnarkOfferBid is SnarkBase {
     modifier onlySecondSale(uint256[] _tokenIds) {
         bool isSecondSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
-            isSecondSale = (isSecondSale && !digitalWorks[_tokenIds[i]].isFirstSale);
+            isSecondSale = (isSecondSale && !artworks[_tokenIds[i]].isFirstSale);
         }
         require(isSecondSale);
         _;
@@ -151,7 +151,7 @@ contract SnarkOfferBid is SnarkBase {
 
     /// @dev Function returns all artworks that belong to a specific offer 
     /// @param _offerId Offer ID 
-    function getDigitalWorksOffersList(uint256 _offerId) public view correctOfferId(_offerId) returns (uint256[]) {
+    function getArtworksOffersList(uint256 _offerId) public view correctOfferId(_offerId) returns (uint256[]) {
         return offerToTokensMap[_offerId];
     }
 
@@ -176,7 +176,7 @@ contract SnarkOfferBid is SnarkBase {
         bool isFistSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             isStatusNone = (isStatusNone && (tokenToSaleTypeMap[_tokenIds[i]] == SaleType.None));
-            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isFirstSale);
+            isFistSale = (isFistSale && artworks[_tokenIds[i]].isFirstSale);
         }
         require(isStatusNone);
         require(isFistSale);
@@ -184,7 +184,7 @@ contract SnarkOfferBid is SnarkBase {
         // Offer creation and return of the offer ID
         Offer memory _offer = Offer({
             price: _price,
-            countOfDigitalWorks: _tokenIds.length,
+            countOfArtworks: _tokenIds.length,
             participants: new address[](0),
             saleStatus: SaleStatus.Preparing
         });
@@ -233,11 +233,11 @@ contract SnarkOfferBid is SnarkBase {
         Offer memory _offer = Offer({
             price: 0,
             participants: new address[](0),
-            countOfDigitalWorks: 0,
+            countOfArtworks: 0,
             saleStatus: SaleStatus.Preparing
         });
         _offer.price = _price;
-        _offer.countOfDigitalWorks = _tokenIds.length;
+        _offer.countOfArtworks = _tokenIds.length;
         uint256 offerId = offers.push(_offer) - 1;
         // count offers with saleType = Offer
         saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
@@ -277,7 +277,7 @@ contract SnarkOfferBid is SnarkBase {
         // if all participants consent to the offer, copy the offer terms into the artwork tokens so that each token can contain
         // information on profit sharing %
         if (isAllApproved) {
-            uint256[] memory tokens = getDigitalWorksOffersList(_offerId);
+            uint256[] memory tokens = getArtworksOffersList(_offerId);
             for (i = 0; i < tokens.length; i++) {
                 _applyProfitShare(tokens[i], offer.participants, parts);
             }
@@ -298,7 +298,7 @@ contract SnarkOfferBid is SnarkBase {
     /// @param _offerId Offer ID
     function deleteOffer(uint256 _offerId) public onlyOfferOwner(_offerId) {
         // clear all data in the artwork
-        uint256[] memory tokens = getDigitalWorksOffersList(_offerId);
+        uint256[] memory tokens = getArtworksOffersList(_offerId);
         for (uint8 i = 0; i < tokens.length; i++) {
             // change sale status to None
             tokenToSaleTypeMap[tokens[i]] = SaleType.None;
@@ -391,7 +391,7 @@ contract SnarkOfferBid is SnarkBase {
         } else {
             // in the event there was no prior bid for the artwork, we form a new bid
             bidId = bids.push(Bid({
-                digitalWorkId: _tokenId,
+                artworkId: _tokenId,
                 price: msg.value,
                 saleStatus: SaleStatus.Active
             })) - 1;
@@ -412,10 +412,10 @@ contract SnarkOfferBid is SnarkBase {
     function cancelBid(uint256 _bidId) public onlyBidOwner(_bidId) {
         address bidder = bidToOwnerMap[_bidId];
         uint256 bidValue = bids[_bidId].price;
-        uint256 digitalWorkId = bids[_bidId].digitalWorkId;
+        uint256 artworkId = bids[_bidId].artworkId;
         _deleteBid(_bidId);
         bidder.transfer(bidValue);
-        emit BidCanceledEvent(digitalWorkId);
+        emit BidCanceledEvent(artworkId);
     }
 
     /// @dev Function to view bids by an address
@@ -471,11 +471,11 @@ contract SnarkOfferBid is SnarkBase {
             }
         }
         // delete the mapping between the artwork and the bid
-        delete tokenToBidMap[bids[_bidId].digitalWorkId];
+        delete tokenToBidMap[bids[_bidId].artworkId];
         // delete the mapping between the bid and the owner
         delete bidToOwnerMap[_bidId];
         // mark that the artwork contains no bids
-        tokenToIsExistBidMap[bids[_bidId].digitalWorkId] = false;
+        tokenToIsExistBidMap[bids[_bidId].artworkId] = false;
         // mark bid status as finished
         bids[_bidId].saleStatus = SaleStatus.Finished;
     }
@@ -486,29 +486,29 @@ contract SnarkOfferBid is SnarkBase {
     /// @param _from Seller Address
     function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) internal {
         // distribute the profit according to the schedule contained in the artwork token
-        DigitalWork storage digitalWork = digitalWorks[_tokenId];
+        Artwork storage artwork = artworks[_tokenId];
         // calculate profit, in primary sale the lastPrice should be 0 while in a secondary it should be a prior sale price
-        if (digitalWork.lastPrice < _price && (_price - digitalWork.lastPrice) >= 100) {
-            uint256 profit = _price - digitalWork.lastPrice;
+        if (artwork.lastPrice < _price && (_price - artwork.lastPrice) >= 100) {
+            uint256 profit = _price - artwork.lastPrice;
             // check whether this sale is primary or secondary
-            if (digitalWork.isFirstSale) { 
+            if (artwork.isFirstSale) { 
                 // if it is a primary sale, then mark that the primary sale is over
-                digitalWork.isFirstSale = false;
+                artwork.isFirstSale = false;
             } else {
                 // if it is a secondary sale, reduce the profit by the profit sharing % specified by the artist 
                 // the remaining amount goes back to the seller
                 uint256 amountToSeller = _price;
                 // the amount to be distributed
-                profit = profit * digitalWork.profitShareFromSecondarySale / 100;
+                profit = profit * artwork.profitShareFromSecondarySale / 100;
                 // the amount that will go to the seller
                 amountToSeller -= profit;
                 pendingWithdrawals[_from] += amountToSeller;
             }
             uint256 residue = profit; // hold any uncollected amount in residue after paying out all of the participants
-            for (uint8 i = 0; i < digitalWork.participants.length; i++) { // one by one go through each profit sharing participant
+            for (uint8 i = 0; i < artwork.participants.length; i++) { // one by one go through each profit sharing participant
                 // calculate the payout amount
-                uint256 payout = profit * digitalWork.participantToPercentMap[digitalWork.participants[i]] / 100;
-                pendingWithdrawals[digitalWork.participants[i]] += payout; // move the payout amount to each participant
+                uint256 payout = profit * artwork.participantToPercentMap[artwork.participants[i]] / 100;
+                pendingWithdrawals[artwork.participants[i]] += payout; // move the payout amount to each participant
                 residue -= payout; // recalculate the uncollected amount after the payout
             }
             // if there is any uncollected amounts after distribution, move the amount to the seller
@@ -518,51 +518,9 @@ contract SnarkOfferBid is SnarkBase {
             pendingWithdrawals[_from] += _price; 
         }
         // mark the price for which the artwork sold
-        digitalWork.lastPrice = _price;
+        artwork.lastPrice = _price;
         // mark the sale type to None after sale
         tokenToSaleTypeMap[_tokenId] = SaleType.None;
-    }
-
-    /// @dev Apply new profit sharing schedule to an offer 
-    /// @param _offerId Offer ID
-    /// @param _participants Address array of profit sharing participants
-    /// @param _percentAmounts Array of profit share %
-    function _applyNewSchemaOfProfitDivisionForOffer(
-        uint256 _offerId,
-        address[] _participants,
-        uint8[] _percentAmounts
-    ) 
-        private
-    {
-        // delete all participants to avoid misentry
-        Offer storage offer = offers[_offerId];
-        for (uint8 i = 0; i < offer.participants.length; i++) {
-            // delete profit sharing %
-            delete offer.participantToPercentageAmountMap[offer.participants[i]];
-            // delete the participant consents
-            delete offer.participantToApproveMap[offer.participants[i]];
-        }
-        offer.participants.length = 0;
-        // apply a new profit sharing schedule
-        bool isSnarkDelivered = false;
-        // add the list of profit sharing participants
-        for (i = 0; i < _participants.length; i++) {
-            // add participant address
-            offer.participants.push(_participants[i]);
-            // add participant profit share %
-            offer.participantToPercentageAmountMap[_participants[i]] = _percentAmounts[i];
-            // in the event that the participant already receives information about the Snark share
-            if (_participants[i] == owner) isSnarkDelivered = true;
-        }
-        // Snark share addition
-        if (isSnarkDelivered == false) {
-            // add Snark Address
-            offer.participants.push(owner); 
-            // add Snark profit share %
-            offer.participantToPercentageAmountMap[owner] = platformProfitShare;
-        }
-        // add Snark consent
-        offer.participantToApproveMap[owner] = true;
     }
 
     /// @dev Lock Token

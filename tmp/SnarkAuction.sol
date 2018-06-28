@@ -29,7 +29,7 @@ contract SnarkAuction is SnarkOfferBid {
         address[] participants;                                     // List of artworks participating in the auction
         mapping(address => uint8) participantToPercentageAmountMap; // Mapping of Auction revenue participant to their share %
         mapping(address => bool) participantToApproveMap;           // Mapping of Auction revenue participant to their approval confirmation
-        uint256 countOfDigitalWorks;                                // Number of artworks offered in the Auction
+        uint256 countOfArtworks;                                // Number of artworks offered in the Auction
         SaleStatus saleStatus;                                      // Status of the Auctioned artwork (4 possible states)
     }
 
@@ -97,7 +97,7 @@ contract SnarkAuction is SnarkOfferBid {
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             isOwnerOfAll = isOwnerOfAll && (msg.sender == tokenToOwnerMap[_tokenIds[i]]);
             isStatusNone = (isStatusNone && (tokenToSaleTypeMap[_tokenIds[i]] == SaleType.None));
-            isFistSale = (isFistSale && digitalWorks[_tokenIds[i]].isFirstSale);
+            isFistSale = (isFistSale && artworks[_tokenIds[i]].isFirstSale);
         }
         require(isOwnerOfAll);
         require(isStatusNone);
@@ -110,7 +110,7 @@ contract SnarkAuction is SnarkOfferBid {
             startingDate: _startingDate,
             duration: _duration,
             participants: new address[](0),
-            countOfDigitalWorks: _tokenIds.length,
+            countOfArtworks: _tokenIds.length,
             saleStatus: SaleStatus.Preparing
         })) - 1;
         // Apply profit sharing schedule to the auction (not to digital artworks)
@@ -159,7 +159,7 @@ contract SnarkAuction is SnarkOfferBid {
         bool isSecondSale = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
             isStatusNone = (isStatusNone && (tokenToSaleTypeMap[_tokenIds[i]] == SaleType.None));
-            isSecondSale = (isSecondSale && !digitalWorks[_tokenIds[i]].isFirstSale);
+            isSecondSale = (isSecondSale && !artworks[_tokenIds[i]].isFirstSale);
         }
         require(isStatusNone);
         require(isSecondSale);
@@ -171,7 +171,7 @@ contract SnarkAuction is SnarkOfferBid {
             startingDate: _startingDate,
             duration: _duration,
             participants: new address[](0),
-            countOfDigitalWorks: _tokenIds.length,
+            countOfArtworks: _tokenIds.length,
             saleStatus: SaleStatus.NotActive
         })) - 1;
         // Assign the owner for the Auction
@@ -232,7 +232,7 @@ contract SnarkAuction is SnarkOfferBid {
         // If all participants approved the terms, pass the Auction terms to the artworks, so that each artwork will contain
         // the terms for the profit sharing
         if (isAllApproved) {
-            uint256[] memory tokens = getDigitalWorksAuctionsList(_auctionId);
+            uint256[] memory tokens = getArtworksAuctionsList(_auctionId);
             for (i = 0; i < tokens.length; i++) {
                 _applyProfitShare(tokens[i], auction.participants, parts);
             }
@@ -252,7 +252,7 @@ contract SnarkAuction is SnarkOfferBid {
 
     /// @dev Function that returns all artworks belonging to the auction
     /// @param _auctionId Auction ID
-    function getDigitalWorksAuctionsList(uint256 _auctionId) 
+    function getArtworksAuctionsList(uint256 _auctionId) 
         public 
         view 
         correctAuctionId(_auctionId) 

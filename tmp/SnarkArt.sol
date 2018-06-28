@@ -56,11 +56,11 @@ contract SnarkArt is SnarkERC721 {
     ///   and `interfaceID` is not 0xffffffff, `false` otherwise
     function supportsInterface(bytes4 _interfaceID) external pure returns (bool)
     {
-        return ((_interfaceID == InterfaceSignature_ERC165)
-        || (_interfaceID == InterfaceSignature_ERC721)
-        || (_interfaceID == InterfaceSignature_ERC721Enumerable)
-        || (_interfaceID == InterfaceSignature_ERC721Metadata) 
-        || (_interfaceID == InterfaceSignature_ERC721Optional)
-        || (_interfaceID == ERC721_RECEIVED));
+        return ((_interfaceID == InterfaceSignature_ERC165) || 
+            (_interfaceID == InterfaceSignature_ERC721) || 
+            (_interfaceID == InterfaceSignature_ERC721Enumerable) || 
+            (_interfaceID == InterfaceSignature_ERC721Metadata) || 
+            (_interfaceID == InterfaceSignature_ERC721Optional) || 
+            (_interfaceID == ERC721_RECEIVED));
     }
 }

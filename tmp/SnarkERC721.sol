@@ -35,15 +35,15 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
     }
 
     function tokenURI(uint256 _tokenId) public view returns (string) {
-        require(_tokenId < digitalWorks.length);
-        return digitalWorks[_tokenId].digitalWorkUrl;
+        require(_tokenId < artworks.length);
+        return artworks[_tokenId].artworkUrl;
     }
 
     /**********************/
     /** ERC721Enumerable **/
     /**********************/
     function totalSupply() public view returns (uint256) {
-        return digitalWorks.length;
+        return artworks.length;
     }
 
     function tokenOfOwnerByIndex(address _owner, uint256 _index) public view returns (uint256 _tokenId) {
@@ -75,7 +75,7 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
     ///      about them do throw.
     /// @return The address of the owner of the NFT
     function ownerOf(uint256 _tokenId) public view returns (address) {
-        require(_tokenId < digitalWorks.length);
+        require(_tokenId < artworks.length);
         return tokenToOwnerMap[_tokenId];
     }
 

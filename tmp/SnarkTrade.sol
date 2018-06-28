@@ -25,7 +25,7 @@ contract SnarkTrade is SnarkLoan {
 
     /// @dev Function returns the count of artwork tokens in the system
     function getAmountOfTokens() public view returns(uint256) {
-        return digitalWorks.length;
+        return artworks.length;
     }
 
     /// @dev Function returns the list of artwork tokens belonging to a specific owner
@@ -37,7 +37,7 @@ contract SnarkTrade is SnarkLoan {
     /// @dev Function to accept a bid and sale of the artwork to the bidder.  At the end removes all outstanding offers and bids.
     function acceptBid(uint256 _bidId) public onlyOwnerOf(_tokenId) {
         // Retrieve the artwork token ID that the owner is willing to sell at the bid price
-        uint256 _tokenId = bids[_bidId].digitalWorkId;
+        uint256 _tokenId = bids[_bidId].artworkId;
         // Record from whom and to whom the artwork has moved
         address _from = msg.sender;
         address _to = bidToOwnerMap[_bidId];
@@ -57,7 +57,7 @@ contract SnarkTrade is SnarkLoan {
         if (containsOffer) {
             uint256 offerId = tokenToOfferMap[_tokenId];
             // Delete offer only if there are no more artworks contained in the offer
-            if (getDigitalWorksOffersList(offerId).length == 0)
+            if (getArtworksOffersList(offerId).length == 0)
                 deleteOffer(offerId);
         }
     }
@@ -96,12 +96,12 @@ contract SnarkTrade is SnarkLoan {
         }
         // Delete Offer and Auction if there are offers and auctions for the artwork
         if (isTypeOffer) {
-            offers[offerId].countOfDigitalWorks--;
-            if (offers[offerId].countOfDigitalWorks == 0)
+            offers[offerId].countOfArtworks--;
+            if (offers[offerId].countOfArtworks == 0)
                 deleteOffer(offerId);
         } else {
-            auctions[auctionId].countOfDigitalWorks--;
-            if (auctions[auctionId].countOfDigitalWorks == 0)
+            auctions[auctionId].countOfArtworks--;
+            if (auctions[auctionId].countOfArtworks == 0)
                 _deleteAuction(auctionId);
         }
     }
@@ -142,12 +142,12 @@ contract SnarkTrade is SnarkLoan {
     //     }
 
     //     if (isTypeOffer) {
-    //         offers[offerId].countOfDigitalWorks--;
-    //         if (offers[offerId].countOfDigitalWorks == 0)
+    //         offers[offerId].countOfArtworks--;
+    //         if (offers[offerId].countOfArtworks == 0)
     //             deleteOffer(offerId);
     //     } else {
-    //         auctions[auctionId].countOfDigitalWorks--;
-    //         if (auctions[auctionId].countOfDigitalWorks == 0)
+    //         auctions[auctionId].countOfArtworks--;
+    //         if (auctions[auctionId].countOfArtworks == 0)
     //             _deleteAuction(auctionId);
     //     }
     // }
