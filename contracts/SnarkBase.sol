@@ -20,7 +20,10 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     event TokenCreatedEvent(address indexed _owner, uint256 _tokenId);
     /// @dev Transfer event as defined in current draft of ERC721.
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
-
+    /// @dev Event occurs when profit share scheme is created.
+    event ProfitShareSchemeAdded(address _schemeOwner, uint256 _profitShareSchemeId);
+    /// @dev Event occurs when an artist wants to remove the profit share for secondary sale
+    event NeedApproveProfitShareRemoving(address _participant, uint256 _tokenId);
 
     /*** CONSTANTS ***/
 
@@ -47,10 +50,41 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         _;
     }
 
+    /// @dev Modifier that allows do an operation by an artist only
+    /// @param _tokenId Artwork Id
+    modifier onlyArtistOf(uint256 _tokenId) {
+        address artist;
+        (artist,,,) = _snarkStorage.getArtworkDescription(_tokenId);
+        require(msg.sender == artist);
+        _;
+    }
+
+    modifier onlyParticipantOf(uint256 _tokenId) {
+        bool isItParticipant = false;
+        uint256 schemeId;
+        (,schemeId,,) = _snarkStorage.getArtworkDetails(_tokenId);
+        uint256 participantsAmount = _snarkStorage.getProfitShareSchemeParticipantsAmount(schemeId);
+        address participant;
+        for (uint256 i = 0; i < participantsAmount; i++) {
+            (participant,) = _snarkStorage.getProfitShareSchemeForParticipant(schemeId, i);
+            if (msg.sender == participant) { 
+                isItParticipant = true; 
+                break; 
+            }
+        }
+        require(isItParticipant);
+        _;
+    }
+
     /// @dev Constructor of contract
     /// @param _snarkStorageAddress Address of a storage contract
     constructor(address _snarkStorageAddress) public {
         _snarkStorage = SnarkStorage(_snarkStorageAddress);
+    }
+
+    /// @dev Function to destroy a contract in the blockchain
+    function kill() external onlyOwner {
+        selfdestruct(owner);
     }
 
     /// @dev Set a new profit share for Snark platform
@@ -59,15 +93,36 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         platformProfitShare = _platformProfitShare;
     }
 
-    /// @dev Delete a profit share from secondary sale
-    /// @param _tokenId Token Id
-    function dropProfitShareFromSecondarySale(uint256 _tokenId) external onlyOwner {
-        _snarkStorage.updateArtworkProfitShareFromSecondarySale(_tokenId, 0);
+    /// @dev Generating event to approval from each participant of token
+    /// @param _tokenId Id of artwork
+    function sendRequestForApprovalOfProfitShareRemovalForSecondarySale(uint _tokenId) external onlyArtistOf(_tokenId) {
+        uint256 schemeId;
+        (,schemeId,,) = _snarkStorage.getArtworkDetails(_tokenId);
+        uint256 participantsAmount = _snarkStorage.getProfitShareSchemeParticipantsAmount(schemeId);
+        address participant;
+        for (uint256 i = 0; i < participantsAmount; i++) {
+            (participant,) = _snarkStorage.getProfitShareSchemeForParticipant(schemeId, i);
+            _snarkStorage.setParticipantApproving(_tokenId, participant, false);
+            emit NeedApproveProfitShareRemoving(participant, _tokenId);
+        }
     }
 
-    /// @dev Function to destroy a contract in the blockchain
-    function kill() external onlyOwner {
-        selfdestruct(owner);
+    /// @dev Delete a profit share from secondary sale
+    /// @param _tokenId Token Id
+    function approveRemovingProfitShareFromSecondarySale(uint256 _tokenId) external onlyParticipantOf(_tokenId) {
+        _snarkStorage.setParticipantApproving(_tokenId, msg.sender, true);
+
+        uint256 schemeId;
+        address participant;
+        bool isApproved = true;
+        (,schemeId,,) = _snarkStorage.getArtworkDetails(_tokenId);
+        uint256 participantsAmount = _snarkStorage.getProfitShareSchemeParticipantsAmount(schemeId);
+        for (uint256 i = 0; i < participantsAmount; i++) {
+            (participant,) = _snarkStorage.getProfitShareSchemeForParticipant(schemeId, i);
+            isApproved = isApproved && _snarkStorage.getParticipantApproving(_tokenId, participant);
+        }
+
+        if (isApproved) _snarkStorage.updateArtworkProfitShareFromSecondarySale(_tokenId, 0);
     }
 
     /// @dev Create a scheme of profit share for user
@@ -78,13 +133,29 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         require(_participants.length == _percentAmounts.length);
         uint256 schemeId = _snarkStorage.addProfitShareScheme(_participants, _percentAmounts);
         _snarkStorage.addProfitShareSchemeToAddress(msg.sender, schemeId);
-        return schemeId;
+        emit ProfitShareSchemeAdded(msg.sender, schemeId);
+    }
+
+    /// @dev Return a total number of profit share schemes
+    function getProfitShareSchemesTotalAmount() public view returns (uint256) {
+        return _snarkStorage.getProfitShareSchemesTotalAmount();
+    }
+
+    /// @dev Return a total number of user's profit share schemes
+    function getProfitShareSchemeAmountByAddress() public view returns (uint256) {
+        return _snarkStorage.getProfitShareSchemesAmountByAddress(msg.sender);
+    }
+
+    /// @dev Return a scheme Id for user by an index
+    /// @param _index Index of scheme for current user's address
+    function getProfitShareSchemeIdByIndex(uint256 _index) public view returns (uint256) {
+        return _snarkStorage.getProfitShareSchemeIdByIndex(msg.sender, _index);
     }
 
     /// @dev Return a list of user profit share schemes
     /// @return A list of schemes belongs to owner
-    function getProfitShareSchemeList() public view returns(uint256[]) {
-        return _snarkStorage.getProfitShareSchemeByAddress(msg.sender);
+    function getProfitShareParticipantsAmount() public view returns(uint256) {
+        return _snarkStorage.getProfitShareSchemesAmountByAddress(msg.sender);
     }
 
     /// @dev Function to add a new digital artwork to blockchain
@@ -112,6 +183,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         // Create the number of editions specified by the limitEdition
         for (uint8 i = 0; i < _limitedEdition; i++) {
             uint256 _tokenId = _snarkStorage.addArtwork(
+                msg.sender,
                 _hashOfArtwork,
                 _limitedEdition,
                 i + 1,
@@ -133,6 +205,21 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         }
     }
 
+    /// @dev Return description about token
+    /// @param _tokenId Token Id of digital work
+    function getTokenDescription(uint256 _tokenId) 
+        public 
+        view 
+        returns (
+            address artist,
+            uint16 limitedEdition, 
+            uint16 editionNumber, 
+            uint256 lastPrice
+        ) 
+    {
+        return _snarkStorage.getArtworkDescription(_tokenId);
+    }
+
     /// @dev Return details about token
     /// @param _tokenId Token Id of digital work
     function getTokenDetails(uint256 _tokenId) 
@@ -140,15 +227,12 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         view 
         returns (
             bytes32 hashOfArtwork, 
-            uint16 limitedEdition, 
-            uint16 editionNumber, 
-            uint256 lastPrice, 
             uint256 profitShareSchemaId,
             uint8 profitShareFromSecondarySale, 
             string artworkUrl
         ) 
     {
-        return _snarkStorage.getArtwork(_tokenId);
+        return _snarkStorage.getArtworkDetails(_tokenId);
     }
 
     /// @dev Change in profit sharing. Change can only be to the percentages for already registered wallet addresses.

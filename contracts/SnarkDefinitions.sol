@@ -6,6 +6,7 @@ contract SnarkDefinitions {
     /// @dev The main Artwork struct. Every digital artwork created by Snark 
     /// is represented by a copy of this structure.
     struct Artwork {
+        address artist;                     // Address of artist
         bytes32 hashOfArtwork;              // Hash of file SHA3 (32 bytes)
         uint16 limitedEdition;              // Number of editions available for sale
         uint16 editionNumber;               // Edition number or id (2 bytes)

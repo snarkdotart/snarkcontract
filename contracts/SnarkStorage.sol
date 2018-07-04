@@ -6,36 +6,94 @@ import "./SnarkDefinitions.sol";
 
 contract SnarkStorage is Ownable, SnarkDefinitions {
 
-    /// @dev An array containing the Artwork struct for all artworks.
-    Artwork[] artworks;
+    /*** STORAGE ***/
 
-    function getArtworksAmount() public view onlyPlatform returns (uint256) {
+    // An array containing the Artwork struct for all artworks.
+    Artwork[] private artworks;
+    // An array containing the structures of profit share schemes
+    ProfitShareScheme[] private profitShareSchemes;
+
+    // Mapping from a contract address to access indicator
+    mapping (address => bool) private accessAllowed;
+    // Mapping from token ID to owner
+    mapping (uint256 => address) private tokenToOwnerMap;
+    // Mapping from owner to their Token IDs
+    mapping (address => uint256[]) private ownerToTokensMap;
+    // Mapping from hash to previously used indicator
+    mapping (bytes32 => bool) private hashToUsedMap;
+    // Mapping from owner to approved operator
+    mapping (address => mapping (address => bool)) private operatorToApprovalsMap;
+    // Mapping from token ID to approved address
+    mapping (uint256 => address) private tokenToApprovalsMap;
+    // Mapping from address of owner to profit share schemes
+    mapping (address => uint256[]) private addressToProfitShareSchemesMap;
+    // Mapping token of revenue participant to their approval confirmation
+    mapping (uint256 => mapping (address => bool)) private tokenToParticipantApprovingMap;
+
+    /*** MODIFIERS ***/
+
+    modifier onlyPlatform() {
+        require(accessAllowed[msg.sender] == true || msg.sender == owner);
+        _;
+    }
+
+    modifier checkTokenId(uint256 _tokenId) {
+        require(artworks.length > 0);
+        require(_tokenId < artworks.length);
+        _;
+    }
+
+    modifier checkSchemeId(uint256 _schemeId) {
+        require(profitShareSchemes.length > 0);
+        require(_schemeId < profitShareSchemes.length);
+        _;
+    }
+
+    /*** ACCESS ***/
+
+    function allowAccess(address _address) external onlyOwner {
+        accessAllowed[_address] = true;
+    }
+
+    function denyAccess(address _address) external onlyOwner {
+        accessAllowed[_address] = false;
+    }
+
+    /*** Artwork ***/
+    function getArtworksAmount() external view onlyPlatform returns (uint256) {
         return artworks.length;
     }
 
-    function getArtwork(uint256 _tokenId) public view onlyPlatform returns (        
-        bytes32 _hashOfArtwork,
-        uint16 _limitedEdition,
-        uint16 _editionNumber,
-        uint256 _lastPrice,
-        uint256 _profitShareSchemaId,
-        uint8 _profitShareFromSecondarySale,
-        string _artworkUrl) 
+    function getArtworkDescription(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (
+        address artist,
+        uint16 limitedEdition,
+        uint16 editionNumber,
+        uint256 lastPrice) 
     {
-        require(artworks.length > 0);
-        require(_tokenId > 0);
-        require(_tokenId <= artworks.length);
-        
-        return (artworks[_tokenId - 1].hashOfArtwork, 
-            artworks[_tokenId - 1].limitedEdition,
-            artworks[_tokenId - 1].editionNumber,
-            artworks[_tokenId - 1].lastPrice,
-            artworks[_tokenId - 1].profitShareSchemaId,
-            artworks[_tokenId - 1].profitShareFromSecondarySale,
-            artworks[_tokenId - 1].artworkUrl);
+        return (
+            artworks[_tokenId].artist,
+            artworks[_tokenId].limitedEdition,
+            artworks[_tokenId].editionNumber,
+            artworks[_tokenId].lastPrice
+        );
+    }
+
+    function getArtworkDetails(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (
+        bytes32 hastOfArtwork,
+        uint256 profitShareSchemaId,
+        uint8 profitShareFromSecondarySale,
+        string artworkUrl)
+    {
+        return (
+            artworks[_tokenId].hashOfArtwork, 
+            artworks[_tokenId].profitShareSchemaId,
+            artworks[_tokenId].profitShareFromSecondarySale,
+            artworks[_tokenId].artworkUrl
+        );
     }
 
     function addArtwork(
+        address _artist,
         bytes32 _hashOfArtwork,
         uint16 _limitedEdition,
         uint16 _editionNumber,
@@ -44,11 +102,12 @@ contract SnarkStorage is Ownable, SnarkDefinitions {
         uint8 _profitShareFromSecondarySale,
         string _artworkUrl
     ) 
-        public 
+        external 
         onlyPlatform
         returns(uint256) 
     {
-        return artworks.push(Artwork({
+        uint256 tokenId = artworks.push(Artwork({
+            artist: _artist,
             hashOfArtwork: _hashOfArtwork,
             limitedEdition: _limitedEdition,
             editionNumber: _editionNumber,
@@ -56,96 +115,131 @@ contract SnarkStorage is Ownable, SnarkDefinitions {
             profitShareSchemaId: _profitShareSchemaId,
             profitShareFromSecondarySale: _profitShareFromSecondarySale,
             artworkUrl: _artworkUrl
-        }));
-    }
-
-    function updateArtworkLastPrice(uint256 _tokenId, uint8 _lastPrice) public onlyPlatform {
-        artworks[_tokenId - 1].lastPrice = _lastPrice;
-    }
-
-    function updateArtworkProfitShareSchemaId(uint256 _tokenId, uint256 _profitShareSchemaId) public onlyPlatform {
-        artworks[_tokenId - 1].profitShareSchemaId = _profitShareSchemaId;
-    }
-
-    function updateArtworkProfitShareFromSecondarySale(uint256 _tokenId, uint8 _profitShareForSecondarySale) public onlyPlatform {
-        artworks[_tokenId - 1].profitShareFromSecondarySale = _profitShareForSecondarySale;
-    }
-
-    /// @dev An array containing the structures of profit share schemes
-    ProfitShareScheme[] profitShareSchemes;
-
-    function addProfitShareScheme(address[] _participants, uint8[] _percentAmounts) public onlyPlatform returns (uint256) {
-        return profitShareSchemes.push(ProfitShareScheme({
-            participants: _participants,
-            profits: _percentAmounts
         })) - 1;
+        return tokenId;
     }
 
-    // Mapping from a contract address to access indicator
-    mapping (address => bool) public accessAllowed; 
-
-    modifier onlyPlatform() {
-        require(accessAllowed[msg.sender] == true || msg.sender == owner);
-        _;
+    function updateArtworkLastPrice(uint256 _tokenId, uint8 _lastPrice) 
+        external 
+        onlyPlatform 
+        checkTokenId(_tokenId) 
+    {
+        artworks[_tokenId].lastPrice = _lastPrice;
     }
 
-    function allowAccess(address _address) public onlyOwner {
-        accessAllowed[_address] = true;
+    function updateArtworkProfitShareSchemaId(uint256 _tokenId, uint256 _profitShareSchemaId) 
+        external 
+        onlyPlatform 
+        checkTokenId(_tokenId) 
+    {
+        artworks[_tokenId].profitShareSchemaId = _profitShareSchemaId;
     }
 
-    function denyAccess(address _address) onlyOwner public {
-        accessAllowed[_address] = false;
+    function updateArtworkProfitShareFromSecondarySale(uint256 _tokenId, uint8 _profitShareForSecondarySale) 
+        external 
+        onlyPlatform 
+        checkTokenId(_tokenId) 
+    {
+        artworks[_tokenId].profitShareFromSecondarySale = _profitShareForSecondarySale;
     }
 
-    // Mapping from token ID to owner
-    mapping (uint256 => address) tokenToOwnerMap;
+    /*** ProfitShareScheme ***/
 
-    function getOwnerByToken(uint256 _tokenId) public view onlyPlatform returns (address) {
+    function addProfitShareScheme(address[] _participants, uint8[] _profits) external onlyPlatform returns (uint256) {
+        uint256 _schemeId = profitShareSchemes.push(ProfitShareScheme({
+            participants: _participants,
+            profits: _profits
+        })) - 1;
+        return _schemeId;
+    }
+
+    function getProfitShareSchemesTotalAmount() external view onlyPlatform returns (uint256) {
+        return profitShareSchemes.length;
+    }
+
+    function getProfitShareSchemeParticipantsAmount(uint256 _schemeId) 
+        external 
+        view 
+        onlyPlatform
+        checkSchemeId(_schemeId)
+        returns (uint256) 
+    {
+        return profitShareSchemes[_schemeId].participants.length;
+    }
+
+    function getProfitShareSchemeForParticipant(
+        uint256 _schemeId, 
+        uint256 _participantIndex
+    ) 
+        external 
+        view 
+        onlyPlatform 
+        checkSchemeId(_schemeId)
+        returns (address _participant, uint8 _profit) 
+    {
+        require(_participantIndex < profitShareSchemes[_schemeId].participants.length);
+        
+        return (
+            profitShareSchemes[_schemeId].participants[_participantIndex], 
+            profitShareSchemes[_schemeId].profits[_participantIndex]
+        );
+    }
+
+    /*** addressToProfitShareSchemesMap ***/
+    function addProfitShareSchemeToAddress(address _owner, uint256 _schemeId) external onlyPlatform {
+        addressToProfitShareSchemesMap[_owner].push(_schemeId);
+    }
+
+    function getProfitShareSchemesAmountByAddress(address _owner) external view onlyPlatform returns (uint256) {
+        return addressToProfitShareSchemesMap[_owner].length;
+    }
+
+    function getProfitShareSchemeIdByIndex(address _owner, uint256 _index) external view onlyPlatform returns (uint256) {
+        return addressToProfitShareSchemesMap[_owner][_index];
+    }
+
+    /*** tokenToOwnerMap ***/
+    function getOwnerByToken(uint256 _tokenId) external view onlyPlatform returns (address) {
         return tokenToOwnerMap[_tokenId];
     }
 
-    function setOwnerForToken(uint256 _tokenId, address _owner) public onlyPlatform {
+    function setOwnerForToken(uint256 _tokenId, address _owner) external onlyPlatform {
         tokenToOwnerMap[_tokenId] = _owner;
     }
 
-    // Mapping from owner to their Token IDs
-    mapping (address => uint256[]) ownerToTokensMap;
-
-    function getTokensByOwner(address _owner) public view onlyPlatform returns (uint256[]) {
+    /*** ownerToTokensMap ***/
+    function getTokensByOwner(address _owner) external view onlyPlatform returns (uint256[]) {
         return ownerToTokensMap[_owner];
     }
 
-    function addTokenToOwner(address _owner, uint256 _tokenId) public onlyPlatform {
+    function addTokenToOwner(address _owner, uint256 _tokenId) external onlyPlatform {
         ownerToTokensMap[_owner].push(_tokenId);
     }
 
-    function deleteOwnerTokenByIndex(address _owner, uint256 _index) public onlyPlatform {
+    function deleteOwnerTokenByIndex(address _owner, uint256 _index) external onlyPlatform {
         ownerToTokensMap[_owner][_index] = ownerToTokensMap[_owner][ownerToTokensMap[_owner].length - 1];
         ownerToTokensMap[_owner].length--;
     }
     
-    // Mapping from hash to previously used indicator
-    mapping (bytes32 => bool) hashToUsedMap;
-
-    function getHashToUsed(bytes32 _hash) public view onlyPlatform returns (bool) {
+    /*** hashToUsedMap ***/
+    function getHashToUsed(bytes32 _hash) external view onlyPlatform returns (bool) {
         return hashToUsedMap[_hash];
     }
 
-    function setHashToUsed(bytes32 _hash, bool _isUsed) public onlyPlatform {
+    function setHashToUsed(bytes32 _hash, bool _isUsed) external onlyPlatform {
         hashToUsedMap[_hash] = _isUsed;
     }
 
-    mapping (address => mapping (address => bool)) operatorToApprovalsMap; // Mapping from owner to approved operator
-    mapping (uint256 => address) tokenToApprovalsMap;                      // Mapping from token ID to approved address
+    /*** operatorToApprovalsMap ***/
     
-    // Mapping from address of owner to profit share schemes
-    mapping (address => uint256[]) addressToProfitShareSchemesMap;
+    /*** tokenToApprovalsMap ***/
 
-    function addProfitShareSchemeToAddress(address _owner, uint256 _schemeId) public onlyPlatform {
-        addressToProfitShareSchemesMap[_owner].push(_schemeId);
+    /*** tokenToParticipantApprovingMap ***/
+    function getParticipantApproving(uint256 _tokenId, address _participant) external view onlyPlatform returns (bool) {
+        return tokenToParticipantApprovingMap[_tokenId][_participant];
     }
 
-    function getProfitShareSchemeByAddress(address _owner) public view onlyPlatform returns (uint256[]) {
-        return addressToProfitShareSchemesMap[_owner];
+    function setParticipantApproving(uint256 _tokenId, address _participant, bool _consent) external onlyPlatform {
+        tokenToParticipantApprovingMap[_tokenId][_participant] = _consent;
     }
 }
