@@ -19,6 +19,8 @@ contract SnarkStorage is Ownable, SnarkDefinitions {
     mapping (uint256 => address) private tokenToOwnerMap;
     // Mapping from owner to their Token IDs
     mapping (address => uint256[]) private ownerToTokensMap;
+    // Mapping from artist to their Token IDs
+    mapping (address => uint256[]) private artistToTokensMap;
     // Mapping from hash to previously used indicator
     mapping (bytes32 => bool) private hashToUsedMap;
     // Mapping from owner to approved operator
@@ -208,8 +210,13 @@ contract SnarkStorage is Ownable, SnarkDefinitions {
     }
 
     /*** ownerToTokensMap ***/
-    function getTokensByOwner(address _owner) external view onlyPlatform returns (uint256[]) {
-        return ownerToTokensMap[_owner];
+    function getTokensAmountByOwner(address _owner) external view onlyPlatform returns (uint256) {
+        return ownerToTokensMap[_owner].length;
+    }
+
+    function getTokenIdForOwnerByIndex(address _owner, uint256 _index) external view onlyPlatform returns (uint256) {
+        require(_index < ownerToTokensMap[_owner].length);
+        return ownerToTokensMap[_owner][_index];
     }
 
     function addTokenToOwner(address _owner, uint256 _tokenId) external onlyPlatform {
@@ -241,5 +248,19 @@ contract SnarkStorage is Ownable, SnarkDefinitions {
 
     function setParticipantApproving(uint256 _tokenId, address _participant, bool _consent) external onlyPlatform {
         tokenToParticipantApprovingMap[_tokenId][_participant] = _consent;
+    }
+
+    /*** artistToTokensMap ***/
+    function getTokensAmountByArtist(address _artist) external view onlyPlatform returns (uint256) {
+        return artistToTokensMap[_artist].length;
+    }
+
+    function getTokenIdForArtistByIndex(address _artist, uint256 _index) external view onlyPlatform returns (uint256) {
+        require(_index < artistToTokensMap[_artist].length);
+        return artistToTokensMap[_artist][_index];
+    }
+
+    function addTokenToArtist(address _artist, uint256 _tokenId) external onlyPlatform {
+        artistToTokensMap[_artist].push(_tokenId);
     }
 }

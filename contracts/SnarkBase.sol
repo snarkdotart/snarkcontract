@@ -59,6 +59,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         _;
     }
 
+    /// @dev Modifier that allows access for a participant only
     modifier onlyParticipantOf(uint256 _tokenId) {
         bool isItParticipant = false;
         uint256 schemeId;
@@ -200,6 +201,8 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             _snarkStorage.setOwnerForToken(_tokenId, msg.sender);
             // Add new token to new owner's token list
             _snarkStorage.addTokenToOwner(msg.sender, _tokenId);
+            // Add new token to new artist's token list
+            _snarkStorage.addTokenToArtist(msg.sender, _tokenId);
             // Emit token event 
             emit TokenCreatedEvent(msg.sender, _tokenId);
         }
@@ -207,6 +210,14 @@ contract SnarkBase is Ownable, SnarkDefinitions {
 
     function getTokensAmount() public view returns (uint256) {
         return _snarkStorage.getArtworksAmount();
+    }
+
+    function getTokensAmountByArtist(address _artist) public view returns (uint256) {
+        return _snarkStorage.getTokensAmountByArtist(_artist);
+    }
+
+    function getTokensAmountByOwner() public view returns (uint256) {
+        return _snarkStorage.getTokensAmountByOwner(msg.sender);
     }
 
     /// @dev Return description about token
@@ -258,10 +269,11 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @param _tokenId Token Id
     function _transfer(address _from, address _to, uint256 _tokenId) internal {
         if (_from != address(0)) {
+            uint256 tokensAmount = _snarkStorage.getTokensAmountByOwner(_from);
             // Remove the transferred token from the array of tokens belonging to the owner
-            uint256[] memory tokensArray = _snarkStorage.getTokensByOwner(_from);
-            for (uint i = 0; i < tokensArray.length; i++) {
-                if (tokensArray[i] == _tokenId) {
+            for (uint i = 0; i < tokensAmount; i++) {
+                uint256 ownerTokenId = _snarkStorage.getTokenIdForOwnerByIndex(_from, i);
+                if (ownerTokenId == _tokenId) {
                     _snarkStorage.deleteOwnerTokenByIndex(_from, i);
                     break;
                 }
