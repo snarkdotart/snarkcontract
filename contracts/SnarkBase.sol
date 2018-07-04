@@ -205,6 +205,10 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         }
     }
 
+    function getTokensAmount() public view returns (uint256) {
+        return _snarkStorage.getArtworksAmount();
+    }
+
     /// @dev Return description about token
     /// @param _tokenId Token Id of digital work
     function getTokenDescription(uint256 _tokenId) 
