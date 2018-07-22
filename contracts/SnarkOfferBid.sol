@@ -9,10 +9,6 @@ contract SnarkOfferBid is SnarkBase {
 
     // New offer event
     event OfferCreatedEvent(uint256 offerId);
-    // Approved profit share by participant event
-    event NeedApproveOfferEvent(uint256 offerId, address indexed _participant, uint8 _percentAmount);
-    // Declined profit share by participant event
-    event DeclineApproveOfferEvent(uint256 _offerId, address indexed _offerOwner, address indexed _participant);
     // Offer deleted event
     event OfferDeletedEvent(uint256 _offerId);
     // Offer ended (artworks sold) event
@@ -21,70 +17,12 @@ contract SnarkOfferBid is SnarkBase {
     event BidSettedUpEvent(uint256 _bidId, address indexed _bidder, uint256 _value);
     // Canceled bid event
     event BidCanceledEvent(uint256 _artworkId);
-
-    // There are 4 states for an Offer and an Auction:
-    // Preparing -recently created and not approved by participants
-    // NotActive - created and approved by participants, but is not yet active (auctions only) 
-    // Active - created, approved, and active 
-    // Finished - finished when the artwork has sold 
-    enum SaleStatus { Preparing, NotActive, Active, Finished }
-
-    // Sale type (none, offer sale, auction, art loan)
-    enum SaleType { None, Offer, Auction, Loan }
-
-    struct Offer {
-        uint256 price;                                              // Proposed sale price in Ether for all artworks
-        uint256 countOfArtworks;                                // Number of artworks offered. Decrease with every succesful sale.
-        address[] participants;                                     // Profit sharing participants' addresses
-        SaleStatus saleStatus;                                      // Offer status (3 possible states: Preparing, Active, Finished)
-        mapping (address => uint8) participantToPercentageAmountMap;// Mapping of participants to their profit share
-        mapping (address => bool) participantToApproveMap;          // Mapping of participants to their approval indicators
-    }
-
-    struct Bid {
-        uint artworkId;     // Artwork ID
-        uint price;             // Offered price for the digital artwork
-        SaleStatus saleStatus;  // Offer status (2 possible states: Active, Finished)
-    }
-
-    Offer[] internal offers;    // List of all offers
-    Bid[] internal bids;        // List of all bids
-
-    mapping (uint256 => uint256) internal tokenToOfferMap;      // Mapping of artwork to offers
-    mapping (uint256 => uint256[]) internal offerToTokensMap;   // Mapping of offer to tokens
-    mapping (uint256 => address) internal offerToOwnerMap;      // Mapping of offers to owner
-    mapping (address => uint256[]) internal ownerToOffersMap;   // Mapping of owner to offers
-    mapping (uint8 => uint256[]) internal saleStatusToOffersMap;// Mapping status to offers
-    mapping (uint256 => address) internal bidToOwnerMap;        // Mapping of bids to owner
-    mapping (address => uint256[]) internal ownerToBidsMap;     // Mapping of owner to bids
-    mapping (uint256 => uint256) internal tokenToBidMap;        // Mapping of artwork to bid
-    mapping (uint256 => bool) internal tokenToIsExistBidMap;    // Mapping of artwork to an indicator of an existing bid
-    mapping (address => uint256) public pendingWithdrawals;     // Mapping of an address with its balance
-
-    // Artwork can only be in one of four states:
-    // 1. Not being sold
-    // 2. Offered for sale at an offer price
-    // 3. Auction sale
-    // 4. Art loan
-    // Must avoid any possibility of a double sale
-    mapping (uint256 => SaleType) internal tokenToSaleTypeMap;
-
-    /// @dev Modifier that permits only the revenue sharing participants
-    /// @param _offerId Offer ID
-    modifier onlyOfferParticipator(uint256 _offerId) {
-        bool isItParticipant = false;
-        address[] storage p = offers[_offerId].participants;
-        for (uint8 i = 0; i < p.length; i++) {
-            if (msg.sender == p[i]) isItParticipant = true;
-        }
-        require(isItParticipant);
-        _;
-    }
+/*
 
     /// @dev Modifier that allows only the owner of the offer
     /// @param _offerId Id of offer
     modifier onlyOfferOwner(uint256 _offerId) {
-        require(msg.sender == offerToOwnerMap[_offerId]);
+        require(msg.sender == _snarkStorage.get_offerToOwnerMap(_offerId));
         _;
     }
     
@@ -162,8 +100,7 @@ contract SnarkOfferBid is SnarkBase {
     /// @param _percentAmounts List of profit share % of participants
     function createOffer(
         uint256 _price, 
-        uint256[] _tokenIds, 
-        address[] _participants,
+        uint256[] _tokenIds,
         uint8[] _percentAmounts
     ) 
         public 
@@ -260,39 +197,6 @@ contract SnarkOfferBid is SnarkBase {
         // emit an event that a new offer was created
         emit OfferCreatedEvent(offerId);
     }
-
-    /// @dev Profit sharing participants confirm consent to offer terms
-    /// @param _offerId Offer ID
-    function approveOffer(uint256 _offerId) public onlyOfferParticipator(_offerId) {
-        Offer storage offer = offers[_offerId];
-        // mark the current participant as approving offer terms
-        offer.participantToApproveMap[msg.sender] = true;
-        // check whether all participants consented to and offer and form an array with profit sharing %
-        bool isAllApproved = true;
-        uint8[] memory parts = new uint8[](offer.participants.length);
-        for (uint8 i = 0; i < offer.participants.length; i++) {
-            isAllApproved = isAllApproved && offer.participantToApproveMap[offer.participants[i]];
-            parts[i] = offer.participantToPercentageAmountMap[offer.participants[i]];
-        }
-        // if all participants consent to the offer, copy the offer terms into the artwork tokens so that each token can contain
-        // information on profit sharing %
-        if (isAllApproved) {
-            uint256[] memory tokens = getArtworksOffersList(_offerId);
-            for (i = 0; i < tokens.length; i++) {
-                _applyProfitShare(tokens[i], offer.participants, parts);
-            }
-        }
-        // now mark the offer as having been created
-        if (isAllApproved) _moveOfferToNextStatus(_offerId);
-        emit OfferCreatedEvent(_offerId);
-    }
-
-    /// @dev Profit sharing participant declines the offered terms 
-    /// @param _offerId Offer ID
-    function declineOfferApprove(uint256 _offerId) public onlyOfferParticipator(_offerId) {
-        // in this case we only can inform the owner about the refusal
-        emit DeclineApproveOfferEvent(_offerId, offerToOwnerMap[_offerId], msg.sender);
-    }
     
     /// @dev Delete offer. This is also done during the sale of the last artwork in the offer.  
     /// @param _offerId Offer ID
@@ -375,7 +279,7 @@ contract SnarkOfferBid is SnarkBase {
             require(msg.value >= bid.price + (bid.price * 5 / 100));
             // earlier bidder needs to get back his bid
             if (bid.price > 0) {
-                // write the bid amount to the previous bidder to allow them to later withdraw
+                // write the bid count to the previous bidder to allow them to later withdraw
                 pendingWithdrawals[bidToOwnerMap[bidId]] += bid.price;
                 // delete the bid from the bidder
                 for (uint8 i = 0; i < ownerToBidsMap[msg.sender].length; i++) {
@@ -496,22 +400,22 @@ contract SnarkOfferBid is SnarkBase {
                 artwork.isFirstSale = false;
             } else {
                 // if it is a secondary sale, reduce the profit by the profit sharing % specified by the artist 
-                // the remaining amount goes back to the seller
-                uint256 amountToSeller = _price;
-                // the amount to be distributed
+                // the remaining count goes back to the seller
+                uint256 countToSeller = _price;
+                // the count to be distributed
                 profit = profit * artwork.profitShareFromSecondarySale / 100;
-                // the amount that will go to the seller
-                amountToSeller -= profit;
-                pendingWithdrawals[_from] += amountToSeller;
+                // the count that will go to the seller
+                countToSeller -= profit;
+                pendingWithdrawals[_from] += countToSeller;
             }
-            uint256 residue = profit; // hold any uncollected amount in residue after paying out all of the participants
+            uint256 residue = profit; // hold any uncollected count in residue after paying out all of the participants
             for (uint8 i = 0; i < artwork.participants.length; i++) { // one by one go through each profit sharing participant
-                // calculate the payout amount
+                // calculate the payout count
                 uint256 payout = profit * artwork.participantToPercentMap[artwork.participants[i]] / 100;
-                pendingWithdrawals[artwork.participants[i]] += payout; // move the payout amount to each participant
-                residue -= payout; // recalculate the uncollected amount after the payout
+                pendingWithdrawals[artwork.participants[i]] += payout; // move the payout count to each participant
+                residue -= payout; // recalculate the uncollected count after the payout
             }
-            // if there is any uncollected amounts after distribution, move the amount to the seller
+            // if there is any uncollected counts after distribution, move the count to the seller
             pendingWithdrawals[_from] += residue;
         } else {
             // if there is no profit, then all goes back to the seller
@@ -540,4 +444,6 @@ contract SnarkOfferBid is SnarkBase {
         // move token from Snark to artwork Owner
         _transfer(owner, realOwner, _tokenId);
     }
+
+*/
 }

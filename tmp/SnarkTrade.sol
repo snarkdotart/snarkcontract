@@ -24,7 +24,7 @@ contract SnarkTrade is SnarkLoan {
     }
 
     /// @dev Function returns the count of artwork tokens in the system
-    function getAmountOfTokens() public view returns(uint256) {
+    function getCountOfTokens() public view returns(uint256) {
         return artworks.length;
     }
 

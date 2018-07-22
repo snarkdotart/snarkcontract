@@ -27,7 +27,7 @@ contract('SnarkBase', async (accounts) => {
         const addresses = [accounts[1], accounts[2]];
         const percents = [60, 40];
 
-        let result = await instance.getProfitShareSchemesTotalAmount.call();
+        let result = await instance.getProfitShareSchemesTotalCount.call();
         assert.equal(result.toNumber(), 0, "Array of profits is not empty")
 
         const event = instance.ProfitShareSchemeAdded({ fromBlock: 0, toBlock: 'latest' });
@@ -40,7 +40,7 @@ contract('SnarkBase', async (accounts) => {
 
         await instance.createProfitShareScheme(addresses, percents);
 
-        result = await instance.getProfitShareSchemesTotalAmount.call();
+        result = await instance.getProfitShareSchemesTotalCount.call();
         assert.equal(result.toNumber(), 1, "Array of profits has a wrong length")
     });
 
@@ -50,7 +50,7 @@ contract('SnarkBase', async (accounts) => {
         // const addresses = [accounts[1], accounts[2]];
         // const percents = [60, 40];
 
-        // let result = await instance.getProfitShareSchemesTotalAmount.call();
+        // let result = await instance.getProfitShareSchemesTotalCount.call();
         // console.log(result);
         // assert.equal(result.toNumber(), 0, "Array of profits is not empty")
 
@@ -66,8 +66,8 @@ contract('SnarkBase', async (accounts) => {
         // await instance.createProfitShareScheme(addresses, percents);
 
         // 2. создаем цифровую работу и назначаем ей созданную схему распределения
-        let tokens_amount = await instance.getTokensAmount.call();
-        assert.equal(tokens_amount, 0, "tokens amount is more than 0");
+        let tokens_count = await instance.getTokensCount.call();
+        assert.equal(tokens_count, 0, "tokens count is more than 0");
 
         const event2 = instance.TokenCreatedEvent({ fromBlock: 0, toBlock: 'latest' });
         let val_tokenId;
@@ -94,8 +94,8 @@ contract('SnarkBase', async (accounts) => {
             profitShareSchemeId
         );
 
-        tokens_amount = await instance.getTokensAmount.call();
-        assert.equal(tokens_amount, 1, "tokens amount is not 1");
+        tokens_count = await instance.getTokensCount.call();
+        assert.equal(tokens_count, 1, "tokens count is not 1");
 
         const event3 = instance.NeedApproveProfitShareRemoving({ fromBlock: 0, toBlock: 'latest' });
         event3.watch(function (error, result) {

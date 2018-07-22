@@ -20,18 +20,6 @@ contract SnarkAuction is SnarkOfferBid {
     // Event notifying that the Auction has finished
     event AuctionFinishedEvent(uint256 _auctionId);
 
-    struct Auction {
-        uint256 startingPrice;                                      // Starting price in wei
-        uint256 endingPrice;                                        // Ending price in wei
-        uint256 workingPrice;                                       // Current price
-        uint64 startingDate;                                        // Block number when an auction should to start
-        uint16 duration;                                            // Auction duration in days
-        address[] participants;                                     // List of artworks participating in the auction
-        mapping(address => uint8) participantToPercentageAmountMap; // Mapping of Auction revenue participant to their share %
-        mapping(address => bool) participantToApproveMap;           // Mapping of Auction revenue participant to their approval confirmation
-        uint256 countOfArtworks;                                // Number of artworks offered in the Auction
-        SaleStatus saleStatus;                                      // Status of the Auctioned artwork (4 possible states)
-    }
 
     // List of all auctions    
     Auction[] internal auctions;
