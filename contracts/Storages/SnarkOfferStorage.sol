@@ -12,14 +12,6 @@ contract SnarkOfferStorage is SnarkBaseStorage {
     // List of all bids
     Bid[] private bids;
 
-    // Artwork can only be in one of four states:
-    // 1. Not being sold
-    // 2. Offered for sale at an offer price
-    // 3. Auction sale
-    // 4. Art loan
-    // Must avoid any possibility of a double sale
-    mapping (uint256 => SaleType) internal tokenToSaleTypeMap;
-
     // Mapping of artwork to offers
     mapping (uint256 => uint256) private tokenToOfferMap;
     // Mapping of offers to owner
@@ -35,10 +27,6 @@ contract SnarkOfferStorage is SnarkBaseStorage {
     mapping (address => uint256[]) private ownerToBidsMap;
     // Mapping of artwork to bid
     mapping (uint256 => uint256[]) private tokenToBidsMap;
-    
-    // Mapping of an address with its balance
-    mapping (address => uint256) private pendingWithdrawals;
-
 
     modifier checkOfferId(uint256 _offerId) {
         require(offers.length > 0);
@@ -53,8 +41,10 @@ contract SnarkOfferStorage is SnarkBaseStorage {
     }
 
     /*** offers ***/
-    function get_offer(uint256 _offerId) external view onlyPlatform checkOfferId(_offerId) returns (uint256 price, SaleStatus status) {
-        return (offers[_offerId].price, offers[_offerId].saleStatus);
+    function get_offer(uint256 _offerId) external view onlyPlatform checkOfferId(_offerId) 
+        returns (uint256 tokenId, uint256 price, SaleStatus status) 
+    {
+        return (offers[_offerId].tokenId, offers[_offerId].price, offers[_offerId].saleStatus);
     }
 
     function get_offers_count() external view onlyPlatform returns (uint256 offersCount) {
@@ -94,19 +84,6 @@ contract SnarkOfferStorage is SnarkBaseStorage {
 
     function finish_bid(uint256 _bidId) external onlyPlatform checkBidId(_bidId) {
         bids[_bidId].saleStatus = SaleStatus.Finished;
-    }
-
-    /*** tokenToSaleTypeMap ***/
-    function get_tokenToSaleTypeMap(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (SaleType saleType) {
-        return tokenToSaleTypeMap[_tokenId];
-    }
-
-    function set_tokenToSaleTypeMap(uint256 _tokenId, SaleType _saleType) external onlyPlatform checkTokenId(_tokenId) {
-        tokenToSaleTypeMap[_tokenId] = _saleType;
-    }
-
-    function delete_tokenToSaleTypeMap(uint256 _tokenId) external onlyPlatform checkTokenId(_tokenId) {
-        delete tokenToSaleTypeMap[_tokenId];
     }
 
     /*** tokenToOfferMap ***/
@@ -226,23 +203,6 @@ contract SnarkOfferStorage is SnarkBaseStorage {
         require(_index < tokenToBidsMap[_tokenId].length && _index >= 0);
         tokenToBidsMap[_tokenId][_index] = tokenToBidsMap[_tokenId][tokenToBidsMap[_tokenId].length - 1];
         tokenToBidsMap[_tokenId].length--;
-    }
-
-    /*** pendingWithdrawals ***/
-    function get_pendingWithdrawals(address _owner) external view onlyPlatform returns (uint256 ownersBalance) {
-        return pendingWithdrawals[_owner];
-    }
-
-    function set_pendingWithdrawals(address _owner, uint256 _balance) external onlyPlatform {
-        pendingWithdrawals[_owner] = _balance;
-    }
-
-    function add_pendingWithdrawals(address _owner, uint256 _addSum) external onlyPlatform {
-        pendingWithdrawals[_owner] = SafeMath.add(pendingWithdrawals[_owner], _addSum);
-    }
-
-    function sub_pendingWithdrawals(address _owner, uint256 _subSum) external onlyPlatform {
-        pendingWithdrawals[_owner] = SafeMath.sub(pendingWithdrawals[_owner], _subSum);
     }
 
 }

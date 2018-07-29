@@ -8,7 +8,7 @@ contract SnarkOfferBid is SnarkBase {
     /*** EVENTS ***/
 
     // New offer event
-    event OfferCreatedEvent(uint256 offerId);
+    event OfferCreatedEvent(uint256 offerId, uint tokenId);
     // Offer deleted event
     event OfferDeletedEvent(uint256 _offerId);
     // Offer ended (artworks sold) event
@@ -16,8 +16,7 @@ contract SnarkOfferBid is SnarkBase {
     // New bid event
     event BidSettedUpEvent(uint256 _bidId, address indexed _bidder, uint256 _value);
     // Canceled bid event
-    event BidCanceledEvent(uint256 _artworkId);
-/*
+    event BidCanceledEvent(uint256 _artworkId, uint256 _bidId);
 
     /// @dev Modifier that allows only the owner of the offer
     /// @param _offerId Id of offer
@@ -26,412 +25,272 @@ contract SnarkOfferBid is SnarkBase {
         _;
     }
     
-    /// @dev Modifier that checks the artwork is not involved in a sale somewhere else
-    /// @param _tokenIds Array of tokens
-    modifier onlyNoneStatus(uint256[] _tokenIds) {
-        bool isStatusNone = true;
-        for (uint8 i = 0; i < _tokenIds.length; i++) {
-            isStatusNone = (isStatusNone && (tokenToSaleTypeMap[_tokenIds[i]] == SaleType.None));
-        }
-        require(isStatusNone);
-        _;
-    }
-
-    /// @dev Modifier that checks that the artworks had a primary sale
-    /// @param _tokenIds Array of tokens
-    modifier onlyFirstSale(uint256[] _tokenIds) {
-        bool isFistSale = true;
-        for (uint8 i = 0; i < _tokenIds.length; i++) {
-            isFistSale = (isFistSale && artworks[_tokenIds[i]].isFirstSale);
-        }
-        require(isFistSale);
-        _;
-    }
-
-    /// @dev Modifier that checks that the artworks had a secondary sale 
-    /// @param _tokenIds Array of tokens
-    modifier onlySecondSale(uint256[] _tokenIds) {
-        bool isSecondSale = true;
-        for (uint8 i = 0; i < _tokenIds.length; i++) {
-            isSecondSale = (isSecondSale && !artworks[_tokenIds[i]].isFirstSale);
-        }
-        require(isSecondSale);
-        _;
-    }    
-
-    /// @dev Modifier checks that the offer ID is in the offer interval 
-    /// @param _offerId Offer ID 
-    modifier correctOfferId(uint256 _offerId) {
-        require(offers.length > 0);
-        require(_offerId < offers.length);
-        _;
-    }
-
     /// @dev Modifier that permits only the owner of the Bid 
     /// @param _bidId Bid ID
     modifier onlyBidOwner(uint256 _bidId) {
-        require(msg.sender == bidToOwnerMap[_bidId]);
+        require(msg.sender == _snarkStorage.get_bidToOwnerMap(_bidId));
         _;
+    }
+
+    constructor(address _snarkStorageAddress) SnarkBase(_snarkStorageAddress) public {
     }
 
     /// @dev Function returns the offer count with a specific status 
     /// @param _status Sale status
-    function getCountOfOffers(uint8 _status) public view returns (uint256) {        
-        require(uint8(SaleStatus.Finished) >= _status);
-        return saleStatusToOffersMap[_status].length;
+    function getOffersCount(uint8 _status) public view returns (uint256) {        
+        require(_status <= uint8(SaleStatus.Finished));
+        return _snarkStorage.get_saleStatusToOffersMap_length(_status);
     }
 
-    /// @dev Function returns a list of offers which belong to a specific owner
+    /// @dev Function returns a count of offers which belong to a specific owner
     /// @param _owner Owner address
-    function getOwnerOffersList(address _owner) public view returns (uint256[]) {
-        return ownerToOffersMap[_owner];
+    function getOwnerOffersCount(address _owner) public view returns (uint256 offersCount) {
+        return _snarkStorage.get_ownerToOffersMap_length(_owner);
     }
 
-    /// @dev Function returns all artworks that belong to a specific offer 
-    /// @param _offerId Offer ID 
-    function getArtworksOffersList(uint256 _offerId) public view correctOfferId(_offerId) returns (uint256[]) {
-        return offerToTokensMap[_offerId];
+    function getOwnerOfferByIndex(address _owner, uint256 _index) public view returns (uint256 offerId) {
+        return _snarkStorage.get_ownerToOffersMap(_owner, _index);
     }
 
-    /// @dev Function to create an offer for the primary sale.  Requires approval of profit sharing participants. 
+    /// @dev Function to create an offer for the secondary sale.
+    /// @param _tokenId Artwork IDs included in the offer
     /// @param _price The price for all artworks included in the offer
-    /// @param _tokenIds List of artwork IDs included in the offer
-    /// @param _participants List of profit sharing participants
-    /// @param _percentAmounts List of profit share % of participants
-    function createOffer(
-        uint256 _price, 
-        uint256[] _tokenIds,
-        uint8[] _percentAmounts
-    ) 
-        public 
-        onlyOwnerOfMany(_tokenIds)
-        // onlyNoneStatus(_tokenIds)
-        // onlyFirstSale(_tokenIds)
-    {
-        // Due to a problem during code compilation, placed the check of 2 modifiers into the function 
-        bool isStatusNone = true;
-        bool isFistSale = true;
-        for (uint8 i = 0; i < _tokenIds.length; i++) {
-            isStatusNone = (isStatusNone && (tokenToSaleTypeMap[_tokenIds[i]] == SaleType.None));
-            isFistSale = (isFistSale && artworks[_tokenIds[i]].isFirstSale);
-        }
-        require(isStatusNone);
-        require(isFistSale);
-
-        // Offer creation and return of the offer ID
-        Offer memory _offer = Offer({
-            price: _price,
-            countOfArtworks: _tokenIds.length,
-            participants: new address[](0),
-            saleStatus: SaleStatus.Preparing
-        });
-        uint256 offerId = offers.push(_offer) - 1;
-        // apply new profit sharing schedule
-        _applyNewSchemaOfProfitDivisionForOffer(offerId, _participants, _percentAmounts);
-        // count offers with saleType = Offer
-        saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
-        // enter the owner of the offer
-        offerToOwnerMap[offerId] = msg.sender;
-        // increase the number of offers owned by the offer owner
-        ownerToOffersMap[msg.sender].push(offerId);
-        // for all artworks perform the following:
-        for (i = 0; i < _tokenIds.length; i++) {
-            // for each artwork mark that is part of an offer
-            tokenToSaleTypeMap[_tokenIds[i]] = SaleType.Offer;
-            // mark also which specific offer it belongs to
-            tokenToOfferMap[_tokenIds[i]] = offerId;
-            // add token to an offer list
-            offerToTokensMap[offerId].push(_tokenIds[i]);
-            // move token to Snark
-            _lockOffersToken(offerId, _tokenIds[i]);
-        }
-        // Generate an event for all profit sharing participants that includes:
-        // offer ID, to give the ability to receive and view the offered
-        // artworks and their price
-        for (i = 0; i < _participants.length; i++) {
-            // emit the event to each participant
-            emit NeedApproveOfferEvent(offerId, _participants[i], _percentAmounts[i]);
-        }
-    }
-
-    /// @dev Create an offer for the secondary sale
-    /// @param _tokenIds List of artwork token IDs to be included in the offer
-    /// @param _price Offer price for all artworks in the offer
-    function createOffer(
-        uint256[] _tokenIds, 
+    function createSaleOffer(
+        uint256 _tokenId,
         uint256 _price
     ) 
         public 
-        onlyOwnerOfMany(_tokenIds)
-        onlyNoneStatus(_tokenIds)
-        onlySecondSale(_tokenIds)
+        onlyOwnerOf(_tokenId)
     {
+        bool isStatusNone = true;
+        bool isSecondSale = true;
+        uint256 lastPrice = 0;
+        isStatusNone = (isStatusNone && (_snarkStorage.get_tokenToSaleTypeMap(_tokenId) == SaleType.None));
+        (, , , lastPrice) = _snarkStorage.get_artwork_description(_tokenId);
+        isSecondSale = (isSecondSale && (lastPrice != 0));
+
+        require(isStatusNone && isSecondSale);
+
         // Offer creation and return of the offer ID
-        Offer memory _offer = Offer({
-            price: 0,
-            participants: new address[](0),
-            countOfArtworks: 0,
-            saleStatus: SaleStatus.Preparing
-        });
-        _offer.price = _price;
-        _offer.countOfArtworks = _tokenIds.length;
-        uint256 offerId = offers.push(_offer) - 1;
+        uint256 offerId = _snarkStorage.add_offer(_price, _tokenId);
         // count offers with saleType = Offer
-        saleStatusToOffersMap[uint8(SaleStatus.Preparing)].push(offerId);
+        _snarkStorage.add_saleStatusToOffersMap(uint8(SaleStatus.Active), offerId);
         // enter the owner of the offer
-        offerToOwnerMap[offerId] = msg.sender;
+        _snarkStorage.set_offerToOwnerMap(offerId, msg.sender);
         // increase the number of offers owned by the offer owner
-        ownerToOffersMap[msg.sender].push(offerId);
-        // for all artworks perform the following:
-        for (uint8 i = 0; i < _tokenIds.length; i++) {
-            // for each artwork mark that is part of an offer
-            uint256 _t = _tokenIds[i];
-            tokenToSaleTypeMap[_t] = SaleType.Offer;
-            // mark also which specific offer it belongs to
-            tokenToOfferMap[_t] = offerId;
-            // add token to offer list
-            offerToTokensMap[offerId].push(_t);
-            // move token to Snark
-            _lockOffersToken(offerId, _t);            
-        }
-        // emit an event that a new offer was created
-        emit OfferCreatedEvent(offerId);
+        _snarkStorage.add_ownerToOffersMap(msg.sender, offerId);
+        // for each artwork mark that is part of an offer
+        _snarkStorage.set_tokenToSaleTypeMap(_tokenId, SaleType.Offer);
+        // mark also which specific offer it belongs to
+        _snarkStorage.set_tokenToOfferMap(_tokenId, offerId);
+        // move token to Snark
+        _lockOffersToken(offerId, _tokenId);
+        // Emit an event that returns token id and offer id as well
+        emit OfferCreatedEvent(offerId, _tokenId);
     }
-    
+
     /// @dev Delete offer. This is also done during the sale of the last artwork in the offer.  
     /// @param _offerId Offer ID
-    function deleteOffer(uint256 _offerId) public onlyOfferOwner(_offerId) {
+    function deleteSaleOffer(uint256 _offerId) public onlyOfferOwner(_offerId) {
+        // mark the offer as finished
+        _snarkStorage.finish_offer(_offerId);
         // clear all data in the artwork
-        uint256[] memory tokens = getArtworksOffersList(_offerId);
-        for (uint8 i = 0; i < tokens.length; i++) {
-            // change sale status to None
-            tokenToSaleTypeMap[tokens[i]] = SaleType.None;
-            // delete the artwork from the offer
-            delete tokenToOfferMap[tokens[i]];
-            // unlock token
-            _unlockOffersToken(_offerId, tokens[i]);
-        }
-        address offerOwner = offerToOwnerMap[_offerId];
+        uint256 tokenId;
+        (tokenId, , ) = _snarkStorage.get_offer(_offerId);
+        // change sale status to None
+        _snarkStorage.set_tokenToSaleTypeMap(tokenId, SaleType.None);
+        // delete the artwork from the offer
+        _snarkStorage.delete_tokenToOfferMap(tokenId);
+        // unlock token
+        _unlockOffersToken(_offerId, tokenId);
+            
+        address offerOwner = _snarkStorage.get_offerToOwnerMap(_offerId);
         // remove the connection of the offer from the owner
-        delete offerToOwnerMap[_offerId];
+        _snarkStorage.delete_offerToOwnerMap(_offerId);
         // delete the offer from owner
-        uint256[] storage ownerOffers = ownerToOffersMap[offerOwner];
-        for (i = 0; i < ownerOffers.length; i++) {
-            if (ownerOffers[i] == _offerId) {
-                ownerOffers[i] = ownerOffers[ownerOffers.length - 1];
-                ownerOffers.length--;
+        uint256 offersCount = _snarkStorage.get_ownerToOffersMap_length(offerOwner);
+        for (uint256 i = 0; i < offersCount; i++) {
+            if (_snarkStorage.get_ownerToOffersMap(offerOwner, i) == _offerId) {
+                _snarkStorage.delete_ownerToOffersMap(offerOwner, i);
                 break;
             }
         }
-        // mark the offer as finished
-        _moveOfferToNextStatus(_offerId);
         // emit event that the offer has been deleted
         emit OfferDeletedEvent(_offerId);
     }
 
-    /// @dev Get a list of all active offers (which are Approved)
-    /// @param _status Offer sale status
-    function getOffersListByStatus(uint8 _status) public view returns(uint256[]) {
-        return saleStatusToOffersMap[_status];
-    }
-
-    /// @dev Function of modification of profit sharing participants and their %, in case of rejection of an offer by one of the participants
-    /// @param _offerId Offer ID
-    /// @param _participants Address array of profit sharing participants
-    /// @param _percentAmounts Array of profit share %
-    function setNewSchemaOfProfitDivisionForOffer(
-        uint256 _offerId,
-        address[] _participants,
-        uint8[] _percentAmounts
-    )
-        public
-        onlyOfferOwner(_offerId)
-    {
-        // array length must match
-        require(_participants.length == _percentAmounts.length);
-        // apply new profit sharing schedule
-        _applyNewSchemaOfProfitDivisionForOffer(_offerId, _participants, _percentAmounts);
-        // since change of profit shares applied to all participants, need to notify all profit sharing participants for their approval
-        for (uint256 i = 0; i < _participants.length; i++) {
-            // emit the norification to each participant
-            emit NeedApproveOfferEvent(_offerId, _participants[i], _percentAmounts[i]);
-        }
-    }
- 
     /// @dev Function to set bid for an artwork
     /// @param _tokenId Artwork token ID
     function setBid(uint256 _tokenId) public payable {
+        require(msg.sender != address(0));
         // it does not matter if the token is available for sale
         // it is possible to accept a bid unless
-        // the artwork is part of an auction
-        require(tokenToSaleTypeMap[_tokenId] != SaleType.Auction);
-        // Artwork token cannot belong to the bidder
-        require(tokenToOwnerMap[_tokenId] != msg.sender);
-        require(msg.sender != address(0));
-
-        uint256 bidId;
-        if (tokenToIsExistBidMap[_tokenId]) {
-            // if the bid has already been specified for the selected artwork, retrieve its bid ID
-            bidId = tokenToBidMap[_tokenId];
-            // get the bid by its bid ID
-            Bid storage bid = bids[bidId];
-            // bid must be greater than an earlier bid by at least 5%
-            require(msg.value >= bid.price + (bid.price * 5 / 100));
-            // earlier bidder needs to get back his bid
-            if (bid.price > 0) {
-                // write the bid count to the previous bidder to allow them to later withdraw
-                pendingWithdrawals[bidToOwnerMap[bidId]] += bid.price;
-                // delete the bid from the bidder
-                for (uint8 i = 0; i < ownerToBidsMap[msg.sender].length; i++) {
-                    if (ownerToBidsMap[msg.sender][i] == bidId) {
-                        ownerToBidsMap[msg.sender][i] = ownerToBidsMap[msg.sender][ownerToBidsMap[msg.sender].length - 1];
-                        ownerToBidsMap[msg.sender].length--;
-                        break;
-                    }
-                }
-            }
-            // establish new bid price
-            bid.price = msg.value;
+        // the artwork is part of an auction or a loan
+        SaleType currentSaleType = _snarkStorage.get_tokenToSaleTypeMap(_tokenId);
+        require(currentSaleType == SaleType.Offer || currentSaleType == SaleType.None);
+        address currentOwner;
+        uint256 offerId;
+        uint256 price;
+        if (currentSaleType == SaleType.Offer) {
+            offerId = _snarkStorage.get_tokenToOfferMap(_tokenId);
+            currentOwner = _snarkStorage.get_offerToOwnerMap(offerId);
+            (, price, ) = _snarkStorage.get_offer(offerId);
+            // If an OFFER exists for an artwork, ANY collector can BID for the artwork at a price LOWER 
+            // than the OFFER price.  If a BID is made at the OFFER price or HIGHER, than the platform should 
+            // notify the bidder that they must BUY the artwork at an OFFER price or revise the BID to something 
+            // lower than the OFFER price.
+            require(msg.value < price);
         } else {
-            // in the event there was no prior bid for the artwork, we form a new bid
-            bidId = bids.push(Bid({
-                artworkId: _tokenId,
-                price: msg.value,
-                saleStatus: SaleStatus.Active
-            })) - 1;
-            // since there can only be 1 bid for an artwork, we add the new bid to the artwork token ID
-            tokenToBidMap[_tokenId] = bidId;
-            // mark that a new bid was created for the artwork
-            tokenToIsExistBidMap[_tokenId] = true;
+            currentOwner = _snarkStorage.get_tokenToOwnerMap(_tokenId);
         }
-        // enter the new owner of the bid
-        bidToOwnerMap[bidId] = msg.sender;
-        ownerToBidsMap[msg.sender].push(bidId);
+        // Artwork token cannot belong to the bidder
+        require(currentOwner != msg.sender);
+
+        // If there is NO OFFER made for an artwork by the owner, ANY collector can BID for the artwork at ANY price.
+        // If there is a BID outstanding that has not been accepted by the artwork owner, another collector can make 
+        // a BID at a ANY price higher than the highest outstanding BID. 
+        uint256 bidsCount = _snarkStorage.get_tokenToBidsMap_length(_tokenId);
+        uint256 maxBidsPrice = 0;
+        uint256 bidId;
+        for (uint256 i = 0; i < bidsCount; i++) {
+            bidId = _snarkStorage.get_tokenToBidsMap(_tokenId, i);
+            (, price, ) = _snarkStorage.get_bid(bidId);
+            if (price > maxBidsPrice) maxBidsPrice = price;
+        }
+        require(msg.value > maxBidsPrice);
+
+        bidId = _snarkStorage.add_bid(_tokenId, msg.value);
+        _snarkStorage.add_tokenToBidsMap(_tokenId, bidId);
+        _snarkStorage.set_bidToOwnerMap(bidId, msg.sender);
+        _snarkStorage.add_ownerToBidsMap(msg.sender, bidId);
+
+        // adding an amount of this bid to a contract balance
+        _snarkStorage.add_pendingWithdrawals(address(this), msg.value);
+
         // emit the bid creation event
         emit BidSettedUpEvent(bidId, msg.sender, msg.value);
+    }
+
+    /// @dev Function to accept bid
+    /// @param _bidId Id of bid
+    function acceptBid(uint256 _bidId) public {
+        // To persuade if this function called a token owner
+        uint256 tokenId;
+        uint256 price;
+        (tokenId, price,) = _snarkStorage.get_bid(_bidId);
+        SaleType saleType = _snarkStorage.get_tokenToSaleTypeMap(tokenId);
+        // it's forbidden to accept the Bid when it has a Loan Status
+        require(saleType == SaleType.Offer || saleType == SaleType.None);
+        address tokenOwner;
+        address mediator;
+        uint256 offerId;
+        if (saleType == SaleType.Offer) {
+            // in this case the token is blocked and we can get a real address via an offer
+            offerId = _snarkStorage.get_tokenToOfferMap(tokenId);
+            tokenOwner = _snarkStorage.get_offerToOwnerMap(offerId);
+            mediator = _snarkStorage.get_tokenToOwnerMap(tokenId);
+        } else {
+            tokenOwner = _snarkStorage.get_tokenToOwnerMap(tokenId);
+            mediator = tokenOwner;
+        }
+        // Only token's owner can accept the bid
+        require(msg.sender == tokenOwner);
+
+        address bidOwner = _snarkStorage.get_bidToOwnerMap(_bidId);
+        _snarkStorage.sub_pendingWithdrawals(address(this), price);
+        price = _takePlatformProfitShare(price);
+        _buy(tokenId, price, tokenOwner, bidOwner, mediator);
+        _deleteBid(_bidId, tokenId, bidOwner);
+
+        // deleting all bids relating with the token
+        // but we have to take back bid amounts to their owners as well
+        _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
     }
     
     /// @dev Function to allow the bidder to cancel their own bid
     /// @param _bidId Bid ID
     function cancelBid(uint256 _bidId) public onlyBidOwner(_bidId) {
-        address bidder = bidToOwnerMap[_bidId];
-        uint256 bidValue = bids[_bidId].price;
-        uint256 artworkId = bids[_bidId].artworkId;
-        _deleteBid(_bidId);
-        bidder.transfer(bidValue);
-        emit BidCanceledEvent(artworkId);
+        address bidder = _snarkStorage.get_bidToOwnerMap(_bidId);
+        uint256 tokenId;
+        uint256 price;
+        (tokenId, price,) = _snarkStorage.get_bid(_bidId);
+        _deleteBid(_bidId, tokenId, bidder);
+        bidder.transfer(price);
+        emit BidCanceledEvent(tokenId, _bidId);
     }
 
-    /// @dev Function to view bids by an address
-    /// @param _owner Address
-    function getBidList(address _owner) public view returns (uint256[]) {
-        return ownerToBidsMap[_owner];
-    }
-
-    /// @dev Function to view the balance in our contract that an owner can withdraw 
-    /// @param _owner Address
-    function getWithdrawBalance(address _owner) public view returns (uint256) {
-        require(_owner != address(0));
-        return pendingWithdrawals[_owner];
-    }
-
-    /// @dev Function to withdraw funds to the owners wallet 
-    /// @param _owner Address
-    function withdrawFunds(address _owner) public {
-        require(_owner != address(0));
-        uint256 balance = pendingWithdrawals[_owner];
-        delete pendingWithdrawals[_owner];
-        _owner.transfer(balance);
-    }
-
-    /// @dev Function to change sale status 
+    /// @dev Accepting the artist's offer
     /// @param _offerId Offer ID
-    function _moveOfferToNextStatus(uint256 _offerId) internal {
-        uint8 prevStatus = uint8(offers[_offerId].saleStatus);
-        if (prevStatus < uint8(SaleStatus.Finished)) {
-            for (uint8 i = 0; i < saleStatusToOffersMap[prevStatus].length; i++) {
-                if (saleStatusToOffersMap[prevStatus][i] == _offerId) {
-                    saleStatusToOffersMap[prevStatus][i] = saleStatusToOffersMap[prevStatus][saleStatusToOffersMap[prevStatus].length - 1];
-                    saleStatusToOffersMap[prevStatus].length--;
-                    break;
-                }
-            }
-            uint8 newStatus = (prevStatus == 0) ? prevStatus + 2 : prevStatus + 1;
-            saleStatusToOffersMap[newStatus].push(_offerId);
-            offers[_offerId].saleStatus = SaleStatus(newStatus);
+    function buyOffer(uint256 _offerId) public payable {
+        uint256 tokenId;
+        uint256 price;
+        SaleStatus saleStatus;
+        (tokenId, price, saleStatus) = _snarkStorage.get_offer(_offerId);
+        require(saleStatus == SaleStatus.Active);
+        require(msg.value >= price);
+
+        address tokenOwner = _snarkStorage.get_offerToOwnerMap(_offerId);
+        address mediator = _snarkStorage.get_tokenToOwnerMap(tokenId);
+
+        require(msg.sender != tokenOwner);
+
+        price = _takePlatformProfitShare(price);
+        _buy(tokenId, price, tokenOwner, msg.sender, mediator);
+        _snarkStorage.finish_offer(_offerId);
+
+        // If there are bids for the offer than we takes back an amount to their owners. 
+        // After that we can delete bids.
+        _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
+    }
+
+    function _takeBackBidAmountsAndDeleteAllTokenBids(uint256 _tokenId) internal {
+        uint256 bidsCount = _snarkStorage.get_tokenToBidsMap_length(_tokenId);
+        uint256 bidId;
+        address bidder;
+        uint256 bidPrice;
+        for (uint256 i = 0; i < bidsCount; i++) {
+            bidId = _snarkStorage.get_tokenToBidsMap(_tokenId, 0);
+            bidder = _snarkStorage.get_bidToOwnerMap(bidId);
+            (, bidPrice, ) = _snarkStorage.get_bid(bidId);
+            // Moving these amount from contract's balance to the bid's one
+            _snarkStorage.sub_pendingWithdrawals(address(this), bidPrice);
+            _snarkStorage.add_pendingWithdrawals(bidder, bidPrice);
+            // Delete the bid
+            _deleteBid(bidId, _tokenId, bidder);
         }
     }
 
     /// @dev Function to delete bid from the bid array 
     /// @param _bidId Bid ID
-    function _deleteBid(uint256 _bidId) internal {
-        // delete the bid from the bidder
-        address bidder = bidToOwnerMap[_bidId];
-        for (uint8 i = 0; i < ownerToBidsMap[bidder].length; i++) {
-            if (ownerToBidsMap[bidder][i] == _bidId) {
-                ownerToBidsMap[bidder][i] = ownerToBidsMap[bidder][ownerToBidsMap[bidder].length - 1];
-                ownerToBidsMap[bidder].length--;
+    /// @param _tokenId Artwork ID
+    /// @param _bidder Address of bidder
+    function _deleteBid(uint256 _bidId, uint256 _tokenId, address _bidder) internal {
+        uint256 bidsCount = _snarkStorage.get_ownerToBidsMap_length(_bidder);
+        for (uint256 i = 0; i < bidsCount; i++) {
+            if (_snarkStorage.get_ownerToBidsMap(_bidder, i) == _bidId) {
+                _snarkStorage.delete_ownerToBidsMap(_bidder, i);
                 break;
             }
         }
         // delete the mapping between the artwork and the bid
-        delete tokenToBidMap[bids[_bidId].artworkId];
-        // delete the mapping between the bid and the owner
-        delete bidToOwnerMap[_bidId];
-        // mark that the artwork contains no bids
-        tokenToIsExistBidMap[bids[_bidId].artworkId] = false;
-        // mark bid status as finished
-        bids[_bidId].saleStatus = SaleStatus.Finished;
-    }
-
-    /// @dev Function to distribute the profits to participants
-    /// @param _price Price at which artwork is sold
-    /// @param _tokenId Artwork token ID
-    /// @param _from Seller Address
-    function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) internal {
-        // distribute the profit according to the schedule contained in the artwork token
-        Artwork storage artwork = artworks[_tokenId];
-        // calculate profit, in primary sale the lastPrice should be 0 while in a secondary it should be a prior sale price
-        if (artwork.lastPrice < _price && (_price - artwork.lastPrice) >= 100) {
-            uint256 profit = _price - artwork.lastPrice;
-            // check whether this sale is primary or secondary
-            if (artwork.isFirstSale) { 
-                // if it is a primary sale, then mark that the primary sale is over
-                artwork.isFirstSale = false;
-            } else {
-                // if it is a secondary sale, reduce the profit by the profit sharing % specified by the artist 
-                // the remaining count goes back to the seller
-                uint256 countToSeller = _price;
-                // the count to be distributed
-                profit = profit * artwork.profitShareFromSecondarySale / 100;
-                // the count that will go to the seller
-                countToSeller -= profit;
-                pendingWithdrawals[_from] += countToSeller;
+        bidsCount = _snarkStorage.get_tokenToBidsMap_length(_tokenId);
+        for (i = 0; i < bidsCount; i++) {
+            if (_snarkStorage.get_tokenToBidsMap(_tokenId, i) == _bidId) {
+                _snarkStorage.delete_tokenToBidsMap(_tokenId, i);
+                break;
             }
-            uint256 residue = profit; // hold any uncollected count in residue after paying out all of the participants
-            for (uint8 i = 0; i < artwork.participants.length; i++) { // one by one go through each profit sharing participant
-                // calculate the payout count
-                uint256 payout = profit * artwork.participantToPercentMap[artwork.participants[i]] / 100;
-                pendingWithdrawals[artwork.participants[i]] += payout; // move the payout count to each participant
-                residue -= payout; // recalculate the uncollected count after the payout
-            }
-            // if there is any uncollected counts after distribution, move the count to the seller
-            pendingWithdrawals[_from] += residue;
-        } else {
-            // if there is no profit, then all goes back to the seller
-            pendingWithdrawals[_from] += _price; 
         }
-        // mark the price for which the artwork sold
-        artwork.lastPrice = _price;
-        // mark the sale type to None after sale
-        tokenToSaleTypeMap[_tokenId] = SaleType.None;
+        // delete the mapping between the bid and the owner
+        _snarkStorage.delete_bidToOwnerMap(_bidId);
+        // mark bid status as finished
+        _snarkStorage.finish_bid(_bidId);
     }
 
     /// @dev Lock Token
     /// @param _offerId Offer Id
     /// @param _tokenId Token Id
     function _lockOffersToken(uint256 _offerId, uint256 _tokenId) private {
-        address realOwner = offerToOwnerMap[_offerId];
+        address realOwner = _snarkStorage.get_offerToOwnerMap(_offerId);
         // move token from artwork Owner to Snark
         _transfer(realOwner, owner, _tokenId);
     }
@@ -440,10 +299,60 @@ contract SnarkOfferBid is SnarkBase {
     /// @param _offerId Offer Id
     /// @param _tokenId Token Id
     function _unlockOffersToken(uint256 _offerId, uint256 _tokenId) private {
-        address realOwner = offerToOwnerMap[_offerId];
+        address realOwner = _snarkStorage.get_offerToOwnerMap(_offerId);
         // move token from Snark to artwork Owner
         _transfer(owner, realOwner, _tokenId);
     }
 
-*/
+    // /// @dev Function to view bids by an address
+    // /// @param _owner Address
+    // function getBidList(address _owner) public view returns (uint256[]) {
+    //     return ownerToBidsMap[_owner];
+    // }
+
+    // /// @dev Function to create an offer for the secondary sale.
+    // /// @param _price The price for all artworks included in the offer
+    // /// @param _tokenIds List of artwork IDs included in the offer
+    // function createOffer(
+    //     uint256 _price, 
+    //     uint256[] _tokenIds
+    // ) 
+    //     public 
+    //     onlyOwnerOfMany(_tokenIds)
+    // {
+    //     bool isStatusNone;
+    //     bool isSecondSale;
+    //     uint256 lastPrice;
+    //     uint256 offerId;
+
+    //     for (uint8 i = 0; i < _tokenIds.length; i++) {
+    //         isStatusNone = true;
+    //         isSecondSale = true;
+    //         lastPrice = 0;
+    //         isStatusNone = (isStatusNone && (_snarkStorage.get_tokenToSaleTypeMap(_tokenIds[i]) == SaleType.None));
+    //         (,,,lastPrice) = _snarkStorage.get_artwork_description(_tokenIds[i]);
+    //         isSecondSale = (isSecondSale && (lastPrice != 0));
+
+    //         if (isStatusNone && isSecondSale) {
+    //             // Offer creation and return of the offer ID
+    //             offerId = _snarkStorage.add_offer(_price, _tokenIds[i]);
+    //             // count offers with saleType = Offer
+    //             _snarkStorage.add_saleStatusToOffersMap(uint8(SaleStatus.Active), offerId);
+    //             // enter the owner of the offer
+    //             _snarkStorage.set_offerToOwnerMap(offerId, msg.sender);
+    //             // increase the number of offers owned by the offer owner
+    //             _snarkStorage.add_ownerToOffersMap(msg.sender, offerId);
+    //             // for each artwork mark that is part of an offer
+    //             _snarkStorage.set_tokenToSaleTypeMap(_tokenIds[i], SaleType.Offer);
+    //             // mark also which specific offer it belongs to
+    //             // _snarkStorage.set_tokenToOfferMap(_tokenIds[i], offerId);
+    //             // move token to Snark
+    //             _lockOffersToken(offerId, _tokenIds[i]);
+    //             emit OfferCreatedEvent(offerId, _tokenIds[i]);
+    //         } else {
+    //             emit OfferDeclinedForTokens(_tokenIds[i]);
+    //         }
+    //     }
+    // }
+
 }

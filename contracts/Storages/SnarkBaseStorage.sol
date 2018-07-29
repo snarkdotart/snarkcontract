@@ -7,6 +7,14 @@ import "./SnarkDefinitions.sol";
 
 contract SnarkBaseStorage is Ownable, SnarkDefinitions {
 
+    /*** CONSTANTS ***/
+
+    // Snark profit share %, default = 5%
+    uint8 private platformProfitShare = 5;
+
+    // Snark's wallet address
+    address private snarkWalletAddress;
+
     /*** STORAGE ***/
 
     // An array containing the Artwork struct for all artworks.
@@ -32,9 +40,17 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
     mapping (uint256 => address) private tokenToApprovalsMap;
     // Mapping token of revenue participant to their approval confirmation
     mapping (uint256 => mapping (address => bool)) private tokenToParticipantApprovingMap;
+    // Mapping of an address with its balance
+    mapping (address => uint256) private pendingWithdrawals;
+    // Artwork can only be in one of four states:
+    // 1. Not being sold
+    // 2. Offered for sale at an offer price
+    // 3. Auction sale
+    // 4. Art loan
+    // Must avoid any possibility of a double sale
+    mapping (uint256 => SaleType) internal tokenToSaleTypeMap;
 
     /*** MODIFIERS ***/
-
     modifier onlyPlatform() {
         require(accessAllowed[msg.sender] == true || msg.sender == owner);
         _;
@@ -53,13 +69,30 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
     }
 
     /*** ACCESS ***/
-
     function allowAccess(address _address) external onlyOwner {
         accessAllowed[_address] = true;
     }
 
     function denyAccess(address _address) external onlyOwner {
         accessAllowed[_address] = false;
+    }
+
+    /*** SNARK's DATA ***/
+    function set_platformProfitShare(uint8 _platformProfitShare) external onlyOwner {
+        platformProfitShare = _platformProfitShare;
+    }
+
+    function set_snarkWalletAddress(address _snarkWalletAddrss) external onlyOwner {
+        snarkWalletAddress = _snarkWalletAddrss;
+    }
+
+    function get_platformProfitShare() external view onlyPlatform returns (uint8 platformProfit) {
+        return platformProfitShare;
+    }
+
+
+    function get_snarkWalletAddress() external view onlyPlatform returns (address snarkAddress) {
+        return snarkWalletAddress;
     }
 
     /*** Artwork ***/
@@ -122,7 +155,7 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
         return tokenId;
     }
 
-    function update_artworks_lastPrice(uint256 _tokenId, uint8 _lastPrice) 
+    function update_artworks_lastPrice(uint256 _tokenId, uint256 _lastPrice) 
         external 
         onlyPlatform 
         checkTokenId(_tokenId) 
@@ -311,6 +344,36 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
 
     function delete_tokenToParticipantApprovingMap(uint256 _tokenId, address _participant) external onlyPlatform {
         delete tokenToParticipantApprovingMap[_tokenId][_participant];
+    }
+
+    /*** pendingWithdrawals ***/
+    function get_pendingWithdrawals(address _owner) external view onlyPlatform returns (uint256 ownersBalance) {
+        return pendingWithdrawals[_owner];
+    }
+
+    function set_pendingWithdrawals(address _owner, uint256 _balance) external onlyPlatform {
+        pendingWithdrawals[_owner] = _balance;
+    }
+
+    function add_pendingWithdrawals(address _owner, uint256 _addSum) external onlyPlatform {
+        pendingWithdrawals[_owner] = SafeMath.add(pendingWithdrawals[_owner], _addSum);
+    }
+
+    function sub_pendingWithdrawals(address _owner, uint256 _subSum) external onlyPlatform {
+        pendingWithdrawals[_owner] = SafeMath.sub(pendingWithdrawals[_owner], _subSum);
+    }
+
+    /*** tokenToSaleTypeMap ***/
+    function get_tokenToSaleTypeMap(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (SaleType saleType) {
+        return tokenToSaleTypeMap[_tokenId];
+    }
+
+    function set_tokenToSaleTypeMap(uint256 _tokenId, SaleType _saleType) external onlyPlatform checkTokenId(_tokenId) {
+        tokenToSaleTypeMap[_tokenId] = _saleType;
+    }
+
+    function delete_tokenToSaleTypeMap(uint256 _tokenId) external onlyPlatform checkTokenId(_tokenId) {
+        delete tokenToSaleTypeMap[_tokenId];
     }
 
 }

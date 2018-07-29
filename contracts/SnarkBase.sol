@@ -25,9 +25,6 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Transfer event as defined in current draft of ERC721.
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
 
-    /*** CONSTANTS ***/
-
-    uint8 public platformProfitShare = 5;   // Snark profit share %, default = 5%
 
     /*** STORAGE ***/
     SnarkStorage internal _snarkStorage;
@@ -54,7 +51,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @param _tokenId Artwork Id
     modifier onlyArtistOf(uint256 _tokenId) {
         address artist;
-        (artist,,,) = _snarkStorage.get_artwork_description(_tokenId);
+        (artist, , , ) = _snarkStorage.get_artwork_description(_tokenId);
         require(msg.sender == artist);
         _;
     }
@@ -63,7 +60,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     modifier onlyParticipantOf(uint256 _tokenId) {
         bool isItParticipant = false;
         uint256 schemeId;
-        (,schemeId,,) = _snarkStorage.get_artwork_details(_tokenId);
+        (, schemeId, , ) = _snarkStorage.get_artwork_details(_tokenId);
         uint256 participantsCount = _snarkStorage.get_profitShareSchemes_participants_length(schemeId);
         address participant;
         for (uint256 i = 0; i < participantsCount; i++) {
@@ -81,6 +78,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @param _snarkStorageAddress Address of a storage contract
     constructor(address _snarkStorageAddress) public {
         _snarkStorage = SnarkStorage(_snarkStorageAddress);
+        // _snarkStorage.set_snarkWalletAddress(owner);
     }
 
     /// @dev Function to destroy a contract in the blockchain
@@ -88,17 +86,11 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         selfdestruct(owner);
     }
 
-    /// @dev Set a new profit share for Snark platform
-    /// @param _platformProfitShare new a profit share
-    function setPlatformProfitShare(uint8 _platformProfitShare) external onlyOwner {
-        platformProfitShare = _platformProfitShare;
-    }
-
     /// @dev Generating event to approval from each participant of token
     /// @param _tokenId Id of artwork
     function sendRequestForApprovalOfProfitShareRemovalForSecondarySale(uint _tokenId) external onlyArtistOf(_tokenId) {
         uint256 schemeId;
-        (,schemeId,,) = _snarkStorage.get_artwork_details(_tokenId);
+        (, schemeId, , ) = _snarkStorage.get_artwork_details(_tokenId);
         uint256 participantsCount = _snarkStorage.get_profitShareSchemes_participants_length(schemeId);
         address participant;
         for (uint256 i = 0; i < participantsCount; i++) {
@@ -116,7 +108,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         uint256 schemeId;
         address participant;
         bool isApproved = true;
-        (,schemeId,,) = _snarkStorage.get_artwork_details(_tokenId);
+        (, schemeId, , ) = _snarkStorage.get_artwork_details(_tokenId);
         uint256 participantsCount = _snarkStorage.get_profitShareSchemes_participants_length(schemeId);
         for (uint256 i = 0; i < participantsCount; i++) {
             (participant,) = _snarkStorage.get_profitShareSchemes(schemeId, i);
@@ -262,6 +254,20 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     {
         _snarkStorage.update_artworks_profitShareSchemaId(_tokenId, _newProfitShareSchemeId);
     }
+    
+    /// @dev Function to view the balance in our contract that an owner can withdraw 
+    function getWithdrawBalance() public view returns (uint256) {
+        require(msg.sender != address(0));
+        return _snarkStorage.get_pendingWithdrawals(msg.sender);
+    }
+
+    /// @dev Function to withdraw funds to the owners wallet 
+    function withdrawFunds() public {
+        require(msg.sender != address(0));
+        uint256 balance = _snarkStorage.get_pendingWithdrawals(msg.sender);
+        _snarkStorage.sub_pendingWithdrawals(msg.sender, balance);
+        msg.sender.transfer(balance);
+    }
 
     /// @dev Transfer a token from one address to another 
     /// @param _from Address of previous owner
@@ -285,6 +291,78 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         _snarkStorage.add_ownerToTokensMap(_to, _tokenId);
         // Emit ERC721 Transfer event
         emit Transfer(_from, _to, _tokenId);
+    }
+
+    /// @dev Function to distribute the profits to participants
+    /// @param _price Price at which artwork is sold
+    /// @param _tokenId Artwork token ID
+    /// @param _from Seller Address
+    function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) internal {
+        // distribute the profit according to the schedule contained in the artwork token
+        uint256 lastPrice;
+        uint256 profitShareSchemaId;
+        uint8 profitShareFromSecondarySale;
+        (, , , lastPrice) = _snarkStorage.get_artwork_description(_tokenId);
+        (, profitShareSchemaId, profitShareFromSecondarySale, ) = _snarkStorage.get_artwork_details(_tokenId);
+
+        // calculate profit
+        // in primary sale the lastPrice should be 0 while in a secondary it should be a prior sale price
+        if (lastPrice < _price && (_price - lastPrice) >= 100) {
+            uint256 profit = _price - lastPrice;
+            if (lastPrice > 0) {
+                // if it is a secondary sale, reduce the profit by the profit sharing % specified by the artist 
+                // the remaining count goes back to the seller
+                uint256 countToSeller = _price;
+                // the count to be distributed
+                profit = profit * profitShareFromSecondarySale / 100;
+                // the count that will go to the seller
+                countToSeller -= profit;
+                _snarkStorage.add_pendingWithdrawals(_from, countToSeller);
+            }
+            uint256 residue = profit; // hold any uncollected count in residue after paying out all of the participants
+            uint256 participantsCount = _snarkStorage.get_profitShareSchemes_participants_length(profitShareSchemaId);
+            address currentParticipant;
+            uint8 participantProfit;
+            for (uint8 i = 0; i < participantsCount; i++) { // one by one go through each profit sharing participant
+                (currentParticipant, participantProfit) = _snarkStorage.get_profitShareSchemes(profitShareSchemaId, i);
+                // calculate the payout count
+                uint256 payout = profit * participantProfit / 100;
+                // move the payout count to each participant
+                _snarkStorage.add_pendingWithdrawals(currentParticipant, payout);
+                residue -= payout; // recalculate the uncollected count after the payout
+            }
+            // if there is any uncollected counts after distribution, move the count to the seller
+            lastPrice = residue;
+        } else {
+            // if there is no profit, then all goes back to the seller
+            lastPrice = _price;
+        }
+        _snarkStorage.add_pendingWithdrawals(_from, lastPrice);
+    }
+
+    /// @dev Function of an artwork buying
+    /// @param _tokenId Artwork ID
+    /// @param _value Selling price of artwork
+    /// @param _from Address of seller
+    /// @param _to Address of buyer
+    /// @param _mediator Address of token's temporary keeper (Snark)
+    function _buy(uint256 _tokenId, uint256 _value, address _from, address _to, address _mediator) internal {
+        _incomeDistribution(_value, _tokenId, _from);
+        // mark the price for which the artwork sold
+        _snarkStorage.update_artworks_lastPrice(_tokenId, _value);
+        // mark the sale type to None after sale
+        _snarkStorage.set_tokenToSaleTypeMap(_tokenId, SaleType.None);
+        _transfer(_mediator, _to, _tokenId);
+    }
+
+    /// @dev Snark platform takes it's profit share
+    /// @param income A price of selling
+    function _takePlatformProfitShare(uint256 income) internal returns (uint256 residue) {
+        uint256 profit = income * _snarkStorage.get_platformProfitShare() / 100;
+        residue = income - profit;
+        address snarkWallet = _snarkStorage.get_snarkWalletAddress();
+        _snarkStorage.add_pendingWithdrawals(snarkWallet, profit);
+        return residue;
     }
 
 }
