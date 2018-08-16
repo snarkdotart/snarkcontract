@@ -90,7 +90,6 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
         return platformProfitShare;
     }
 
-
     function get_snarkWalletAddress() external view onlyPlatform returns (address snarkAddress) {
         return snarkWalletAddress;
     }
@@ -277,7 +276,9 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
         return artistToTokensMap[_artist].length;
     }
 
-    function get_artistToTokensMap(address _artist, uint256 _index) external view onlyPlatform returns (uint256 tokenId) {
+    function get_artistToTokensMap(address _artist, uint256 _index) external view onlyPlatform 
+        returns (uint256 tokenId) 
+    {
         require(_index < artistToTokensMap[_artist].length && _index >= 0);
         return artistToTokensMap[_artist][_index];
     }
@@ -364,12 +365,12 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
     }
 
     /*** tokenToSaleTypeMap ***/
-    function get_tokenToSaleTypeMap(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (SaleType saleType) {
-        return tokenToSaleTypeMap[_tokenId];
+    function get_tokenToSaleTypeMap(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (uint8 saleType) {
+        return uint8(tokenToSaleTypeMap[_tokenId]);
     }
 
-    function set_tokenToSaleTypeMap(uint256 _tokenId, SaleType _saleType) external onlyPlatform checkTokenId(_tokenId) {
-        tokenToSaleTypeMap[_tokenId] = _saleType;
+    function set_tokenToSaleTypeMap(uint256 _tokenId, uint8 _saleType) external onlyPlatform checkTokenId(_tokenId) {
+        tokenToSaleTypeMap[_tokenId] = SaleType(_saleType);
     }
 
     function delete_tokenToSaleTypeMap(uint256 _tokenId) external onlyPlatform checkTokenId(_tokenId) {

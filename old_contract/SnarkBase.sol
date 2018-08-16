@@ -6,7 +6,7 @@ import "./OpenZeppelin/Ownable.sol";
 import "./OpenZeppelin/SafeMath.sol";
 import "./OpenZeppelin/AddressUtils.sol";
 import "./Storages/SnarkDefinitions.sol";
-import "./Storages/SnarkStorage.sol";
+import "./Storages/SnarkStorageInterface.sol";
 
 
 contract SnarkBase is Ownable, SnarkDefinitions { 
@@ -27,7 +27,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
 
 
     /*** STORAGE ***/
-    SnarkStorage internal _snarkStorage;
+    SnarkStorageInterface internal _snarkStorage;
 
     /// @dev Modifier that checks that an owner has a specific token
     /// @param _tokenId Token ID
@@ -77,7 +77,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Constructor of contract
     /// @param _snarkStorageAddress Address of a storage contract
     constructor(address _snarkStorageAddress) public {
-        _snarkStorage = SnarkStorage(_snarkStorageAddress);
+        _snarkStorage = SnarkStorageInterface(_snarkStorageAddress);
         // _snarkStorage.set_snarkWalletAddress(owner);
     }
 
@@ -351,7 +351,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         // mark the price for which the artwork sold
         _snarkStorage.update_artworks_lastPrice(_tokenId, _value);
         // mark the sale type to None after sale
-        _snarkStorage.set_tokenToSaleTypeMap(_tokenId, SaleType.None);
+        _snarkStorage.set_tokenToSaleTypeMap(_tokenId, uint8(SaleType.None));
         _transfer(_mediator, _to, _tokenId);
     }
 

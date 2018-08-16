@@ -42,9 +42,9 @@ contract SnarkOfferStorage is SnarkBaseStorage {
 
     /*** offers ***/
     function get_offer(uint256 _offerId) external view onlyPlatform checkOfferId(_offerId) 
-        returns (uint256 tokenId, uint256 price, SaleStatus status) 
+        returns (uint256 tokenId, uint256 price, uint8 status) 
     {
-        return (offers[_offerId].tokenId, offers[_offerId].price, offers[_offerId].saleStatus);
+        return (offers[_offerId].tokenId, offers[_offerId].price, uint8(offers[_offerId].saleStatus));
     }
 
     function get_offers_count() external view onlyPlatform returns (uint256 offersCount) {
@@ -65,9 +65,9 @@ contract SnarkOfferStorage is SnarkBaseStorage {
 
     /*** bids ***/
     function get_bid(uint256 _bidId) external view onlyPlatform checkBidId(_bidId)
-        returns (uint256 tokenId, uint256 price, SaleStatus saleStatus) 
+        returns (uint256 tokenId, uint256 price, uint8 saleStatus) 
     {
-        return (bids[_bidId].tokenId, bids[_bidId].price, bids[_bidId].saleStatus);
+        return (bids[_bidId].tokenId, bids[_bidId].price, uint8(bids[_bidId].saleStatus));
     }
 
     function get_bids_count() external view onlyPlatform returns (uint256 bidsCount) {

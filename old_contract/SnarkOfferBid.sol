@@ -32,7 +32,7 @@ contract SnarkOfferBid is SnarkBase {
         _;
     }
 
-    constructor(address _snarkStorageAddress) SnarkBase(_snarkStorageAddress) public {
+    constructor(address _snarkStorageAddress) public SnarkBase(_snarkStorageAddress) {
     }
 
     /// @dev Function returns the offer count with a specific status 
@@ -65,7 +65,7 @@ contract SnarkOfferBid is SnarkBase {
         bool isStatusNone = true;
         bool isSecondSale = true;
         uint256 lastPrice = 0;
-        isStatusNone = (isStatusNone && (_snarkStorage.get_tokenToSaleTypeMap(_tokenId) == SaleType.None));
+        isStatusNone = (isStatusNone && (_snarkStorage.get_tokenToSaleTypeMap(_tokenId) == uint8(SaleType.None)));
         (, , , lastPrice) = _snarkStorage.get_artwork_description(_tokenId);
         isSecondSale = (isSecondSale && (lastPrice != 0));
 
@@ -80,7 +80,7 @@ contract SnarkOfferBid is SnarkBase {
         // increase the number of offers owned by the offer owner
         _snarkStorage.add_ownerToOffersMap(msg.sender, offerId);
         // for each artwork mark that is part of an offer
-        _snarkStorage.set_tokenToSaleTypeMap(_tokenId, SaleType.Offer);
+        _snarkStorage.set_tokenToSaleTypeMap(_tokenId, uint8(SaleType.Offer));
         // mark also which specific offer it belongs to
         _snarkStorage.set_tokenToOfferMap(_tokenId, offerId);
         // move token to Snark
@@ -98,7 +98,7 @@ contract SnarkOfferBid is SnarkBase {
         uint256 tokenId;
         (tokenId, , ) = _snarkStorage.get_offer(_offerId);
         // change sale status to None
-        _snarkStorage.set_tokenToSaleTypeMap(tokenId, SaleType.None);
+        _snarkStorage.set_tokenToSaleTypeMap(tokenId, uint8(SaleType.None));
         // delete the artwork from the offer
         _snarkStorage.delete_tokenToOfferMap(tokenId);
         // unlock token
@@ -126,7 +126,7 @@ contract SnarkOfferBid is SnarkBase {
         // it does not matter if the token is available for sale
         // it is possible to accept a bid unless
         // the artwork is part of an auction or a loan
-        SaleType currentSaleType = _snarkStorage.get_tokenToSaleTypeMap(_tokenId);
+        SaleType currentSaleType = SaleType(_snarkStorage.get_tokenToSaleTypeMap(_tokenId));
         require(currentSaleType == SaleType.Offer || currentSaleType == SaleType.None);
         address currentOwner;
         uint256 offerId;
@@ -178,7 +178,7 @@ contract SnarkOfferBid is SnarkBase {
         uint256 tokenId;
         uint256 price;
         (tokenId, price,) = _snarkStorage.get_bid(_bidId);
-        SaleType saleType = _snarkStorage.get_tokenToSaleTypeMap(tokenId);
+        SaleType saleType = SaleType(_snarkStorage.get_tokenToSaleTypeMap(tokenId));
         // it's forbidden to accept the Bid when it has a Loan Status
         require(saleType == SaleType.Offer || saleType == SaleType.None);
         address tokenOwner;
@@ -224,9 +224,9 @@ contract SnarkOfferBid is SnarkBase {
     function buyOffer(uint256 _offerId) public payable {
         uint256 tokenId;
         uint256 price;
-        SaleStatus saleStatus;
+        uint8 saleStatus;
         (tokenId, price, saleStatus) = _snarkStorage.get_offer(_offerId);
-        require(saleStatus == SaleStatus.Active);
+        require(saleStatus == uint8(SaleStatus.Active));
         require(msg.value >= price);
 
         address tokenOwner = _snarkStorage.get_offerToOwnerMap(_offerId);
