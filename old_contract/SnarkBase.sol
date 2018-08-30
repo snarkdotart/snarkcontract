@@ -2,14 +2,14 @@
 /// @dev See the Snark contract documentation to understand how the various contract facets are arranged.
 pragma solidity ^0.4.24;
 
-import "./OpenZeppelin/Ownable.sol";
-import "./OpenZeppelin/SafeMath.sol";
-import "./OpenZeppelin/AddressUtils.sol";
-import "./Storages/SnarkDefinitions.sol";
-import "./Storages/SnarkStorageInterface.sol";
+import "../node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "../node_modules/openzeppelin-solidity/contracts/AddressUtils.sol";
+import "./ISnarkHub.sol";
+import "./ISnarkStorage.sol";
 
 
-contract SnarkBase is Ownable, SnarkDefinitions { 
+contract SnarkBase is Ownable { 
     
     using SafeMath for uint256;
     using AddressUtils for address;
@@ -25,14 +25,14 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Transfer event as defined in current draft of ERC721.
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
 
-
     /*** STORAGE ***/
-    SnarkStorageInterface internal _snarkStorage;
+    ISnarkHub private _hub;
+    ISnarkStorage private _storage;
 
     /// @dev Modifier that checks that an owner has a specific token
     /// @param _tokenId Token ID
     modifier onlyOwnerOf(uint256 _tokenId) {
-        require(msg.sender == _snarkStorage.get_tokenToOwnerMap(_tokenId));
+        require(msg.sender == _storage.getStorageUint256ToAddressArray("tokenToOwner", _tokenId, 0));
         _;
     }
 
@@ -41,7 +41,8 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     modifier onlyOwnerOfMany(uint256[] _tokenIds) {
         bool isOwnerOfAll = true;
         for (uint8 i = 0; i < _tokenIds.length; i++) {
-            isOwnerOfAll = isOwnerOfAll && (msg.sender == _snarkStorage.get_tokenToOwnerMap(_tokenIds[i]));
+            isOwnerOfAll = isOwnerOfAll && 
+                (msg.sender == _storage.getStorageUint256ToAddressArray("tokenToOwner", _tokenIds[i]));
         }
         require(isOwnerOfAll);
         _;
@@ -50,8 +51,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Modifier that allows do an operation by an artist only
     /// @param _tokenId Artwork Id
     modifier onlyArtistOf(uint256 _tokenId) {
-        address artist;
-        (artist, , , ) = _snarkStorage.get_artwork_description(_tokenId);
+        address artist = _storage.getStorageUint256ToAddressArray("tokenToArtist", _tokenId, 0);
         require(msg.sender == artist);
         _;
     }
@@ -59,12 +59,11 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Modifier that allows access for a participant only
     modifier onlyParticipantOf(uint256 _tokenId) {
         bool isItParticipant = false;
-        uint256 schemeId;
-        (, schemeId, , ) = _snarkStorage.get_artwork_details(_tokenId);
-        uint256 participantsCount = _snarkStorage.get_profitShareSchemes_participants_length(schemeId);
+        uint256 schemeId = _storage.getStorageUint256ToUint256Array("tokenToProfitShareSchemaId", _tokenId, 0);
+        uint256 participantsCount = _storage.getStorageUint256ToAddressArrayLength("schemeToParticipants", schemeId);
         address participant;
         for (uint256 i = 0; i < participantsCount; i++) {
-            (participant,) = _snarkStorage.get_profitShareSchemes(schemeId, i);
+            participant = _storage.getStorageUint256ToAddressArray("schemeToParticipants", schemeId, i);
             if (msg.sender == participant) { 
                 isItParticipant = true; 
                 break; 
@@ -75,10 +74,10 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     }
 
     /// @dev Constructor of contract
-    /// @param _snarkStorageAddress Address of a storage contract
-    constructor(address _snarkStorageAddress) public {
-        _snarkStorage = SnarkStorageInterface(_snarkStorageAddress);
-        // _snarkStorage.set_snarkWalletAddress(owner);
+    /// @param _storageAddress Address of a storage contract
+    constructor(address _hubAddress, address _storageAddress) public {
+        _hub = ISnarkHub(_hubAddress);
+        _storage = ISnarkStorage(_storageAddress);
     }
 
     /// @dev Function to destroy a contract in the blockchain
@@ -89,13 +88,12 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Generating event to approval from each participant of token
     /// @param _tokenId Id of artwork
     function sendRequestForApprovalOfProfitShareRemovalForSecondarySale(uint _tokenId) external onlyArtistOf(_tokenId) {
-        uint256 schemeId;
-        (, schemeId, , ) = _snarkStorage.get_artwork_details(_tokenId);
-        uint256 participantsCount = _snarkStorage.get_profitShareSchemes_participants_length(schemeId);
+        uint256 schemeId = _storage.getStorageUint256ToUint256Array("tokenToProfitShareSchemaId", _tokenId, 0);
+        uint256 participantsCount = _storage.getStorageUint256ToAddressArrayLength("schemeToParticipants", schemeId);
         address participant;
         for (uint256 i = 0; i < participantsCount; i++) {
-            (participant,) = _snarkStorage.get_profitShareSchemes(schemeId, i);
-            _snarkStorage.set_tokenToParticipantApprovingMap(_tokenId, participant, false);
+            participant = _storage.getStorageUint256ToAddressArray("schemeToParticipants", schemeId, i);
+            _storage.set_tokenToParticipantApprovingMap(_tokenId, participant, false);
             emit NeedApproveProfitShareRemoving(participant, _tokenId);
         }
     }
@@ -103,19 +101,19 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Delete a profit share from secondary sale
     /// @param _tokenId Token Id
     function approveRemovingProfitShareFromSecondarySale(uint256 _tokenId) external onlyParticipantOf(_tokenId) {
-        _snarkStorage.set_tokenToParticipantApprovingMap(_tokenId, msg.sender, true);
+        _storage.set_tokenToParticipantApprovingMap(_tokenId, msg.sender, true);
 
         uint256 schemeId;
         address participant;
         bool isApproved = true;
-        (, schemeId, , ) = _snarkStorage.get_artwork_details(_tokenId);
-        uint256 participantsCount = _snarkStorage.get_profitShareSchemes_participants_length(schemeId);
+        (, schemeId, , ) = _storage.get_artwork_details(_tokenId);
+        uint256 participantsCount = _storage.get_profitShareSchemes_participants_length(schemeId);
         for (uint256 i = 0; i < participantsCount; i++) {
-            (participant,) = _snarkStorage.get_profitShareSchemes(schemeId, i);
-            isApproved = isApproved && _snarkStorage.get_tokenToParticipantApprovingMap(_tokenId, participant);
+            (participant,) = _storage.get_profitShareSchemes(schemeId, i);
+            isApproved = isApproved && _storage.get_tokenToParticipantApprovingMap(_tokenId, participant);
         }
 
-        if (isApproved) _snarkStorage.update_artworks_profitShareFromSecondarySale(_tokenId, 0);
+        if (isApproved) _storage.update_artworks_profitShareFromSecondarySale(_tokenId, 0);
     }
 
     /// @dev Create a scheme of profit share for user
@@ -124,31 +122,31 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @return A scheme id
     function createProfitShareScheme(address[] _participants, uint8[] _percentAmount) public returns(uint256) {
         require(_participants.length == _percentAmount.length);
-        uint256 schemeId = _snarkStorage.add_profitShareSchemes(_participants, _percentAmount);
-        _snarkStorage.add_addressToProfitShareSchemesMap(msg.sender, schemeId);
+        uint256 schemeId = _storage.add_profitShareSchemes(_participants, _percentAmount);
+        _storage.add_addressToProfitShareSchemesMap(msg.sender, schemeId);
         emit ProfitShareSchemeAdded(msg.sender, schemeId);
     }
 
     /// @dev Return a total number of profit share schemes
     function getProfitShareSchemesTotalCount() public view returns (uint256) {
-        return _snarkStorage.get_profitShareSchemes_length();
+        return _storage.get_profitShareSchemes_length();
     }
 
     /// @dev Return a total number of user's profit share schemes
     function getProfitShareSchemeCountByAddress() public view returns (uint256) {
-        return _snarkStorage.get_addressToProfitShareSchemesMap_length(msg.sender);
+        return _storage.get_addressToProfitShareSchemesMap_length(msg.sender);
     }
 
     /// @dev Return a scheme Id for user by an index
     /// @param _index Index of scheme for current user's address
     function getProfitShareSchemeIdByIndex(uint256 _index) public view returns (uint256) {
-        return _snarkStorage.get_addressToProfitShareSchemesMap(msg.sender, _index);
+        return _storage.get_addressToProfitShareSchemesMap(msg.sender, _index);
     }
 
     /// @dev Return a list of user profit share schemes
     /// @return A list of schemes belongs to owner
     function getProfitShareParticipantsCount() public view returns(uint256) {
-        return _snarkStorage.get_addressToProfitShareSchemesMap_length(msg.sender);
+        return _storage.get_addressToProfitShareSchemesMap_length(msg.sender);
     }
 
     /// @dev Function to add a new digital artwork to blockchain
@@ -170,12 +168,12 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         // Address cannot be zero
         require(msg.sender != address(0));
         // Check for an identical hash of the digital artwork in existence to prevent uploading a duplicate artwork
-        require(_snarkStorage.get_hashToUsedMap(_hashOfArtwork) == false);
+        require(_storage.get_hashToUsedMap(_hashOfArtwork) == false);
         // Check that the number of artwork editions is >= 1
         require(_limitedEdition >= 1);
         // Create the number of editions specified by the limitEdition
         for (uint8 i = 0; i < _limitedEdition; i++) {
-            uint256 _tokenId = _snarkStorage.add_artwork(
+            uint256 _tokenId = _storage.add_artwork(
                 msg.sender,
                 _hashOfArtwork,
                 _limitedEdition,
@@ -186,30 +184,30 @@ contract SnarkBase is Ownable, SnarkDefinitions {
                 _artworkUrl
             );
             // memoraze that a digital work with this hash already loaded
-            _snarkStorage.set_hashToUsedMap(_hashOfArtwork, true);
+            _storage.set_hashToUsedMap(_hashOfArtwork, true);
             // Check that there is no overflow
             require(_tokenId == uint256(uint32(_tokenId)));
             // Enter the new owner
-            _snarkStorage.set_tokenToOwnerMap(_tokenId, msg.sender);
+            _storage.set_tokenToOwnerMap(_tokenId, msg.sender);
             // Add new token to new owner's token list
-            _snarkStorage.add_ownerToTokensMap(msg.sender, _tokenId);
+            _storage.add_ownerToTokensMap(msg.sender, _tokenId);
             // Add new token to new artist's token list
-            _snarkStorage.add_artistToTokensMap(msg.sender, _tokenId);
+            _storage.add_artistToTokensMap(msg.sender, _tokenId);
             // Emit token event 
             emit TokenCreatedEvent(msg.sender, _tokenId);
         }
     }
 
     function getTokensCount() public view returns (uint256) {
-        return _snarkStorage.get_artworks_length();
+        return _storage.get_artworks_length();
     }
 
     function getTokensCountByArtist(address _artist) public view returns (uint256) {
-        return _snarkStorage.get_artistToTokensMap_length(_artist);
+        return _storage.get_artistToTokensMap_length(_artist);
     }
 
     function getTokensCountByOwner() public view returns (uint256) {
-        return _snarkStorage.get_ownerToTokensMap_length(msg.sender);
+        return _storage.get_ownerToTokensMap_length(msg.sender);
     }
 
     /// @dev Return description about token
@@ -224,7 +222,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             uint256 lastPrice
         ) 
     {
-        return _snarkStorage.get_artwork_description(_tokenId);
+        return _storage.get_artwork_description(_tokenId);
     }
 
     /// @dev Return details about token
@@ -239,7 +237,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             string artworkUrl
         ) 
     {
-        return _snarkStorage.get_artwork_details(_tokenId);
+        return _storage.get_artwork_details(_tokenId);
     }
 
     /// @dev Change in profit sharing. Change can only be to the percentages for already registered wallet addresses.
@@ -252,20 +250,20 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         public
         onlyOwnerOf(_tokenId) 
     {
-        _snarkStorage.update_artworks_profitShareSchemaId(_tokenId, _newProfitShareSchemeId);
+        _storage.update_artworks_profitShareSchemaId(_tokenId, _newProfitShareSchemeId);
     }
     
     /// @dev Function to view the balance in our contract that an owner can withdraw 
     function getWithdrawBalance() public view returns (uint256) {
         require(msg.sender != address(0));
-        return _snarkStorage.get_pendingWithdrawals(msg.sender);
+        return _storage.get_pendingWithdrawals(msg.sender);
     }
 
     /// @dev Function to withdraw funds to the owners wallet 
     function withdrawFunds() public {
         require(msg.sender != address(0));
-        uint256 balance = _snarkStorage.get_pendingWithdrawals(msg.sender);
-        _snarkStorage.sub_pendingWithdrawals(msg.sender, balance);
+        uint256 balance = _storage.get_pendingWithdrawals(msg.sender);
+        _storage.sub_pendingWithdrawals(msg.sender, balance);
         msg.sender.transfer(balance);
     }
 
@@ -275,20 +273,20 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @param _tokenId Token Id
     function _transfer(address _from, address _to, uint256 _tokenId) internal {
         if (_from != address(0)) {
-            uint256 tokensCount = _snarkStorage.get_ownerToTokensMap_length(_from);
+            uint256 tokensCount = _storage.get_ownerToTokensMap_length(_from);
             // Remove the transferred token from the array of tokens belonging to the owner
             for (uint i = 0; i < tokensCount; i++) {
-                uint256 ownerTokenId = _snarkStorage.get_ownerToTokensMap(_from, i);
+                uint256 ownerTokenId = _storage.get_ownerToTokensMap(_from, i);
                 if (ownerTokenId == _tokenId) {
-                    _snarkStorage.delete_ownerToTokensMap(_from, i);
+                    _storage.delete_ownerToTokensMap(_from, i);
                     break;
                 }
             }
         }
         // Enter the new owner
-        _snarkStorage.set_tokenToOwnerMap(_tokenId, _to);
+        _storage.set_tokenToOwnerMap(_tokenId, _to);
         // Add token to token list of new owner
-        _snarkStorage.add_ownerToTokensMap(_to, _tokenId);
+        _storage.add_ownerToTokensMap(_to, _tokenId);
         // Emit ERC721 Transfer event
         emit Transfer(_from, _to, _tokenId);
     }
@@ -302,8 +300,8 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         uint256 lastPrice;
         uint256 profitShareSchemaId;
         uint8 profitShareFromSecondarySale;
-        (, , , lastPrice) = _snarkStorage.get_artwork_description(_tokenId);
-        (, profitShareSchemaId, profitShareFromSecondarySale, ) = _snarkStorage.get_artwork_details(_tokenId);
+        (, , , lastPrice) = _storage.get_artwork_description(_tokenId);
+        (, profitShareSchemaId, profitShareFromSecondarySale, ) = _storage.get_artwork_details(_tokenId);
 
         // calculate profit
         // in primary sale the lastPrice should be 0 while in a secondary it should be a prior sale price
@@ -317,18 +315,18 @@ contract SnarkBase is Ownable, SnarkDefinitions {
                 profit = profit * profitShareFromSecondarySale / 100;
                 // the count that will go to the seller
                 countToSeller -= profit;
-                _snarkStorage.add_pendingWithdrawals(_from, countToSeller);
+                _storage.add_pendingWithdrawals(_from, countToSeller);
             }
             uint256 residue = profit; // hold any uncollected count in residue after paying out all of the participants
-            uint256 participantsCount = _snarkStorage.get_profitShareSchemes_participants_length(profitShareSchemaId);
+            uint256 participantsCount = _storage.get_profitShareSchemes_participants_length(profitShareSchemaId);
             address currentParticipant;
             uint8 participantProfit;
             for (uint8 i = 0; i < participantsCount; i++) { // one by one go through each profit sharing participant
-                (currentParticipant, participantProfit) = _snarkStorage.get_profitShareSchemes(profitShareSchemaId, i);
+                (currentParticipant, participantProfit) = _storage.get_profitShareSchemes(profitShareSchemaId, i);
                 // calculate the payout count
                 uint256 payout = profit * participantProfit / 100;
                 // move the payout count to each participant
-                _snarkStorage.add_pendingWithdrawals(currentParticipant, payout);
+                _storage.add_pendingWithdrawals(currentParticipant, payout);
                 residue -= payout; // recalculate the uncollected count after the payout
             }
             // if there is any uncollected counts after distribution, move the count to the seller
@@ -337,7 +335,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             // if there is no profit, then all goes back to the seller
             lastPrice = _price;
         }
-        _snarkStorage.add_pendingWithdrawals(_from, lastPrice);
+        _storage.add_pendingWithdrawals(_from, lastPrice);
     }
 
     /// @dev Function of an artwork buying
@@ -349,19 +347,19 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     function _buy(uint256 _tokenId, uint256 _value, address _from, address _to, address _mediator) internal {
         _incomeDistribution(_value, _tokenId, _from);
         // mark the price for which the artwork sold
-        _snarkStorage.update_artworks_lastPrice(_tokenId, _value);
+        _storage.update_artworks_lastPrice(_tokenId, _value);
         // mark the sale type to None after sale
-        _snarkStorage.set_tokenToSaleTypeMap(_tokenId, uint8(SaleType.None));
+        _storage.set_tokenToSaleTypeMap(_tokenId, uint8(SaleType.None));
         _transfer(_mediator, _to, _tokenId);
     }
 
     /// @dev Snark platform takes it's profit share
     /// @param income A price of selling
     function _takePlatformProfitShare(uint256 income) internal returns (uint256 residue) {
-        uint256 profit = income * _snarkStorage.get_platformProfitShare() / 100;
+        uint256 profit = income * _storage.get_platformProfitShare() / 100;
         residue = income - profit;
-        address snarkWallet = _snarkStorage.get_snarkWalletAddress();
-        _snarkStorage.add_pendingWithdrawals(snarkWallet, profit);
+        address snarkWallet = _storage.get_snarkWalletAddress();
+        _storage.add_pendingWithdrawals(snarkWallet, profit);
         return residue;
     }
 

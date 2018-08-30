@@ -69,114 +69,114 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
     }
 
     /*** ACCESS ***/
-    function allowAccess(address _address) external onlyOwner {
-        accessAllowed[_address] = true;
-    }
+    // function allowAccess(address _address) external onlyOwner {
+    //     accessAllowed[_address] = true;
+    // }
 
-    function denyAccess(address _address) external onlyOwner {
-        accessAllowed[_address] = false;
-    }
+    // function denyAccess(address _address) external onlyOwner {
+    //     accessAllowed[_address] = false;
+    // }
 
     /*** SNARK's DATA ***/
-    function set_platformProfitShare(uint8 _platformProfitShare) external onlyOwner {
-        platformProfitShare = _platformProfitShare;
-    }
+    // function set_platformProfitShare(uint8 _platformProfitShare) external onlyOwner {
+    //     platformProfitShare = _platformProfitShare;
+    // }
 
-    function set_snarkWalletAddress(address _snarkWalletAddrss) external onlyOwner {
-        snarkWalletAddress = _snarkWalletAddrss;
-    }
+    // function set_snarkWalletAddress(address _snarkWalletAddrss) external onlyOwner {
+    //     snarkWalletAddress = _snarkWalletAddrss;
+    // }
 
-    function get_platformProfitShare() external view onlyPlatform returns (uint8 platformProfit) {
-        return platformProfitShare;
-    }
+    // function get_platformProfitShare() external view onlyPlatform returns (uint8 platformProfit) {
+    //     return platformProfitShare;
+    // }
 
-    function get_snarkWalletAddress() external view onlyPlatform returns (address snarkAddress) {
-        return snarkWalletAddress;
-    }
+    // function get_snarkWalletAddress() external view onlyPlatform returns (address snarkAddress) {
+    //     return snarkWalletAddress;
+    // }
 
     /*** Artwork ***/
-    function get_artworks_length() external view onlyPlatform returns (uint256 artworksCount) {
-        return artworks.length;
-    }
+    // function get_artworks_length() external view onlyPlatform returns (uint256 artworksCount) {
+    //     return artworks.length;
+    // }
 
-    function get_artwork_description(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (
-        address artist,
-        uint16 limitedEdition,
-        uint16 editionNumber,
-        uint256 lastPrice) 
-    {
-        return (
-            artworks[_tokenId].artist,
-            artworks[_tokenId].limitedEdition,
-            artworks[_tokenId].editionNumber,
-            artworks[_tokenId].lastPrice
-        );
-    }
+    // function get_artwork_description(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (
+    //     address artist,
+    //     uint16 limitedEdition,
+    //     uint16 editionNumber,
+    //     uint256 lastPrice) 
+    // {
+    //     return (
+    //         artworks[_tokenId].artist,
+    //         artworks[_tokenId].limitedEdition,
+    //         artworks[_tokenId].editionNumber,
+    //         artworks[_tokenId].lastPrice
+    //     );
+    // }
 
-    function get_artwork_details(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (
-        bytes32 hastOfArtwork,
-        uint256 profitShareSchemaId,
-        uint8 profitShareFromSecondarySale,
-        string artworkUrl)
-    {
-        return (
-            artworks[_tokenId].hashOfArtwork, 
-            artworks[_tokenId].profitShareSchemaId,
-            artworks[_tokenId].profitShareFromSecondarySale,
-            artworks[_tokenId].artworkUrl
-        );
-    }
+    // function get_artwork_details(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (
+    //     bytes32 hastOfArtwork,
+    //     uint256 profitShareSchemaId,
+    //     uint8 profitShareFromSecondarySale,
+    //     string artworkUrl)
+    // {
+    //     return (
+    //         artworks[_tokenId].hashOfArtwork, 
+    //         artworks[_tokenId].profitShareSchemaId,
+    //         artworks[_tokenId].profitShareFromSecondarySale,
+    //         artworks[_tokenId].artworkUrl
+    //     );
+    // }
 
-    function add_artwork(
-        address _artist,
-        bytes32 _hashOfArtwork,
-        uint16 _limitedEdition,
-        uint16 _editionNumber,
-        uint256 _lastPrice,
-        uint256 _profitShareSchemaId,
-        uint8 _profitShareFromSecondarySale,
-        string _artworkUrl
-    ) 
-        external 
-        onlyPlatform
-        returns(uint256 artworkId) 
-    {
-        uint256 tokenId = artworks.push(Artwork({
-            artist: _artist,
-            hashOfArtwork: _hashOfArtwork,
-            limitedEdition: _limitedEdition,
-            editionNumber: _editionNumber,
-            lastPrice: _lastPrice,
-            profitShareSchemaId: _profitShareSchemaId,
-            profitShareFromSecondarySale: _profitShareFromSecondarySale,
-            artworkUrl: _artworkUrl
-        })) - 1;
-        return tokenId;
-    }
+    // function add_artwork(
+    //     address _artist,
+    //     bytes32 _hashOfArtwork,
+    //     uint16 _limitedEdition,
+    //     uint16 _editionNumber,
+    //     uint256 _lastPrice,
+    //     uint256 _profitShareSchemaId,
+    //     uint8 _profitShareFromSecondarySale,
+    //     string _artworkUrl
+    // ) 
+    //     external 
+    //     onlyPlatform
+    //     returns(uint256 artworkId) 
+    // {
+    //     uint256 tokenId = artworks.push(Artwork({
+    //         artist: _artist,
+    //         hashOfArtwork: _hashOfArtwork,
+    //         limitedEdition: _limitedEdition,
+    //         editionNumber: _editionNumber,
+    //         lastPrice: _lastPrice,
+    //         profitShareSchemaId: _profitShareSchemaId,
+    //         profitShareFromSecondarySale: _profitShareFromSecondarySale,
+    //         artworkUrl: _artworkUrl
+    //     })) - 1;
+    //     return tokenId;
+    // }
 
-    function update_artworks_lastPrice(uint256 _tokenId, uint256 _lastPrice) 
-        external 
-        onlyPlatform 
-        checkTokenId(_tokenId) 
-    {
-        artworks[_tokenId].lastPrice = _lastPrice;
-    }
+    // function update_artworks_lastPrice(uint256 _tokenId, uint256 _lastPrice) 
+    //     external 
+    //     onlyPlatform 
+    //     checkTokenId(_tokenId) 
+    // {
+    //     artworks[_tokenId].lastPrice = _lastPrice;
+    // }
 
-    function update_artworks_profitShareSchemaId(uint256 _tokenId, uint256 _profitShareSchemaId) 
-        external 
-        onlyPlatform 
-        checkTokenId(_tokenId) 
-    {
-        artworks[_tokenId].profitShareSchemaId = _profitShareSchemaId;
-    }
+    // function update_artworks_profitShareSchemaId(uint256 _tokenId, uint256 _profitShareSchemaId) 
+    //     external 
+    //     onlyPlatform 
+    //     checkTokenId(_tokenId) 
+    // {
+    //     artworks[_tokenId].profitShareSchemaId = _profitShareSchemaId;
+    // }
 
-    function update_artworks_profitShareFromSecondarySale(uint256 _tokenId, uint8 _profitShareForSecondarySale) 
-        external 
-        onlyPlatform 
-        checkTokenId(_tokenId) 
-    {
-        artworks[_tokenId].profitShareFromSecondarySale = _profitShareForSecondarySale;
-    }
+    // function update_artworks_profitShareFromSecondarySale(uint256 _tokenId, uint8 _profitShareForSecondarySale) 
+    //     external 
+    //     onlyPlatform 
+    //     checkTokenId(_tokenId) 
+    // {
+    //     artworks[_tokenId].profitShareFromSecondarySale = _profitShareForSecondarySale;
+    // }
 
     /*** profitShareSchemes ***/
     function add_profitShareSchemes(address[] _participants, uint8[] _profits) external onlyPlatform returns (uint256 profitShareSchemeId) {
