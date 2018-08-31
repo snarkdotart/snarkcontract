@@ -49,7 +49,7 @@ contract('SnarkBase', async (accounts) => {
         const limitedEdition = 10;
         const editionNumber = 2;
         const lastPrice = 5000;
-        const profitShareSchemaId = 1;
+        const profitShareSchemeId = 1;
         const profitShareFromSecondarySale = 20;
         const artworkUrl = "http://snark.art";
 
@@ -70,7 +70,7 @@ contract('SnarkBase', async (accounts) => {
             limitedEdition,
             editionNumber,
             lastPrice,
-            profitShareSchemaId,
+            profitShareSchemeId,
             profitShareFromSecondarySale,
             artworkUrl
         );
@@ -85,7 +85,7 @@ contract('SnarkBase', async (accounts) => {
         assert.equal(retval[2].toNumber(), limitedEdition);
         assert.equal(retval[3].toNumber(), editionNumber);
         assert.equal(retval[4].toNumber(), lastPrice);
-        assert.equal(retval[5].toNumber(), profitShareSchemaId);
+        assert.equal(retval[5].toNumber(), profitShareSchemeId);
         assert.equal(retval[6].toNumber(), profitShareFromSecondarySale);
         assert.equal(retval[7], artworkUrl);
     });
@@ -171,16 +171,16 @@ contract('SnarkBase', async (accounts) => {
         assert.equal(retval, val);
     });
 
-    it("10. test ArtworkProfitShareSchemaId functions", async () => {
+    it("10. test ArtworkProfitShareSchemeId functions", async () => {
         const key = 9;
         const val = 2;
 
-        let retval = await instance.getArtworkProfitShareSchemaId(key);
+        let retval = await instance.getArtworkProfitShareSchemeId(key);
         assert.equal(retval, 0);
 
-        await instance.setArtworkProfitShareSchemaId(key, val);
+        await instance.setArtworkProfitShareSchemeId(key, val);
 
-        retval = await instance.getArtworkProfitShareSchemaId(key);
+        retval = await instance.getArtworkProfitShareSchemeId(key);
         assert.equal(retval, val);
     });
 
@@ -210,8 +210,48 @@ contract('SnarkBase', async (accounts) => {
         assert.equal(retval, val);
     });
 
-    it("13. test getArtwork function", async () => {
+    it("13. test ProftShareScheme functions", async () => {
+        const participants = [
+            '0xC04691B99EB731536E35F375ffC85249Ec713597', 
+            '0xB94691B99EB731536E35F375ffC85249Ec717233'
+        ];
+        const profits = [ 20, 80 ];
 
+        let retval = await instance.getTotalNumberOfProfitShareSchemes();
+        assert.equal(retval, 0);
+
+        retval = await instance.getNumberOfProfitShareSchemesForOwner();
+        assert.equal(retval, 0);
+
+        const event = instance.ProfitShareSchemeCreated({ fromBlock: 0, toBlock: 'latest' });
+        event.watch(function (error, result) {
+            if (!error) {
+                schemeId = result.args._profitShareSchemeId.toNumber();
+                assert.equal(schemeId, 1, "Token Id is not equal 1");
+            }
+        });
+
+        await instance.addProfitShareScheme(participants, profits);
+
+        retval = await instance.getTotalNumberOfProfitShareSchemes();
+        assert.equal(retval, 1);
+
+        retval = await instance.getNumberOfProfitShareSchemesForOwner();
+        assert.equal(retval, 1);
+
+        schemeId = await instance.getProfitShareSchemeIdForOwner(0);
+        assert.equal(schemeId, 1);
+
+        retval = await instance.getNumberOfParticipantsForProfitShareScheme(schemeId);
+        assert.equal(retval, participants.length);
+
+        retval = await instance.getParticipantOfProfitShareScheme(schemeId, 0);
+        assert.equal(retval[0].toUpperCase(), participants[0].toUpperCase());
+        assert.equal(retval[1], profits[0]);
+
+        retval = await instance.getParticipantOfProfitShareScheme(schemeId, 1);
+        assert.equal(retval[0].toUpperCase(), participants[1].toUpperCase());
+        assert.equal(retval[1], profits[1]);
     });
 
     // it("", async () => {});

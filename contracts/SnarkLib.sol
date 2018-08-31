@@ -49,10 +49,10 @@ library SnarkLib {
         );
     }
 
-    function setArtworkProfitShareSchemaId(address _storageAddress, uint256 _tokenId, uint256 _schemaId) external {
+    function setArtworkProfitShareSchemeId(address _storageAddress, uint256 _tokenId, uint256 _schemeId) external {
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "profitShareSchemaId", _tokenId)),
-            _schemaId
+            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", _tokenId)),
+            _schemeId
         );
     }
 
@@ -80,7 +80,7 @@ library SnarkLib {
         uint256 _limitedEdition,
         uint256 _editionNumber,
         uint256 _lastPrice,
-        uint256 _profitShareSchemaId,
+        uint256 _profitShareSchemeId,
         uint256 _profitShareFromSecondarySale,
         string _artworkUrl
     ) 
@@ -115,8 +115,8 @@ library SnarkLib {
         );
 
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "profitShareSchemaId", tokenId)),
-            _profitShareSchemaId
+            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", tokenId)),
+            _profitShareSchemeId
         );
 
         SnarkStorage(_storageAddress).setUint(
@@ -130,6 +130,50 @@ library SnarkLib {
         );
 
         return tokenId;
+    }
+
+    function addProfitShareScheme(
+        address _storageAddress,
+        address _schemeOwner,
+        address[] _participants,
+        uint256[] _profits
+    )
+        external
+        returns (uint256 schemeId) 
+    {
+        schemeId = SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfProfitShareSchemes")) + 1;
+        SnarkStorage(_storageAddress).setUint(keccak256("totalNumberOfProfitShareSchemes"), schemeId);
+
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("numberOfParticipantsForProfitShareScheme", schemeId)), 
+            _participants.length
+        );
+
+        for (uint256 i = 0; i < _participants.length; i++) {
+
+            SnarkStorage(_storageAddress).setAddress(
+                keccak256(abi.encodePacked("participantAddressForProfitShareScheme", schemeId, i)), 
+                _participants[i]
+            );
+
+            SnarkStorage(_storageAddress).setUint(
+                keccak256(abi.encodePacked("participantProfitForProfitShareScheme", schemeId, i)), 
+                _profits[i]
+            );
+        }
+
+        uint256 numberOfSchemesForOwner = SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", _schemeOwner)));
+
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", _schemeOwner)), 
+            numberOfSchemesForOwner + 1
+        );
+
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("profitShareSchemeIdsForOwner", _schemeOwner, numberOfSchemesForOwner)),
+            schemeId
+        );
     }
 
     /*** GET ***/
@@ -185,11 +229,11 @@ library SnarkLib {
         );
     }
 
-    function getArtworkProfitShareSchemaId(address _storageAddress, uint256 _tokenId) external view
-        returns (uint256 profitShareSchemaId)
+    function getArtworkProfitShareSchemeId(address _storageAddress, uint256 _tokenId) external view
+        returns (uint256 profitShareSchemeId)
     {
         return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "profitShareSchemaId", _tokenId))
+            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", _tokenId))
         );
     }
 
@@ -213,14 +257,14 @@ library SnarkLib {
         uint256 limitedEdition,
         uint256 editionNumber,
         uint256 lastPrice,
-        uint256 profitShareSchemaId,
+        uint256 profitShareSchemeId,
         uint256 profitShareFromSecondarySale,
         string artworkUrl) 
     {
         artistAddress = SnarkStorage(_storageAddress).addressStorage(
             keccak256(abi.encodePacked("artwork", "artist", _tokenId))
         );
-        
+
         artworkHash = SnarkStorage(_storageAddress).bytesStorage(
             keccak256(abi.encodePacked("artwork", "hashOfArtwork", _tokenId))
         );
@@ -237,8 +281,8 @@ library SnarkLib {
             keccak256(abi.encodePacked("artwork", "lastPrice", _tokenId))
         );
 
-        profitShareSchemaId = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "profitShareSchemaId", _tokenId))
+        profitShareSchemeId = SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", _tokenId))
         );
 
         profitShareFromSecondarySale = SnarkStorage(_storageAddress).uintStorage(
@@ -250,4 +294,48 @@ library SnarkLib {
         );
     }
 
+    function getTotalNumberOfProfitShareSchemes(address _storageAddress) external view returns (uint256 number) {
+        return SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfProfitShareSchemes"));
+    }
+
+    function getNumberOfParticipantsForProfitShareScheme(address _storageAddress, uint256 _schemeId) external view 
+        returns (uint256 number) 
+    {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("numberOfParticipantsForProfitShareScheme", _schemeId))
+        );
+    }
+
+    function getParticipantOfProfitShareScheme(address _storageAddress, uint256 _schemeId, uint256 _index) 
+        external
+        view
+        returns (address participant, uint256 profit)
+    {
+        participant = SnarkStorage(_storageAddress).addressStorage(
+            keccak256(abi.encodePacked("participantAddressForProfitShareScheme", _schemeId, _index)) 
+        );
+
+        profit = SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("participantProfitForProfitShareScheme", _schemeId, _index))
+        );
+    }
+
+    function getNumberOfProfitShareSchemesForOwner(address _storageAddress, address _schemeOwner) 
+        external 
+        view 
+        returns (uint256 number)
+    {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", _schemeOwner)));
+    }
+
+    function getProfitShareSchemeIdForOwner(address _storageAddress, address _schemeOwner, uint256 _index)
+        external
+        view
+        returns (uint256 schemeId)
+    {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("profitShareSchemeIdsForOwner", _schemeOwner, _index))
+        );
+    }
 }

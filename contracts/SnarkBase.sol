@@ -17,6 +17,7 @@ contract SnarkBase is Ownable {
 
     /*** ADD ***/
     event ArtworkCreated(address _tokenOwner, uint256 _tokenId);
+    event ProfitShareSchemeCreated(address _schemeCreator, uint256 _profitShareSchemeId);
     
     function addArtwork(
         address _artistAddress, 
@@ -24,7 +25,7 @@ contract SnarkBase is Ownable {
         uint256 _limitedEdition,
         uint256 _editionNumber,
         uint256 _lastPrice,
-        uint256 _profitShareSchemaId,
+        uint256 _profitShareSchemeId,
         uint256 _profitShareFromSecondarySale,
         string _artworkUrl
     ) 
@@ -36,11 +37,16 @@ contract SnarkBase is Ownable {
             _limitedEdition,
             _editionNumber,
             _lastPrice,
-            _profitShareSchemaId,
+            _profitShareSchemeId,
             _profitShareFromSecondarySale,
             _artworkUrl
         );
         emit ArtworkCreated(msg.sender, tokenId);
+    }
+
+    function addProfitShareScheme(address[] _participants, uint256[] _profits) external {
+        uint256 schemeId = storageAddress.addProfitShareScheme(msg.sender, _participants, _profits);
+        emit ProfitShareSchemeCreated(msg.sender, schemeId);
     }
 
     /*** SET ***/
@@ -72,8 +78,8 @@ contract SnarkBase is Ownable {
         storageAddress.setArtworkHash(_tokenId, _artworkHash);
     }
 
-    function setArtworkProfitShareSchemaId(uint256 _tokenId, uint256 _schemaId) external {
-        storageAddress.setArtworkProfitShareSchemaId(_tokenId, _schemaId);
+    function setArtworkProfitShareSchemeId(uint256 _tokenId, uint256 _schemeId) external {
+        storageAddress.setArtworkProfitShareSchemeId(_tokenId, _schemeId);
     }
 
     function setArtworkProfitShareFromSecondarySale(uint256 _tokenId, uint256 _profitShare) external {
@@ -117,8 +123,8 @@ contract SnarkBase is Ownable {
         return storageAddress.getArtworkHash(_tokenId);
     }
 
-    function getArtworkProfitShareSchemaId(uint256 _tokenId) external view returns (uint256) {
-        return storageAddress.getArtworkProfitShareSchemaId(_tokenId);
+    function getArtworkProfitShareSchemeId(uint256 _tokenId) external view returns (uint256) {
+        return storageAddress.getArtworkProfitShareSchemeId(_tokenId);
     }
 
     function getArtworkProfitShareFromSecondarySale(uint256 _tokenId) external view returns (uint256) {
@@ -135,10 +141,34 @@ contract SnarkBase is Ownable {
         uint256 limitedEdition,
         uint256 editionNumber,
         uint256 lastPrice,
-        uint256 profitShareSchemaId,
+        uint256 profitShareSchemeId,
         uint256 profitShareFromSecondarySale,
         string artworkUrl) 
     {
         return storageAddress.getArtwork(_tokenId);
+    }
+
+    function getTotalNumberOfProfitShareSchemes() external view returns (uint256) {
+        return storageAddress.getTotalNumberOfProfitShareSchemes();
+    }
+
+    function getNumberOfParticipantsForProfitShareScheme(uint256 _schemeId) external view returns (uint256) {
+        return storageAddress.getNumberOfParticipantsForProfitShareScheme(_schemeId);
+    }
+
+    function getParticipantOfProfitShareScheme(uint256 _schemeId, uint256 _index) 
+        external
+        view
+        returns (address, uint256)
+    {
+        return storageAddress.getParticipantOfProfitShareScheme(_schemeId, _index);
+    }
+
+    function getNumberOfProfitShareSchemesForOwner() external view returns (uint256) {
+        return storageAddress.getNumberOfProfitShareSchemesForOwner(msg.sender);
+    }
+
+    function getProfitShareSchemeIdForOwner(uint256 _index) external view returns (uint256) {
+        return storageAddress.getProfitShareSchemeIdForOwner(msg.sender, _index);
     }
 }
