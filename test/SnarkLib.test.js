@@ -59,8 +59,8 @@ contract('SnarkBase', async (accounts) => {
         const event = instance.ArtworkCreated({ fromBlock: 0, toBlock: 'latest' });
         event.watch(function (error, result) {
             if (!error) {
-                tokenId = result.args._tokenId.toNumber();
-                assert.equal(tokenId, 1, "Token Id is not equal 1");
+                artworkId = result.args._artworkId.toNumber();
+                assert.equal(artworkId, 1, "Artwork Id is not equal 1");
             }
         });
 
@@ -75,11 +75,11 @@ contract('SnarkBase', async (accounts) => {
             artworkUrl
         );
 
-        tokenId = await instance.getTotalNumberOfArtworks();
-        tokenId = tokenId.toNumber();
-        assert.equal(tokenId, 1);
+        artworkId = await instance.getTotalNumberOfArtworks();
+        artworkId = artworkId.toNumber();
+        assert.equal(artworkId, 1);
 
-        retval = await instance.getArtwork(tokenId);
+        retval = await instance.getArtwork(artworkId);
         assert.equal(retval[0].toUpperCase(), artistAddress.toUpperCase());
         assert.equal(retval[1].toUpperCase(), artworkHash.toUpperCase());
         assert.equal(retval[2].toNumber(), limitedEdition);
@@ -227,7 +227,7 @@ contract('SnarkBase', async (accounts) => {
         event.watch(function (error, result) {
             if (!error) {
                 schemeId = result.args._profitShareSchemeId.toNumber();
-                assert.equal(schemeId, 1, "Token Id is not equal 1");
+                assert.equal(schemeId, 1, "Artwork Id is not equal 1");
             }
         });
 
@@ -254,7 +254,26 @@ contract('SnarkBase', async (accounts) => {
         assert.equal(retval[1], profits[1]);
     });
 
-    // it("", async () => {});
+    it("14. test ArtworkToOwner functions", async () => {
+        const key = 14;
+
+        let retval = await instance.getNumberOfOwnerArtworks();
+        assert.equal(retval.toNumber(), 0, "getNumberOfOwnerArtworks must be empty");
+
+        await instance.setArtworkToOwner(key);
+
+        retval = await instance.getNumberOfOwnerArtworks();
+        assert.equal(retval.toNumber(), 1, "getNumberOfOwnerArtworks must return 1 element");
+
+        retval = await instance.getArtworkIdOfOwner(0);
+        assert.equal(retval.toNumber(), key, "getArtworkIdOfOwner returned not a expected artwork id");
+
+        await instance.deleteArtworkFromOwner(0);
+
+        retval = await instance.getNumberOfOwnerArtworks();
+        assert.equal(retval.toNumber(), 0, "getNumberOfOwnerArtworks must be empty after deleting");
+    });
+
     // it("", async () => {});
     // it("", async () => {});
 
@@ -563,6 +582,6 @@ contract('SnarkBase', async (accounts) => {
     //     assert.equal(cnt, true);
     // });
 
-    // it("test tokenToParticipantApprovingMap functions", async () => {});
+    // it("test artworkToParticipantApprovingMap functions", async () => {});
 
 });

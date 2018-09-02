@@ -179,64 +179,64 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
     // }
 
     /*** profitShareSchemes ***/
-    function add_profitShareSchemes(address[] _participants, uint8[] _profits) external onlyPlatform returns (uint256 profitShareSchemeId) {
-        uint256 _schemeId = profitShareSchemes.push(ProfitShareScheme({
-            participants: _participants,
-            profits: _profits
-        })) - 1;
-        return _schemeId;
-    }
+    // function add_profitShareSchemes(address[] _participants, uint8[] _profits) external onlyPlatform returns (uint256 profitShareSchemeId) {
+    //     uint256 _schemeId = profitShareSchemes.push(ProfitShareScheme({
+    //         participants: _participants,
+    //         profits: _profits
+    //     })) - 1;
+    //     return _schemeId;
+    // }
 
-    function get_profitShareSchemes_length() external view onlyPlatform returns (uint256 PSSCount) {
-        return profitShareSchemes.length;
-    }
+    // function get_profitShareSchemes_length() external view onlyPlatform returns (uint256 PSSCount) {
+    //     return profitShareSchemes.length;
+    // }
 
-    function get_profitShareSchemes_participants_length(uint256 _schemeId) 
-        external 
-        view 
-        onlyPlatform
-        checkSchemeId(_schemeId)
-        returns (uint256 participantsCount) 
-    {
-        return profitShareSchemes[_schemeId].participants.length;
-    }
+    // function get_profitShareSchemes_participants_length(uint256 _schemeId) 
+    //     external 
+    //     view 
+    //     onlyPlatform
+    //     checkSchemeId(_schemeId)
+    //     returns (uint256 participantsCount) 
+    // {
+    //     return profitShareSchemes[_schemeId].participants.length;
+    // }
 
-    function get_profitShareSchemes(
-        uint256 _schemeId, 
-        uint256 _participantIndex
-    ) 
-        external 
-        view 
-        onlyPlatform 
-        checkSchemeId(_schemeId)
-        returns (address participant, uint8 profit) 
-    {
-        require(_participantIndex < profitShareSchemes[_schemeId].participants.length && _participantIndex >= 0);
-        return (
-            profitShareSchemes[_schemeId].participants[_participantIndex], 
-            profitShareSchemes[_schemeId].profits[_participantIndex]
-        );
-    }
+    // function get_profitShareSchemes(
+    //     uint256 _schemeId, 
+    //     uint256 _participantIndex
+    // ) 
+    //     external 
+    //     view 
+    //     onlyPlatform 
+    //     checkSchemeId(_schemeId)
+    //     returns (address participant, uint8 profit) 
+    // {
+    //     require(_participantIndex < profitShareSchemes[_schemeId].participants.length && _participantIndex >= 0);
+    //     return (
+    //         profitShareSchemes[_schemeId].participants[_participantIndex], 
+    //         profitShareSchemes[_schemeId].profits[_participantIndex]
+    //     );
+    // }
 
     /*** addressToProfitShareSchemesMap ***/
-    function get_addressToProfitShareSchemesMap_length(address _owner) external view onlyPlatform returns (uint256 schemesCount) {
-        return addressToPSSMap[_owner].length;
-    }
+    // function get_addressToProfitShareSchemesMap_length(address _owner) external view onlyPlatform returns (uint256 schemesCount) {
+    //     return addressToPSSMap[_owner].length;
+    // }
 
-    function get_addressToProfitShareSchemesMap(address _owner, uint256 _index) external view onlyPlatform returns (uint256 schemeId) {
-        require(_index < addressToPSSMap[_owner].length && _index >= 0);
-        return addressToPSSMap[_owner][_index];
-    }
+    // function get_addressToProfitShareSchemesMap(address _owner, uint256 _index) external view onlyPlatform returns (uint256 schemeId) {
+    //     require(_index < addressToPSSMap[_owner].length && _index >= 0);
+    //     return addressToPSSMap[_owner][_index];
+    // }
 
-    function add_addressToProfitShareSchemesMap(address _owner, uint256 _schemeId) external onlyPlatform {
-        addressToPSSMap[_owner].push(_schemeId);
-    }
+    // function add_addressToProfitShareSchemesMap(address _owner, uint256 _schemeId) external onlyPlatform {
+    //     addressToPSSMap[_owner].push(_schemeId);
+    // }
 
-    function delete_addressToProfitShareSchemesMap(address _owner, uint256 _index) external onlyPlatform {
-        require(_index < addressToPSSMap[_owner].length && _index >= 0);
-        addressToPSSMap[_owner][_index] = addressToPSSMap[_owner][addressToPSSMap[_owner].length - 1];
-        addressToPSSMap[_owner].length--;
-    }
+    // function delete_addressToProfitShareSchemesMap(address _owner, uint256 _index) external onlyPlatform {
+    //     require(_index < addressToPSSMap[_owner].length && _index >= 0);
+    //     addressToPSSMap[_owner][_index] = addressToPSSMap[_owner][addressToPSSMap[_owner].length - 1];
+    //     addressToPSSMap[_owner].length--;
+    // }
 
     /*** tokenToOwnerMap ***/
     function get_tokenToOwnerMap(uint256 _tokenId) external view onlyPlatform returns (address tokenOwner) {
