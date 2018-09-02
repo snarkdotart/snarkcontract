@@ -49,6 +49,10 @@ contract SnarkBase is Ownable {
         emit ProfitShareSchemeCreated(msg.sender, schemeId);
     }
 
+    function addArtworkToArtistList(uint256 _artworkId, address _artistAddress) external {
+        storageAddress.addArtworkToArtistList(_artworkId, _artistAddress);
+    }
+
     /*** SET ***/
     function setSnarkWalletAddress(address _val) external {
         storageAddress.setSnarkWalletAddress(_val);
@@ -92,6 +96,10 @@ contract SnarkBase is Ownable {
 
     function setArtworkToOwner(uint256 _artworkId) external {
         storageAddress.setArtworkToOwner(msg.sender, _artworkId);
+    }
+
+    function setOwnerOfArtwork(uint256 _artworkId, address _artworkOwner) external {
+        storageAddress.setOwnerOfArtwork(_artworkId, _artworkOwner);
     }
 
     /*** DELETE ***/
@@ -187,5 +195,18 @@ contract SnarkBase is Ownable {
 
     function getArtworkIdOfOwner(uint256 _index) external view returns (uint256 artworkId) {
         return storageAddress.getArtworkIdOfOwner(msg.sender, _index);
+    }
+
+    function getOwnerOfArtwork(uint256 _artworkId) external view returns (address artworkOwner) 
+    {
+        return storageAddress.getOwnerOfArtwork(_artworkId);
+    }
+
+    function getNumberOfArtistArtworks(address _artistAddress) external view returns (uint256 number) {
+        return storageAddress.getNumberOfArtistArtworks(_artistAddress);
+    }
+
+    function getArtworkIdForArtist(address _artistAddress, uint256 _index) external view returns (uint256 artworkId) {
+        return storageAddress.getArtworkIdForArtist(_artistAddress, _index);
     }
 }

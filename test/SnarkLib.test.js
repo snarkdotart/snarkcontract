@@ -274,7 +274,46 @@ contract('SnarkBase', async (accounts) => {
         assert.equal(retval.toNumber(), 0, "getNumberOfOwnerArtworks must be empty after deleting");
     });
 
-    // it("", async () => {});
+    it("15. test OwnerOfArtwork functions", async () => {
+        const artworkId = 11;
+        const emptyOwner = '0x0000000000000000000000000000000000000000';
+        const owner1 = '0xC04691B99EB731536E35F375ffC85249Ec713597';
+        const owner2 = '0xB94691B99EB731536E35F375ffC85249Ec717233';
+
+        let retval = await instance.getOwnerOfArtwork(artworkId);
+        assert.equal(retval, emptyOwner);
+
+        await instance.setOwnerOfArtwork(artworkId, owner1);
+
+        retval = await instance.getOwnerOfArtwork(artworkId);
+        assert.equal(retval.toUpperCase(), owner1.toUpperCase());
+
+        await instance.setOwnerOfArtwork(artworkId, owner2);
+
+        retval = await instance.getOwnerOfArtwork(artworkId);
+        assert.equal(retval.toUpperCase(), owner2.toUpperCase());
+    });
+
+    it("16. test ArtworkToArtist functions", async () => {
+        const artworkId = 11;
+        const owner1 = '0xC04691B99EB731536E35F375ffC85249Ec713597';
+        const owner2 = '0xB94691B99EB731536E35F375ffC85249Ec717233';
+        
+        let retval = await instance.getNumberOfArtistArtworks(owner1);
+        assert.equal(retval.toNumber(), 0);
+        retval = await instance.getNumberOfArtistArtworks(owner2);
+        assert.equal(retval.toNumber(), 0);
+
+        await instance.addArtworkToArtistList(artworkId, owner1);
+
+        retval = await instance.getNumberOfArtistArtworks(owner1);
+        assert.equal(retval.toNumber(), 1);
+        retval = await instance.getNumberOfArtistArtworks(owner2);
+        assert.equal(retval.toNumber(), 0);
+        retval = await instance.getArtworkIdForArtist(owner1, 0);
+        assert.equal(retval.toNumber(), artworkId);
+    });
+
     // it("", async () => {});
 
     // it("test arrayNameToItemsCount functions", async () => {

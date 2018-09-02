@@ -239,59 +239,59 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
     // }
 
     /*** tokenToOwnerMap ***/
-    function get_tokenToOwnerMap(uint256 _tokenId) external view onlyPlatform returns (address tokenOwner) {
-        return tokenToOwnerMap[_tokenId];
-    }
+    // function get_tokenToOwnerMap(uint256 _tokenId) external view onlyPlatform returns (address tokenOwner) {
+    //     return tokenToOwnerMap[_tokenId];
+    // }
 
-    function set_tokenToOwnerMap(uint256 _tokenId, address _owner) external onlyPlatform {
-        tokenToOwnerMap[_tokenId] = _owner;
-    }
+    // function set_tokenToOwnerMap(uint256 _tokenId, address _owner) external onlyPlatform {
+    //     tokenToOwnerMap[_tokenId] = _owner;
+    // }
 
-    function delete_tokenToOwnerMap(uint256 _tokenId) external onlyPlatform {
-        delete tokenToOwnerMap[_tokenId];
-    }
+    // function delete_tokenToOwnerMap(uint256 _tokenId) external onlyPlatform {
+    //     delete tokenToOwnerMap[_tokenId];
+    // }
 
     /*** ownerToTokensMap ***/
-    function get_ownerToTokensMap_length(address _owner) external view onlyPlatform returns (uint256 tokensCount) {
-        return ownerToTokensMap[_owner].length;
-    }
+    // function get_ownerToTokensMap_length(address _owner) external view onlyPlatform returns (uint256 tokensCount) {
+    //     return ownerToTokensMap[_owner].length;
+    // }
 
-    function get_ownerToTokensMap(address _owner, uint256 _index) external view onlyPlatform returns (uint256 tokenId) {
-        require(_index < ownerToTokensMap[_owner].length && _index >= 0);
-        return ownerToTokensMap[_owner][_index];
-    }
+    // function get_ownerToTokensMap(address _owner, uint256 _index) external view onlyPlatform returns (uint256 tokenId) {
+    //     require(_index < ownerToTokensMap[_owner].length && _index >= 0);
+    //     return ownerToTokensMap[_owner][_index];
+    // }
 
-    function add_ownerToTokensMap(address _owner, uint256 _tokenId) external onlyPlatform {
-        ownerToTokensMap[_owner].push(_tokenId);
-    }
+    // function add_ownerToTokensMap(address _owner, uint256 _tokenId) external onlyPlatform {
+    //     ownerToTokensMap[_owner].push(_tokenId);
+    // }
 
-    function delete_ownerToTokensMap(address _owner, uint256 _index) external onlyPlatform {
-        require(_index < ownerToTokensMap[_owner].length && _index >= 0);
-        ownerToTokensMap[_owner][_index] = ownerToTokensMap[_owner][ownerToTokensMap[_owner].length - 1];
-        ownerToTokensMap[_owner].length--;
-    }
+    // function delete_ownerToTokensMap(address _owner, uint256 _index) external onlyPlatform {
+    //     require(_index < ownerToTokensMap[_owner].length && _index >= 0);
+    //     ownerToTokensMap[_owner][_index] = ownerToTokensMap[_owner][ownerToTokensMap[_owner].length - 1];
+    //     ownerToTokensMap[_owner].length--;
+    // }
     
     /*** artistToTokensMap ***/
-    function get_artistToTokensMap_length(address _artist) external view onlyPlatform returns (uint256 tokensCount) {
-        return artistToTokensMap[_artist].length;
-    }
+    // function get_artistToTokensMap_length(address _artist) external view onlyPlatform returns (uint256 tokensCount) {
+    //     return artistToTokensMap[_artist].length;
+    // }
 
-    function get_artistToTokensMap(address _artist, uint256 _index) external view onlyPlatform 
-        returns (uint256 tokenId) 
-    {
-        require(_index < artistToTokensMap[_artist].length && _index >= 0);
-        return artistToTokensMap[_artist][_index];
-    }
+    // function get_artistToTokensMap(address _artist, uint256 _index) external view onlyPlatform 
+    //     returns (uint256 tokenId) 
+    // {
+    //     require(_index < artistToTokensMap[_artist].length && _index >= 0);
+    //     return artistToTokensMap[_artist][_index];
+    // }
 
-    function add_artistToTokensMap(address _artist, uint256 _tokenId) external onlyPlatform {
-        artistToTokensMap[_artist].push(_tokenId);
-    }
+    // function add_artistToTokensMap(address _artist, uint256 _tokenId) external onlyPlatform {
+    //     artistToTokensMap[_artist].push(_tokenId);
+    // }
 
-    function delete_artistToTokensMap(address _artist, uint256 _index) external onlyPlatform {
-        require(_index < artistToTokensMap[_artist].length && _index >= 0);
-        artistToTokensMap[_artist][_index] = artistToTokensMap[_artist][artistToTokensMap[_artist].length - 1];
-        artistToTokensMap[_artist].length--;
-    }
+    // function delete_artistToTokensMap(address _artist, uint256 _index) external onlyPlatform {
+    //     require(_index < artistToTokensMap[_artist].length && _index >= 0);
+    //     artistToTokensMap[_artist][_index] = artistToTokensMap[_artist][artistToTokensMap[_artist].length - 1];
+    //     artistToTokensMap[_artist].length--;
+    // }
 
     /*** hashToUsedMap ***/
     function get_hashToUsedMap(bytes32 _hash) external view onlyPlatform returns (bool isUsed) {
