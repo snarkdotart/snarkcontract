@@ -307,30 +307,30 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
     // }
 
     /*** operatorToApprovalsMap ***/
-    function get_operatorToApprovalsMap(address _owner, address _approvalAddress) external view onlyPlatform returns (bool isApprovalAddress) {
-        return operatorToApprovalsMap[_owner][_approvalAddress];
-    }
+    // function get_operatorToApprovalsMap(address _owner, address _approvalAddress) external view onlyPlatform returns (bool isApprovalAddress) {
+    //     return operatorToApprovalsMap[_owner][_approvalAddress];
+    // }
 
-    function set_operatorToApprovalsMap(address _owner, address _approvalAddress, bool _isApproved) external onlyPlatform {
-        operatorToApprovalsMap[_owner][_approvalAddress] = _isApproved;
-    }
+    // function set_operatorToApprovalsMap(address _owner, address _approvalAddress, bool _isApproved) external onlyPlatform {
+    //     operatorToApprovalsMap[_owner][_approvalAddress] = _isApproved;
+    // }
 
-    function delete_operatorToApprovalsMap(address _owner, address _approvalAddress) external onlyPlatform {
-        delete operatorToApprovalsMap[_owner][_approvalAddress];
-    }
+    // function delete_operatorToApprovalsMap(address _owner, address _approvalAddress) external onlyPlatform {
+    //     delete operatorToApprovalsMap[_owner][_approvalAddress];
+    // }
     
     /*** tokenToApprovalsMap ***/
-    function get_tokenToApprovalsMap(uint256 _tokenId) external view onlyPlatform returns (address approvalAddress) {
-        return tokenToApprovalsMap[_tokenId];
-    }
+    // function get_tokenToApprovalsMap(uint256 _tokenId) external view onlyPlatform returns (address approvalAddress) {
+    //     return tokenToApprovalsMap[_tokenId];
+    // }
 
-    function set_tokenToApprovalsMap(uint256 _tokenId, address _approvalAddress) external onlyPlatform {
-        tokenToApprovalsMap[_tokenId] = _approvalAddress;
-    }
+    // function set_tokenToApprovalsMap(uint256 _tokenId, address _approvalAddress) external onlyPlatform {
+    //     tokenToApprovalsMap[_tokenId] = _approvalAddress;
+    // }
 
-    function delete_tokenToApprovalsMap(uint256 _tokenId) external onlyPlatform {
-        delete tokenToApprovalsMap[_tokenId];
-    }
+    // function delete_tokenToApprovalsMap(uint256 _tokenId) external onlyPlatform {
+    //     delete tokenToApprovalsMap[_tokenId];
+    // }
 
     /*** tokenToParticipantApprovingMap ***/
     function get_tokenToParticipantApprovingMap(uint256 _tokenId, address _participant) external view onlyPlatform

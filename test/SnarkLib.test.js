@@ -376,11 +376,14 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getApprovalsToOperator(owner1, owner2);
         assert.isTrue(retval);
 
-        await instance.setApprovalsToOperator(owner1, owner2, false);
+        await instance.deleteApprovalsToOperator(owner1, owner2);
+        // await instance.setApprovalsToOperator(owner1, owner2, false);
 
         retval = await instance.getApprovalsToOperator(owner1, owner2);
         assert.isFalse(retval);
     });
+
+    // it("", async () => {});
 
     // it("", async () => {});
 

@@ -119,6 +119,14 @@ contract SnarkBase is Ownable {
         storageAddress.deleteArtworkFromOwner(msg.sender, _index);
     }
 
+    function deleteApprovalsToOperator(address _owner, address _operator) external {
+        storageAddress.deleteApprovalsToOperator(_owner, _operator);
+    }
+
+    function deleteApprovalsToArtwork(address _owner, uint256 _artworkId) external {
+        storageAddress.deleteApprovalsToArtwork(_owner, _artworkId);
+    }
+
     /*** GET ***/
     function getSnarkWalletAddress() external view returns (address) {
         return storageAddress.getSnarkWalletAddress();
