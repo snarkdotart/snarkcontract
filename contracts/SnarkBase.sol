@@ -94,12 +94,24 @@ contract SnarkBase is Ownable {
         storageAddress.setArtworkURL(_artworkId, _url);
     }
 
-    function setArtworkToOwner(uint256 _artworkId) external {
-        storageAddress.setArtworkToOwner(msg.sender, _artworkId);
+    function setArtworkToOwner(address _owner, uint256 _artworkId) external {
+        storageAddress.setArtworkToOwner(_owner, _artworkId);
     }
 
     function setOwnerOfArtwork(uint256 _artworkId, address _artworkOwner) external {
         storageAddress.setOwnerOfArtwork(_artworkId, _artworkOwner);
+    }
+
+    function setArtworkHashAsInUse(bytes32 _artworkHash, bool _isUsed) external {
+        storageAddress.setArtworkHashAsInUse(_artworkHash, _isUsed);
+    }
+
+    function setApprovalsToOperator(address _owner, address _operator, bool _isApproved) external {
+        storageAddress.setApprovalsToOperator(_owner, _operator, _isApproved);
+    }
+
+    function transferArtwork(uint256 _artworkId, address _from, address _to) external {
+        storageAddress.transferArtwork(_artworkId, _from, _to);
     }
 
     /*** DELETE ***/
@@ -189,12 +201,12 @@ contract SnarkBase is Ownable {
         return storageAddress.getProfitShareSchemeIdForOwner(msg.sender, _index);
     }
 
-    function getNumberOfOwnerArtworks() external view returns (uint256 number) {
-        return storageAddress.getNumberOfOwnerArtworks(msg.sender);
+    function getNumberOfOwnerArtworks(address _sender) external view returns (uint256 number) {
+        return storageAddress.getNumberOfOwnerArtworks(_sender);
     }
 
-    function getArtworkIdOfOwner(uint256 _index) external view returns (uint256 artworkId) {
-        return storageAddress.getArtworkIdOfOwner(msg.sender, _index);
+    function getArtworkIdOfOwner(address _owner, uint256 _index) external view returns (uint256 artworkId) {
+        return storageAddress.getArtworkIdOfOwner(_owner, _index);
     }
 
     function getOwnerOfArtwork(uint256 _artworkId) external view returns (address artworkOwner) 
@@ -208,5 +220,13 @@ contract SnarkBase is Ownable {
 
     function getArtworkIdForArtist(address _artistAddress, uint256 _index) external view returns (uint256 artworkId) {
         return storageAddress.getArtworkIdForArtist(_artistAddress, _index);
+    }
+
+    function getArtworkHashAsInUse(bytes32 _artworkHash) external view returns (bool isUsed) {
+        return storageAddress.getArtworkHashAsInUse(_artworkHash);
+    }
+
+    function getApprovalsToOperator(address _owner, address _operator) external view returns (bool) {
+        return storageAddress.getApprovalsToOperator(_owner, _operator);
     }
 }

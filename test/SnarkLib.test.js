@@ -257,20 +257,20 @@ contract('SnarkBase', async (accounts) => {
     it("14. test ArtworkToOwner functions", async () => {
         const key = 14;
 
-        let retval = await instance.getNumberOfOwnerArtworks();
+        let retval = await instance.getNumberOfOwnerArtworks(web3.eth.accounts[0]);
         assert.equal(retval.toNumber(), 0, "getNumberOfOwnerArtworks must be empty");
 
-        await instance.setArtworkToOwner(key);
+        await instance.setArtworkToOwner(web3.eth.accounts[0], key);
 
-        retval = await instance.getNumberOfOwnerArtworks();
+        retval = await instance.getNumberOfOwnerArtworks(web3.eth.accounts[0]);
         assert.equal(retval.toNumber(), 1, "getNumberOfOwnerArtworks must return 1 element");
 
-        retval = await instance.getArtworkIdOfOwner(0);
+        retval = await instance.getArtworkIdOfOwner(web3.eth.accounts[0], 0);
         assert.equal(retval.toNumber(), key, "getArtworkIdOfOwner returned not a expected artwork id");
 
         await instance.deleteArtworkFromOwner(0);
 
-        retval = await instance.getNumberOfOwnerArtworks();
+        retval = await instance.getNumberOfOwnerArtworks(web3.eth.accounts[0]);
         assert.equal(retval.toNumber(), 0, "getNumberOfOwnerArtworks must be empty after deleting");
     });
 
@@ -312,6 +312,74 @@ contract('SnarkBase', async (accounts) => {
         assert.equal(retval.toNumber(), 0);
         retval = await instance.getArtworkIdForArtist(owner1, 0);
         assert.equal(retval.toNumber(), artworkId);
+    });
+
+    it("17. test transferArtwork function", async () => {
+        const artworkId = 1;
+        const owner1 = '0xC04691B99EB731536E35F375ffC85249Ec713597';
+        const owner2 = '0xB94691B99EB731536E35F375ffC85249Ec717233';
+
+        let retval = await instance.getTotalNumberOfArtworks();
+        assert.equal(retval.toNumber(), 1, "error on step 0");
+
+        retval = await instance.getNumberOfOwnerArtworks(owner1);
+        assert.equal(retval.toNumber(), 0, "error on step 1");
+        retval = await instance.getNumberOfOwnerArtworks(owner2);
+        assert.equal(retval.toNumber(), 0, "error on step 2");
+
+        await instance.setOwnerOfArtwork(artworkId, owner1);
+        await instance.setArtworkToOwner(owner1, artworkId);
+
+        retval = await instance.getNumberOfOwnerArtworks(owner1);
+        assert.equal(retval.toNumber(), 1, "error on step 3");
+        retval = await instance.getNumberOfOwnerArtworks(owner2);
+        assert.equal(retval.toNumber(), 0, "error on step 4");
+        retval = await instance.getArtworkIdOfOwner(owner1, 0);
+        assert.equal(retval.toNumber(), artworkId, "error on step 5");
+
+        await instance.transferArtwork(artworkId, owner1, owner2);
+
+        retval = await instance.getNumberOfOwnerArtworks(owner1);
+        assert.equal(retval.toNumber(), 0, "error on step 6");
+        retval = await instance.getNumberOfOwnerArtworks(owner2);
+        assert.equal(retval.toNumber(), 1, "error on step 7");
+        retval = await instance.getArtworkIdOfOwner(owner2, 0);
+        assert.equal(retval.toNumber(), artworkId, "error on step 8");
+    });
+
+    it("18. test ArtworkHashAsInUse functions", async () => {
+        const artworkHash = web3.sha3("ArtworkHashAsInUse");
+
+        let retval = await instance.getArtworkHashAsInUse(artworkHash);
+        assert.isFalse(retval);
+
+        await instance.setArtworkHashAsInUse(artworkHash, true);
+
+        retval = await instance.getArtworkHashAsInUse(artworkHash);
+        assert.isTrue(retval);
+
+        await instance.setArtworkHashAsInUse(artworkHash, false);
+        
+        retval = await instance.getArtworkHashAsInUse(artworkHash);
+        assert.isFalse(retval);
+    });
+
+    it("19. test ApprovalsToOperator functions", async () => {
+        const owner1 = '0xC04691B99EB731536E35F375ffC85249Ec713597';
+        const owner2 = '0xB94691B99EB731536E35F375ffC85249Ec717233';
+
+        let retval = await instance.getApprovalsToOperator(owner1, owner2);
+        assert.isFalse(retval);
+
+        await instance.setApprovalsToOperator(owner1, owner2, true);
+
+        retval = await instance.getApprovalsToOperator(owner1, owner2);
+        assert.isTrue(retval);
+
+        await instance.setApprovalsToOperator(owner1, owner2, false);
+
+        retval = await instance.getApprovalsToOperator(owner1, owner2);
+        assert.isFalse(retval);
     });
 
     // it("", async () => {});

@@ -294,17 +294,17 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
     // }
 
     /*** hashToUsedMap ***/
-    function get_hashToUsedMap(bytes32 _hash) external view onlyPlatform returns (bool isUsed) {
-        return hashToUsedMap[_hash];
-    }
+    // function get_hashToUsedMap(bytes32 _hash) external view onlyPlatform returns (bool isUsed) {
+    //     return hashToUsedMap[_hash];
+    // }
 
-    function set_hashToUsedMap(bytes32 _hash, bool _isUsed) external onlyPlatform {
-        hashToUsedMap[_hash] = _isUsed;
-    }
+    // function set_hashToUsedMap(bytes32 _hash, bool _isUsed) external onlyPlatform {
+    //     hashToUsedMap[_hash] = _isUsed;
+    // }
 
-    function delete_hashToUsedMap(bytes32 _hash) external onlyPlatform {
-        delete hashToUsedMap[_hash];
-    }
+    // function delete_hashToUsedMap(bytes32 _hash) external onlyPlatform {
+    //     delete hashToUsedMap[_hash];
+    // }
 
     /*** operatorToApprovalsMap ***/
     function get_operatorToApprovalsMap(address _owner, address _approvalAddress) external view onlyPlatform returns (bool isApprovalAddress) {
