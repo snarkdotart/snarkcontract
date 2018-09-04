@@ -375,7 +375,6 @@ contract('SnarkBase', async (accounts) => {
         assert.isFalse(retval);
 
         await instance.setArtworkToParticipantApproving(artworkId, participant, true);
-        await instance.setArtworkToParticipantApproving(artworkId, participant, true);
 
         retval = await instance.getArtworkToParticipantApproving(artworkId, participant);
         assert.isTrue(retval);
