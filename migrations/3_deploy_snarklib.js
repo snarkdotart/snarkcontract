@@ -1,5 +1,5 @@
-var SnarkLib = artifacts.require("SnarkLib");
+var SnarkBaseLib = artifacts.require("SnarkBaseLib");
 
 module.exports = function(deployer) {
-    deployer.deploy(SnarkLib);
+    deployer.deploy(SnarkBaseLib);
 };

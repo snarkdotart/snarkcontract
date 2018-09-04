@@ -1,15 +1,15 @@
-var SnarkBase = artifacts.require("SnarkBase");
+var TestSnarkBaseLib = artifacts.require("TestSnarkBaseLib");
 
-contract('SnarkBase', async (accounts) => {
+contract('TestSnarkBaseLib', async (accounts) => {
 
     let instance = null;
     // const variableName = "testvariable";
 
     before(async () => {
-        instance = await SnarkBase.deployed();
+        instance = await TestSnarkBaseLib.deployed();
     });
 
-    it("1. get size of the SnarkBase library", async () => {
+    it("1. get size of the TestSnarkBaseLib library", async () => {
         const bytecode = instance.constructor._json.bytecode;
         const deployed = instance.constructor._json.deployedBytecode;
         const sizeOfB = bytecode.length / 2;

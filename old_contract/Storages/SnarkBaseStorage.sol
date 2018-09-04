@@ -365,16 +365,16 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
     // }
 
     /*** tokenToSaleTypeMap ***/
-    function get_tokenToSaleTypeMap(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (uint8 saleType) {
-        return uint8(tokenToSaleTypeMap[_tokenId]);
-    }
+    // function get_tokenToSaleTypeMap(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (uint8 saleType) {
+    //     return uint8(tokenToSaleTypeMap[_tokenId]);
+    // }
 
-    function set_tokenToSaleTypeMap(uint256 _tokenId, uint8 _saleType) external onlyPlatform checkTokenId(_tokenId) {
-        tokenToSaleTypeMap[_tokenId] = SaleType(_saleType);
-    }
+    // function set_tokenToSaleTypeMap(uint256 _tokenId, uint8 _saleType) external onlyPlatform checkTokenId(_tokenId) {
+    //     tokenToSaleTypeMap[_tokenId] = SaleType(_saleType);
+    // }
 
-    function delete_tokenToSaleTypeMap(uint256 _tokenId) external onlyPlatform checkTokenId(_tokenId) {
-        delete tokenToSaleTypeMap[_tokenId];
-    }
+    // function delete_tokenToSaleTypeMap(uint256 _tokenId) external onlyPlatform checkTokenId(_tokenId) {
+    //     delete tokenToSaleTypeMap[_tokenId];
+    // }
 
 }
