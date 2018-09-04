@@ -53,6 +53,14 @@ contract SnarkBase is Ownable {
         storageAddress.addArtworkToArtistList(_artworkId, _artistAddress);
     }
 
+    function addPendingWithdrawals(uint256 _owner, uint256 _balance) external {
+        storageAddress.addPendingWithdrawals(_owner, _balance);
+    }
+
+    function subPendingWithdrawals(uint256 _owner, uint256 _balance) external {
+        storageAddress.subPendingWithdrawals(_owner, _balance);
+    }
+
     /*** SET ***/
     function setSnarkWalletAddress(address _val) external {
         storageAddress.setSnarkWalletAddress(_val);
@@ -116,6 +124,10 @@ contract SnarkBase is Ownable {
 
     function setArtworkToParticipantApproving(uint256 _artworkId, address _participant, bool _consent) external {
         storageAddress.setArtworkToParticipantApproving(_artworkId, _participant, _consent);
+    }
+
+    function setArtworkToSaleType(uint256 _artworkId, uint256 _saleType) external {
+        storageAddress.setArtworkToSaleType(_artworkId, _saleType);
     }
 
     // function transferArtwork(uint256 _artworkId, address _from, address _to) external {
@@ -249,5 +261,13 @@ contract SnarkBase is Ownable {
 
     function getArtworkToParticipantApproving(uint256 _artworkId, address _participant) external view returns (bool) {
         return storageAddress.getArtworkToParticipantApproving(_artworkId, _participant);
+    }
+
+    function getPendingWithdrawals(uint256 _owner) external view returns (uint256 balance) {
+        return storageAddress.getPendingWithdrawals(_owner);
+    }
+
+    function getArtworkToSaleType(uint256 _artworkId) external view returns (uint256 saleType) {
+        return storageAddress.getArtworkToSaleType(_artworkId);
     }
 }

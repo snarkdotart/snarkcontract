@@ -333,36 +333,36 @@ contract SnarkBaseStorage is Ownable, SnarkDefinitions {
     // }
 
     /*** tokenToParticipantApprovingMap ***/
-    function get_tokenToParticipantApprovingMap(uint256 _tokenId, address _participant) external view onlyPlatform
-        returns (bool isParticipantApproved)
-    {
-        return tokenToParticipantApprovingMap[_tokenId][_participant];
-    }
+    // function get_tokenToParticipantApprovingMap(uint256 _tokenId, address _participant) external view onlyPlatform
+    //     returns (bool isParticipantApproved)
+    // {
+    //     return tokenToParticipantApprovingMap[_tokenId][_participant];
+    // }
 
-    function set_tokenToParticipantApprovingMap(uint256 _tokenId, address _participant, bool _consent) external onlyPlatform {
-        tokenToParticipantApprovingMap[_tokenId][_participant] = _consent;
-    }
+    // function set_tokenToParticipantApprovingMap(uint256 _tokenId, address _participant, bool _consent) external onlyPlatform {
+    //     tokenToParticipantApprovingMap[_tokenId][_participant] = _consent;
+    // }
 
-    function delete_tokenToParticipantApprovingMap(uint256 _tokenId, address _participant) external onlyPlatform {
-        delete tokenToParticipantApprovingMap[_tokenId][_participant];
-    }
+    // function delete_tokenToParticipantApprovingMap(uint256 _tokenId, address _participant) external onlyPlatform {
+    //     delete tokenToParticipantApprovingMap[_tokenId][_participant];
+    // }
 
     /*** pendingWithdrawals ***/
-    function get_pendingWithdrawals(address _owner) external view onlyPlatform returns (uint256 ownersBalance) {
-        return pendingWithdrawals[_owner];
-    }
+    // function get_pendingWithdrawals(address _owner) external view onlyPlatform returns (uint256 ownersBalance) {
+    //     return pendingWithdrawals[_owner];
+    // }
 
-    function set_pendingWithdrawals(address _owner, uint256 _balance) external onlyPlatform {
-        pendingWithdrawals[_owner] = _balance;
-    }
+    // function set_pendingWithdrawals(address _owner, uint256 _balance) external onlyPlatform {
+    //     pendingWithdrawals[_owner] = _balance;
+    // }
 
-    function add_pendingWithdrawals(address _owner, uint256 _addSum) external onlyPlatform {
-        pendingWithdrawals[_owner] = SafeMath.add(pendingWithdrawals[_owner], _addSum);
-    }
+    // function add_pendingWithdrawals(address _owner, uint256 _addSum) external onlyPlatform {
+    //     pendingWithdrawals[_owner] = SafeMath.add(pendingWithdrawals[_owner], _addSum);
+    // }
 
-    function sub_pendingWithdrawals(address _owner, uint256 _subSum) external onlyPlatform {
-        pendingWithdrawals[_owner] = SafeMath.sub(pendingWithdrawals[_owner], _subSum);
-    }
+    // function sub_pendingWithdrawals(address _owner, uint256 _subSum) external onlyPlatform {
+    //     pendingWithdrawals[_owner] = SafeMath.sub(pendingWithdrawals[_owner], _subSum);
+    // }
 
     /*** tokenToSaleTypeMap ***/
     function get_tokenToSaleTypeMap(uint256 _tokenId) external view onlyPlatform checkTokenId(_tokenId) returns (uint8 saleType) {

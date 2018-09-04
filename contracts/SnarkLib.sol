@@ -335,6 +335,38 @@ library SnarkLib {
         );
     }
 
+    function addPendingWithdrawals(address _storageAddress, uint256 _owner, uint256 _balance) external {
+        uint256 currentBalance = SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("pendingWithdrawals", _owner)));
+
+        uint256 sum = currentBalance + _balance;
+        assert(sum >= currentBalance);
+
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("pendingWithdrawals", _owner)),
+            sum
+        );
+    }
+
+    function subPendingWithdrawals(address _storageAddress, uint256 _owner, uint256 _balance) external {
+        uint256 currentBalance = SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("pendingWithdrawals", _owner)));
+
+        assert(_balance <= currentBalance);
+
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("pendingWithdrawals", _owner)),
+            currentBalance - _balance
+        );
+    }
+
+    function setArtworkToSaleType(address _storageAddress, uint256 _artworkId, uint256 _saleType) external {
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("artworkToSaleType", _artworkId)),
+            _saleType
+        );
+    }
+
     /*** GET ***/
     function getSnarkWalletAddress(address _storageAddress) external view returns (address walletAddress) {
         return SnarkStorage(_storageAddress).addressStorage(keccak256("snarkWalletAddress"));
@@ -575,4 +607,17 @@ library SnarkLib {
             keccak256(abi.encodePacked("artworkToParticipantApproving", _artworkId, _participant))
         );
     }
+
+    function getPendingWithdrawals(address _storageAddress, uint256 _owner) external view returns (uint256 balance) {
+        return SnarkStorage(_storageAddress).uintStorage(keccak256(abi.encodePacked("pendingWithdrawals", _owner)));
+    }
+
+    function getArtworkToSaleType(address _storageAddress, uint256 _artworkId)
+        external view returns (uint256 saleType)
+    {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artworkToSaleType", _artworkId))
+        );
+    }
+
 }

@@ -385,7 +385,36 @@ contract('SnarkBase', async (accounts) => {
         assert.isFalse(retval);
     });
 
-    // it("", async () => {});
+    it("21. test PendingWithdrawals functions", async () => {
+        const balance = 100500;
+        const owner = '0xC04691B99EB731536E35F375ffC85249Ec713597';
+ 
+        let retval = await instance.getPendingWithdrawals(owner);
+        assert.equal(retval.toNumber(), 0);
+
+        await instance.addPendingWithdrawals(owner, balance);
+
+        retval = await instance.getPendingWithdrawals(owner);
+        assert.equal(retval.toNumber(), 100500);
+
+        await instance.subPendingWithdrawals(owner, 500);
+
+        retval = await instance.getPendingWithdrawals(owner);
+        assert.equal(retval.toNumber(), 100000);
+    });
+
+    it("22. test ArtworkToSaleType functions", async () => {
+        const artworkId = 12;
+        const saleType = 1;
+
+        let retval = await instance.getArtworkToSaleType(artworkId);
+        assert.equal(retval.toNumber(), 0);
+
+        await instance.setArtworkToSaleType(artworkId, saleType);
+
+        retval = await instance.getArtworkToSaleType(artworkId);
+        assert.equal(retval.toNumber(), saleType);
+    });
 
     // it("17. test transferArtwork function", async () => {
     //     const artworkId = 1;
