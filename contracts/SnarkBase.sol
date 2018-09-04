@@ -110,23 +110,28 @@ contract SnarkBase is Ownable {
         storageAddress.setApprovalsToOperator(_owner, _operator, _isApproved);
     }
 
-    function transferArtwork(uint256 _artworkId, address _from, address _to) external {
-        storageAddress.transferArtwork(_artworkId, _from, _to);
+    function setApprovalsToArtwork(address _owner, uint256 _artworkId, bool _isApproved) external {
+        storageAddress.setApprovalsToArtwork(_owner, _artworkId, _isApproved);
     }
 
+    function setArtworkToParticipantApproving(uint256 _artworkId, address _participant, bool _consent) external {
+        storageAddress.setArtworkToParticipantApproving(_artworkId, _participant, _consent);
+    }
+
+    // function transferArtwork(uint256 _artworkId, address _from, address _to) external {
+    //     storageAddress.transferArtwork(_artworkId, _from, _to);
+    // }
     /*** DELETE ***/
     function deleteArtworkFromOwner(uint256 _index) external {
         storageAddress.deleteArtworkFromOwner(msg.sender, _index);
     }
 
-    function deleteApprovalsToOperator(address _owner, address _operator) external {
-        storageAddress.deleteApprovalsToOperator(_owner, _operator);
-    }
-
-    function deleteApprovalsToArtwork(address _owner, uint256 _artworkId) external {
-        storageAddress.deleteApprovalsToArtwork(_owner, _artworkId);
-    }
-
+    // function deleteApprovalsToOperator(address _owner, address _operator) external {
+    //     storageAddress.deleteApprovalsToOperator(_owner, _operator);
+    // }
+    // function deleteApprovalsToArtwork(address _owner, uint256 _artworkId) external {
+    //     storageAddress.deleteApprovalsToArtwork(_owner, _artworkId);
+    // }
     /*** GET ***/
     function getSnarkWalletAddress() external view returns (address) {
         return storageAddress.getSnarkWalletAddress();
@@ -236,5 +241,13 @@ contract SnarkBase is Ownable {
 
     function getApprovalsToOperator(address _owner, address _operator) external view returns (bool) {
         return storageAddress.getApprovalsToOperator(_owner, _operator);
+    }
+
+    function getApprovalsToArtwork(address _owner, uint256 _artworkId) external view returns (bool) {
+        return storageAddress.getApprovalsToArtwork(_owner, _artworkId);
+    }
+
+    function getArtworkToParticipantApproving(uint256 _artworkId, address _participant) external view returns (bool) {
+        return storageAddress.getArtworkToParticipantApproving(_artworkId, _participant);
     }
 }

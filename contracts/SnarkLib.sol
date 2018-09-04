@@ -116,60 +116,78 @@ library SnarkLib {
         );
     }
 
-    function setApprovalsToArtwork(address _storageAddress, address _owner, uint256 _artworkId, bool _isApproved) 
+    function setApprovalsToArtwork(
+        address _storageAddress, 
+        address _owner, 
+        uint256 _artworkId, 
+        bool _isApproved
+    ) 
         external 
     {
         SnarkStorage(_storageAddress).setBool(
-            keccak256(abi.encodePacked("approvedArtwork", _owner, _artworkId)),
+            keccak256(abi.encodePacked("approvalsToArtwork", _owner, _artworkId)),
             _isApproved
         );
     }
 
-    function transferArtwork(address _storageAddress, uint256 _artworkId, address _from, address _to) external {
-        if (_artworkId <= SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfArtworks")) &&
-            _from == SnarkStorage(_storageAddress).addressStorage(
-                keccak256(abi.encodePacked("ownerOfArtwork", _artworkId)))
-        ) {
-            // deleteArtworkFromOwner
-            uint256 numberOfArtworks = SnarkStorage(_storageAddress).uintStorage(
-                keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _from)));
-            for (uint256 i = 0; i < numberOfArtworks; i++) {
-                if (_artworkId == SnarkStorage(_storageAddress).uintStorage(
-                    keccak256(abi.encodePacked("artworkOfOwner", _from, i))
-                )) {
-                    uint256 _index = i;
-                    break;
-                }
-            }
-            uint256 maxIndex = numberOfArtworks - 1;
-            if (maxIndex != _index) {
-                uint256 artworkId = SnarkStorage(_storageAddress).uintStorage(
-                    keccak256(abi.encodePacked("artworkOfOwner", _from, maxIndex)));
-                SnarkStorage(_storageAddress).setUint(
-                    keccak256(abi.encodePacked("artworkOfOwner", _from, _index)), 
-                    artworkId);
-            }
-            SnarkStorage(_storageAddress).deleteUint(
-                keccak256(abi.encodePacked("artworkOfOwner", _from, maxIndex)));
-            SnarkStorage(_storageAddress).setUint(
-                keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _from)),
-                maxIndex);
-            // setOwnerOfArtwork
-            SnarkStorage(_storageAddress).setAddress(
-                keccak256(abi.encodePacked("ownerOfArtwork", _artworkId)),
-                _to);
-            // setArtworkToOwner
-            _index = SnarkStorage(_storageAddress).uintStorage(
-                keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _to))); 
-            SnarkStorage(_storageAddress).setUint(
-                keccak256(abi.encodePacked("artworkOfOwner", _to, _index)),
-                _artworkId);
-            SnarkStorage(_storageAddress).setUint(
-                keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _to)),
-                _index + 1);
-        }
+    function setArtworkToParticipantApproving(
+        address _storageAddress, 
+        uint256 _artworkId, 
+        address _participant, 
+        bool _consent
+    ) 
+        external
+    {
+        SnarkStorage(_storageAddress).setBool(
+            keccak256(abi.encodePacked("artworkToParticipantApproving", _artworkId, _participant)),
+            _consent
+        );
     }
 
+    // function transferArtwork(address _storageAddress, uint256 _artworkId, address _from, address _to) external {
+    //     if (_artworkId <= SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfArtworks")) &&
+    //         _from == SnarkStorage(_storageAddress).addressStorage(
+    //             keccak256(abi.encodePacked("ownerOfArtwork", _artworkId)))
+    //     ) {
+    //         // deleteArtworkFromOwner
+    //         uint256 numberOfArtworks = SnarkStorage(_storageAddress).uintStorage(
+    //             keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _from)));
+    //         for (uint256 i = 0; i < numberOfArtworks; i++) {
+    //             if (_artworkId == SnarkStorage(_storageAddress).uintStorage(
+    //                 keccak256(abi.encodePacked("artworkOfOwner", _from, i))
+    //             )) {
+    //                 uint256 _index = i;
+    //                 break;
+    //             }
+    //         }
+    //         uint256 maxIndex = numberOfArtworks - 1;
+    //         if (maxIndex != _index) {
+    //             uint256 artworkId = SnarkStorage(_storageAddress).uintStorage(
+    //                 keccak256(abi.encodePacked("artworkOfOwner", _from, maxIndex)));
+    //             SnarkStorage(_storageAddress).setUint(
+    //                 keccak256(abi.encodePacked("artworkOfOwner", _from, _index)), 
+    //                 artworkId);
+    //         }
+    //         SnarkStorage(_storageAddress).deleteUint(
+    //             keccak256(abi.encodePacked("artworkOfOwner", _from, maxIndex)));
+    //         SnarkStorage(_storageAddress).setUint(
+    //             keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _from)),
+    //             maxIndex);
+    //         // setOwnerOfArtwork
+    //         SnarkStorage(_storageAddress).setAddress(
+    //             keccak256(abi.encodePacked("ownerOfArtwork", _artworkId)),
+    //             _to);
+    //         // setArtworkToOwner
+    //         _index = SnarkStorage(_storageAddress).uintStorage(
+    //             keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _to))); 
+    //         SnarkStorage(_storageAddress).setUint(
+    //             keccak256(abi.encodePacked("artworkOfOwner", _to, _index)),
+    //             _artworkId);
+    //         SnarkStorage(_storageAddress).setUint(
+    //             keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _to)),
+    //             _index + 1);
+    //     }
+    // }
     /*** DELETE ***/
     function deleteArtworkFromOwner(address _storageAddress, address _artworkOwner, uint256 _index) external {
         uint256 maxIndex = SnarkStorage(_storageAddress).uintStorage(
@@ -194,18 +212,6 @@ library SnarkLib {
         SnarkStorage(_storageAddress).setUint(
             keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _artworkOwner)),
             maxIndex
-        );
-    }
-
-    function deleteApprovalsToOperator(address _storageAddress, address _owner, address _operator) external {
-        SnarkStorage(_storageAddress).deleteBool(
-            keccak256(abi.encodePacked("approvedOperator", _owner, _operator))
-        );
-    }
-
-    function deleteApprovalsToArtwork(address _storageAddress, address _owner, uint256 _artworkId) external {
-        SnarkStorage(_storageAddress).deleteBool(
-            keccak256(abi.encodePacked("approvedArtwork", _owner, _artworkId))
         );
     }
 
@@ -558,7 +564,15 @@ library SnarkLib {
         returns (bool)
     {
         return SnarkStorage(_storageAddress).boolStorage(
-            keccak256(abi.encodePacked("approvedArtwork", _owner, _artworkId))
+            keccak256(abi.encodePacked("approvalsToArtwork", _owner, _artworkId))
+        );
+    }
+
+    function getArtworkToParticipantApproving(address _storageAddress, uint256 _artworkId, address _participant)
+        external view returns (bool)
+    {
+        return SnarkStorage(_storageAddress).boolStorage(
+            keccak256(abi.encodePacked("artworkToParticipantApproving", _artworkId, _participant))
         );
     }
 }
