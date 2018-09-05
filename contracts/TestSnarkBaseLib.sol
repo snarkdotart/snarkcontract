@@ -53,11 +53,11 @@ contract TestSnarkBaseLib is Ownable {
         storageAddress.addArtworkToArtistList(_artworkId, _artistAddress);
     }
 
-    function addPendingWithdrawals(uint256 _owner, uint256 _balance) external {
+    function addPendingWithdrawals(address _owner, uint256 _balance) external {
         storageAddress.addPendingWithdrawals(_owner, _balance);
     }
 
-    function subPendingWithdrawals(uint256 _owner, uint256 _balance) external {
+    function subPendingWithdrawals(address _owner, uint256 _balance) external {
         storageAddress.subPendingWithdrawals(_owner, _balance);
     }
 
@@ -130,20 +130,11 @@ contract TestSnarkBaseLib is Ownable {
         storageAddress.setArtworkToSaleType(_artworkId, _saleType);
     }
 
-    // function transferArtwork(uint256 _artworkId, address _from, address _to) external {
-    //     storageAddress.transferArtwork(_artworkId, _from, _to);
-    // }
     /*** DELETE ***/
     function deleteArtworkFromOwner(uint256 _index) external {
         storageAddress.deleteArtworkFromOwner(msg.sender, _index);
     }
 
-    // function deleteApprovalsToOperator(address _owner, address _operator) external {
-    //     storageAddress.deleteApprovalsToOperator(_owner, _operator);
-    // }
-    // function deleteApprovalsToArtwork(address _owner, uint256 _artworkId) external {
-    //     storageAddress.deleteApprovalsToArtwork(_owner, _artworkId);
-    // }
     /*** GET ***/
     function getSnarkWalletAddress() external view returns (address) {
         return storageAddress.getSnarkWalletAddress();
@@ -263,7 +254,7 @@ contract TestSnarkBaseLib is Ownable {
         return storageAddress.getArtworkToParticipantApproving(_artworkId, _participant);
     }
 
-    function getPendingWithdrawals(uint256 _owner) external view returns (uint256 balance) {
+    function getPendingWithdrawals(address _owner) external view returns (uint256 balance) {
         return storageAddress.getPendingWithdrawals(_owner);
     }
 

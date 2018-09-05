@@ -3,7 +3,6 @@ var TestSnarkBaseLib = artifacts.require("TestSnarkBaseLib");
 contract('TestSnarkBaseLib', async (accounts) => {
 
     let instance = null;
-    // const variableName = "testvariable";
 
     before(async () => {
         instance = await TestSnarkBaseLib.deployed();
@@ -415,38 +414,5 @@ contract('TestSnarkBaseLib', async (accounts) => {
         retval = await instance.getArtworkToSaleType(artworkId);
         assert.equal(retval.toNumber(), saleType);
     });
-
-    // it("17. test transferArtwork function", async () => {
-    //     const artworkId = 1;
-    //     const owner1 = '0xC04691B99EB731536E35F375ffC85249Ec713597';
-    //     const owner2 = '0xB94691B99EB731536E35F375ffC85249Ec717233';
-
-    //     let retval = await instance.getTotalNumberOfArtworks();
-    //     assert.equal(retval.toNumber(), 1, "error on step 0");
-
-    //     retval = await instance.getNumberOfOwnerArtworks(owner1);
-    //     assert.equal(retval.toNumber(), 0, "error on step 1");
-    //     retval = await instance.getNumberOfOwnerArtworks(owner2);
-    //     assert.equal(retval.toNumber(), 0, "error on step 2");
-
-    //     await instance.setOwnerOfArtwork(artworkId, owner1);
-    //     await instance.setArtworkToOwner(owner1, artworkId);
-
-    //     retval = await instance.getNumberOfOwnerArtworks(owner1);
-    //     assert.equal(retval.toNumber(), 1, "error on step 3");
-    //     retval = await instance.getNumberOfOwnerArtworks(owner2);
-    //     assert.equal(retval.toNumber(), 0, "error on step 4");
-    //     retval = await instance.getArtworkIdOfOwner(owner1, 0);
-    //     assert.equal(retval.toNumber(), artworkId, "error on step 5");
-
-    //     await instance.transferArtwork(artworkId, owner1, owner2);
-
-    //     retval = await instance.getNumberOfOwnerArtworks(owner1);
-    //     assert.equal(retval.toNumber(), 0, "error on step 6");
-    //     retval = await instance.getNumberOfOwnerArtworks(owner2);
-    //     assert.equal(retval.toNumber(), 1, "error on step 7");
-    //     retval = await instance.getArtworkIdOfOwner(owner2, 0);
-    //     assert.equal(retval.toNumber(), artworkId, "error on step 8");
-    // });
 
 });
