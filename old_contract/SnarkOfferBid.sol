@@ -198,7 +198,10 @@ contract SnarkOfferBid is SnarkBase {
 
         address bidOwner = _storage.get_bidToOwnerMap(_bidId);
         _storage.sub_pendingWithdrawals(address(this), price);
-        price = _takePlatformProfitShare(price);
+        uint256 profit;
+        (profit, price) = _calculatePlatformProfitShare(price);
+        _takePlatformProfitShare(price);
+
         _buy(tokenId, price, tokenOwner, bidOwner, mediator);
         _deleteBid(_bidId, tokenId, bidOwner);
 

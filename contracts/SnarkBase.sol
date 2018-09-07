@@ -16,6 +16,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     using SnarkCommonLib for address;
 
     /*** STORAGE ***/
+
     address private _storage;
 
     /*** EVENTS ***/
@@ -28,7 +29,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     event NeedApproveProfitShareRemoving(address _participant, uint256 _tokenId);
     /// @dev Transfer event as defined in current draft of ERC721.
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
-
+    
     /// @dev Modifier that checks that an owner has a specific token
     /// @param _tokenId Token ID
     modifier onlyOwnerOf(uint256 _tokenId) {
@@ -201,8 +202,34 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         return _storage.getNumberOfArtistArtworks(_artist);
     }
 
-    function getTokensCountByOwner() public view returns (uint256) {
-        return _storage.getNumberOfOwnerArtworks(msg.sender);
+    function getTokensCountByOwner(address _owner) public view returns (uint256) {
+        return _storage.getNumberOfOwnerArtworks(_owner);
+    }
+    
+    // /// @dev Return details about token
+    // /// @param _tokenId Token Id of digital work
+    function getTokenDetails(uint256 _tokenId) 
+        public 
+        view 
+        returns (
+            address artist,
+            uint256 limitedEdition, 
+            uint256 editionNumber, 
+            uint256 lastPrice,
+            bytes32 hashOfArtwork, 
+            uint256 profitShareSchemeId,
+            uint256 profitShareFromSecondarySale, 
+            string artworkUrl
+        ) 
+    {
+        artist = _storage.getArtworkArtist(_tokenId);
+        limitedEdition = _storage.getArtworkLimitedEdition(_tokenId);
+        editionNumber = _storage.getArtworkEditionNumber(_tokenId);
+        lastPrice = _storage.getArtworkLastPrice(_tokenId);
+        hashOfArtwork = _storage.getArtworkHash(_tokenId);
+        profitShareSchemeId = _storage.getArtworkProfitShareSchemeId(_tokenId);
+        profitShareFromSecondarySale = _storage.getArtworkProfitShareFromSecondarySale(_tokenId);
+        artworkUrl = _storage.getArtworkURL(_tokenId);
     }
 
     /// @dev Change in profit sharing. Change can only be to the percentages for already registered wallet addresses.
@@ -219,8 +246,24 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     }
     
     /// @dev Function to view the balance in our contract that an owner can withdraw 
-    function getWithdrawBalance() public view returns (uint256) {
-        return _storage.getPendingWithdrawals(msg.sender);
+    function getWithdrawBalance(address _owner) public view returns (uint256) {
+        return _storage.getPendingWithdrawals(_owner);
+    }
+
+    /// @dev Return number of particpants
+    function getNumberOfParticipantsForProfitShareScheme(uint256 _schemeId) public view returns (uint256) {
+        return _storage.getNumberOfParticipantsForProfitShareScheme(_schemeId);
+    }
+
+    /// @dev Function returns a participant address and its profit
+    /// @param _schemeId Id of Profit Share Scheme
+    /// @param _index index of element in array of ProfitShareSchemes
+    function getParticipantOfProfitShareScheme(uint256 _schemeId, uint256 _index) 
+        public 
+        view 
+        returns (address, uint256) 
+    {
+        return _storage.getParticipantOfProfitShareScheme(_schemeId, _index);
     }
 
     /// @dev Function to withdraw funds to the owners wallet 
@@ -230,36 +273,36 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         msg.sender.transfer(balance);
     }
 
+    function setSnarkWalletAddress(address _snarkWalletAddr) public onlyOwner {
+        _storage.setSnarkWalletAddress(_snarkWalletAddr);
+    }
+
+    function setPlatformProfitShare(uint256 _profit) public onlyOwner {
+        _storage.setPlatformProfitShare(_profit);
+    }
+
+    function getSnarkWalletAddressAndProfit() public view returns (address snarkWalletAddr, uint256 platformProfit) {
+        snarkWalletAddr = _storage.getSnarkWalletAddress();
+        platformProfit = _storage.getPlatformProfitShare();
+    }
+
     /// @dev Transfer a token from one address to another 
     /// @param _from Address of previous owner
     /// @param _to Address of new owner
     /// @param _tokenId Token Id
     function _transfer(address _from, address _to, uint256 _tokenId) internal {
+        /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
         _storage.transferArtwork(_tokenId, _from, _to);
-        // if (_from != address(0)) {
-        //     uint256 tokensCount = _storage.getNumberOfOwnerArtworks(_from);
-        //     // Remove the transferred token from the array of tokens belonging to the owner
-        //     for (uint i = 0; i < tokensCount; i++) {
-        //         uint256 ownerTokenId = _storage.getArtworkIdOfOwner(_from, i);
-        //         if (ownerTokenId == _tokenId) {
-        //             _storage.delete_ownerToTokensMap(_from, i);
-        //             break;
-        //         }
-        //     }
-        // }
-        // // Enter the new owner
-        // _storage.set_tokenToOwnerMap(_tokenId, _to);
-        // // Add token to token list of new owner
-        // _storage.add_ownerToTokensMap(_to, _tokenId);
-        // // Emit ERC721 Transfer event
-        // emit Transfer(_from, _to, _tokenId);
+        // Emit ERC721 Transfer event
+        emit Transfer(_from, _to, _tokenId);
     }
 
     /// @dev Function to distribute the profits to participants
     /// @param _price Price at which artwork is sold
     /// @param _tokenId Artwork token ID
     /// @param _from Seller Address
-    function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) internal {
+    function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) internal { 
+        /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
         // distribute the profit according to the schedule contained in the artwork token
         uint256 lastPrice = _storage.getArtworkLastPrice(_tokenId);
         uint256 profitShareSchemaId = _storage.getArtworkProfitShareSchemeId(_tokenId);
@@ -301,6 +344,20 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         _storage.addPendingWithdrawals(_from, lastPrice);
     }
 
+    /// @dev Snark platform takes it's profit share
+    /// @param _profit A price of selling
+    function _takePlatformProfitShare(uint256 _profit) internal {
+        /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
+        address snarkWallet = _storage.getSnarkWalletAddress();
+        _storage.addPendingWithdrawals(snarkWallet, _profit);
+    }
+
+    function _calculatePlatformProfitShare(uint256 _income) internal view returns (uint256 profit, uint256 residue) {
+        /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
+        profit = (_income * _storage.getPlatformProfitShare() / 100);
+        residue = (_income - profit);
+    }
+
     /// @dev Function of an artwork buying
     /// @param _tokenId Artwork ID
     /// @param _value Selling price of artwork
@@ -315,45 +372,5 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         _storage.setArtworkToSaleType(_tokenId, uint256(SaleType.None));
         _transfer(_mediator, _to, _tokenId);
     }
-
-    /// @dev Snark platform takes it's profit share
-    /// @param income A price of selling
-    function _takePlatformProfitShare(uint256 income) internal returns (uint256 residue) {
-        uint256 profit = income * _storage.getPlatformProfitShare() / 100;
-        residue = income - profit;
-        address snarkWallet = _storage.getSnarkWalletAddress();
-        _storage.addPendingWithdrawals(snarkWallet, profit);
-        return residue;
-    }
-
-    // /// @dev Return details about token
-    // /// @param _tokenId Token Id of digital work
-    // function getTokenDetails(uint256 _tokenId) 
-    //     public 
-    //     view 
-    //     returns (
-    //         bytes32 hashOfArtwork, 
-    //         uint256 profitShareSchemaId,
-    //         uint8 profitShareFromSecondarySale, 
-    //         string artworkUrl
-    //     ) 
-    // {
-    //     return _storage.get_artwork_details(_tokenId);
-    // }
-
-    // /// @dev Return description about token
-    // /// @param _tokenId Token Id of digital work
-    // function getTokenDescription(uint256 _tokenId) 
-    //     public 
-    //     view 
-    //     returns (
-    //         address artist,
-    //         uint256 limitedEdition, 
-    //         uint256 editionNumber, 
-    //         uint256 lastPrice
-    //     ) 
-    // {
-    //     return _storage.get_artwork_description(_tokenId);
-    // }
 
 }

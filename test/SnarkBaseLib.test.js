@@ -55,7 +55,7 @@ contract('TestSnarkBaseLib', async (accounts) => {
         let retval = await instance.getTotalNumberOfArtworks();
         assert.equal(retval.toNumber(), 0);
 
-        const event = instance.ArtworkCreated({ fromBlock: 0, toBlock: 'latest' });
+        const event = instance.ArtworkCreated({ fromBlock: 'latest' });
         event.watch(function (error, result) {
             if (!error) {
                 artworkId = result.args._artworkId.toNumber();
@@ -222,7 +222,7 @@ contract('TestSnarkBaseLib', async (accounts) => {
         retval = await instance.getNumberOfProfitShareSchemesForOwner();
         assert.equal(retval, 0);
 
-        const event = instance.ProfitShareSchemeCreated({ fromBlock: 0, toBlock: 'latest' });
+        const event = instance.ProfitShareSchemeCreated({ fromBlock: 'latest' });
         event.watch(function (error, result) {
             if (!error) {
                 schemeId = result.args._profitShareSchemeId.toNumber();
