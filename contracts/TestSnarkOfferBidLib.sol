@@ -183,19 +183,19 @@ contract TestSnarkOfferBidLib is Ownable {
         return storageAddress.getTotalNumberOfBids();
     }
 
-    function getBidOwner(uint256 _bidId) external view returns (address) {
-        return storageAddress.getBidOwner(_bidId);
+    function getOwnerOfBid(uint256 _bidId) external view returns (address) {
+        return storageAddress.getOwnerOfBid(_bidId);
     }
 
     function getNumberOfArtworkBids(uint256 _artworkId) external view returns (uint256) {
         return storageAddress.getNumberOfArtworkBids(_artworkId);
     }
 
-    function getNumberOfOwnerBids(uint256 _bidOwner) external view returns (uint256) {
-        return storageAddress.getNumberOfOwnerBids(_bidOwner);
+    function getNumberBidsOfOwner(address _bidOwner) external view returns (uint256) {
+        return storageAddress.getNumberBidsOfOwner(_bidOwner);
     }
 
-    function getBidOfOwner(uint256 _bidOwner, uint256 _index) external view returns (uint256) {
+    function getBidOfOwner(address _bidOwner, uint256 _index) external view returns (uint256) {
         return storageAddress.getBidOfOwner(_bidOwner, _index);
     }
 

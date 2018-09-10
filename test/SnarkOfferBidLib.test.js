@@ -37,8 +37,15 @@ contract('TestSnarkOfferBidLib', async (accounts) => {
         retval = await instance.getSaleTypeToArtwork(artworkId);
         assert.equal(retval.toNumber(), 0, "error on step 4");
 
-        retval = await instance.getSaleStatusToArtwork(artworkId);
-        assert.equal(retval.toNumber(), 0, "error on step 5");
+        const event = instance.OfferAdded({ fromBlock: 'latest' });
+        event.watch(function (error, result) {
+            if (!error) {
+                retOfferId = result.args._offerId.toNumber();
+                retOfferOwner = result.args._offerOwner;
+                console.log(`event OfferAdded: owner - ${retOfferOwner}, offer Id - ${retOfferId}`);
+                // assert.equal(schemeId, 1, "SchemeId is not equal 1");
+            }
+        });
 
         await instance.addOffer(offerOwner, artworkId, price);
 
@@ -54,7 +61,7 @@ contract('TestSnarkOfferBidLib', async (accounts) => {
         retval = await instance.getSaleTypeToArtwork(artworkId);
         assert.equal(retval.toNumber(), 1, "error on step 9");
 
-        retval = await instance.getSaleStatusToArtwork(artworkId);
+        retval = await instance.getSaleStatusForOffer(1);
         assert.equal(retval.toNumber(), 2, "error on step 10");
 
         retval = await instance.getArtworkIdByOfferId(1);
@@ -62,11 +69,84 @@ contract('TestSnarkOfferBidLib', async (accounts) => {
 
         retval = await instance.getOfferIdOfOwner(offerOwner, 0);
         assert.equal(retval.toNumber(), 1, "error on step 12");
+
+        await instance.deleteOffer(1);
+
+        retval = await instance.getOfferIdByArtworkId(artworkId);
+        assert.equal(retval.toNumber(), 0, "error on step 13");
+
+        retval = await instance.getTotalNumberOfOwnerOffers(offerOwner);
+        assert.equal(retval.toNumber(), 0, "error on step 14");
+
+        retval = await instance.getSaleStatusForOffer(1);
+        assert.equal(retval.toNumber(), 3, "error on step 15");
+        
+        retval = await instance.getSaleTypeToArtwork(artworkId);
+        assert.equal(retval.toNumber(), 0, "error on step 4");
     });
 
     it("3. test addBid and deleteBid functions", async () => {
+        const bidOwner = web3.eth.accounts[0];
+        const artworkId = 1;
+        const bidPrice = 25;
 
+        let retval = await instance.getTotalNumberOfBids();
+        assert.equal(retval.toNumber(), 0, "error on step 1");
+        
+        retval = await instance.getNumberOfArtworkBids(artworkId);
+        assert.equal(retval.toNumber(), 0, "error on step 2");
+
+        retval = await instance.getNumberBidsOfOwner(bidOwner);
+        assert.equal(retval.toNumber(), 0, "error on step 3");
+
+        const event = instance.BidAdded({ fromBlock: 'latest' });
+        event.watch(function (error, result) {
+            if (!error) {
+                retBidId = result.args._bidId.toNumber();
+                retBidOwner = result.args._bidOwner;
+                console.log(`event BidAdded: owner - ${retBidOwner}, bid Id - ${retBidId}`);
+                // assert.equal(schemeId, 1, "SchemeId is not equal 1");
+            }
+        });
+
+        await instance.addBid(bidOwner, artworkId, bidPrice);
+
+        retval = await instance.getTotalNumberOfBids();
+        assert.equal(retval.toNumber(), 1, "error on step 4");
+        
+        retval = await instance.getNumberOfArtworkBids(artworkId);
+        assert.equal(retval.toNumber(), 1, "error on step 5");
+
+        retval = await instance.getOwnerOfBid(1);
+        assert.equal(retval.toUpperCase(), bidOwner.toUpperCase(), "error on step 6");
+
+        retval = await instance.getNumberBidsOfOwner(bidOwner);
+        assert.equal(retval.toNumber(), 1, "error on step 7");
+
+        retval = await instance.getBidOfOwner(bidOwner, 0);
+        assert.equal(retval.toNumber(), 1, "error on step 8");
+
+        retval = await instance.getBidIdForArtwork(artworkId, 0);
+        assert.equal(retval.toNumber(), 1, "error on step 9");
+
+        retval = await instance.getArtworkIdByBidId(1);
+        assert.equal(retval.toNumber(), 1, "error on step 10");
+
+        retval = await instance.getBidPrice(1);
+        assert.equal(retval.toNumber(), bidPrice, "error on step 11");
+
+        retval = await instance.getBidSaleStatus(1);
+        assert.equal(retval.toNumber(), 2, "error on step 12");
+
+        await instance.deleteBid(1);
+
+        retval = await instance.getNumberOfArtworkBids(artworkId);
+        assert.equal(retval.toNumber(), 0, "error on step 13");
+
+        retval = await instance.getBidSaleStatus(1);
+        assert.equal(retval.toNumber(), 3, "error on step 14");
     });
+
     // it("3. test PlatformProfitShare functions", async () => {
     //     const val = 5;
 

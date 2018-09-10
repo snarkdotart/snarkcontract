@@ -87,7 +87,7 @@ library SnarkOfferBidLib {
         // изменяем статус saleStatus = Finished:
         // 0 - Preparing, 1 - NotActive, 2 - Active, 3 - Finished
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("saleStatusOfOffer", _offerId)), 3);
+            keccak256(abi.encodePacked("saleStatusToOffer", _offerId)), 3);
     }
 
     function deleteBid(address _storageAddress, uint256 _bidId) external {
@@ -206,14 +206,14 @@ library SnarkOfferBidLib {
             keccak256(abi.encodePacked("artworkBidsList", _artworkId, numberOfArtworkBids)), bidId);
         
         // тоже самое, но для owner-а... нужно знать список его бидов
-        uint256 numberOfOwnerBids = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfOwnerBids", _bidOwner)));
-        uint256 newNumberOfOwnerBids = numberOfOwnerBids + 1;
-        assert(newNumberOfOwnerBids >= numberOfOwnerBids);
+        uint256 numberBidsOfOwner = SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("numberBidsOfOwner", _bidOwner)));
+        uint256 newNumberOfOwnerBids = numberBidsOfOwner + 1;
+        assert(newNumberOfOwnerBids >= numberBidsOfOwner);
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("numberOfOwnerBids", _bidOwner)), newNumberOfOwnerBids);
+            keccak256(abi.encodePacked("numberBidsOfOwner", _bidOwner)), newNumberOfOwnerBids);
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("ownerBidsList", _bidOwner, numberOfOwnerBids)), bidId);
+            keccak256(abi.encodePacked("ownerBidsList", _bidOwner, numberBidsOfOwner)), bidId);
 
         // binding the bidId with the artworkId
         SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("artworkIdToBidId", bidId)), _artworkId);
@@ -317,11 +317,11 @@ library SnarkOfferBidLib {
         returns (uint256 newAmount) 
     {
         uint256 amount = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfOwnerBids", _bidOwner)));
+            keccak256(abi.encodePacked("numberBidsOfOwner", _bidOwner)));
         newAmount = amount + 1;
         assert(newAmount >= amount);
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("numberOfOwnerBids", _bidOwner)), newAmount);
+            keccak256(abi.encodePacked("numberBidsOfOwner", _bidOwner)), newAmount);
     }
 
     function decreaseNumberOfOwnerBids(address _storageAddress, address _bidOwner)
@@ -329,11 +329,11 @@ library SnarkOfferBidLib {
         returns (uint256 newAmount)
     {
         uint256 amount = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfOwnerBids", _bidOwner)));
+            keccak256(abi.encodePacked("numberBidsOfOwner", _bidOwner)));
         assert(1 <= amount);
         newAmount = amount - 1;
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("numberOfOwnerBids", _bidOwner)), newAmount);
+            keccak256(abi.encodePacked("numberBidsOfOwner", _bidOwner)), newAmount);
     }
 
     function addOfferToOwnerOffersList(address _storageAddress, address _offerOwner, uint256 _offerId)
@@ -358,11 +358,11 @@ library SnarkOfferBidLib {
         returns (uint256 newAmount)
     {
         uint256 amount = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfOwnerBids", _bidOwner)));
+            keccak256(abi.encodePacked("numberBidsOfOwner", _bidOwner)));
         newAmount = amount + 1;
         assert(newAmount >= amount);
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("numberOfOwnerBids", _bidOwner)), newAmount);
+            keccak256(abi.encodePacked("numberBidsOfOwner", _bidOwner)), newAmount);
         SnarkStorage(_storageAddress).setUint(
             keccak256(abi.encodePacked("ownerBidsList", _bidOwner, amount)), _bidId);
     }
@@ -418,7 +418,7 @@ library SnarkOfferBidLib {
         return SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfBids"));
     }
 
-    function getBidOwner(address _storageAddress, uint256 _bidId) external view returns (address) {
+    function getOwnerOfBid(address _storageAddress, uint256 _bidId) external view returns (address) {
         return SnarkStorage(_storageAddress).addressStorage(
             keccak256(abi.encodePacked("ownerToBid", _bidId))
         );
@@ -430,12 +430,12 @@ library SnarkOfferBidLib {
         );
     }
 
-    function getNumberOfOwnerBids(address _storageAddress, uint256 _bidOwner) external view returns (uint256) {
+    function getNumberBidsOfOwner(address _storageAddress, address _bidOwner) external view returns (uint256) {
         return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfOwnerBids", _bidOwner)));
+            keccak256(abi.encodePacked("numberBidsOfOwner", _bidOwner)));
     }
 
-    function getBidOfOwner(address _storageAddress, uint256 _bidOwner, uint256 _index) external view returns (uint256) {
+    function getBidOfOwner(address _storageAddress, address _bidOwner, uint256 _index) external view returns (uint256) {
         return SnarkStorage(_storageAddress).uintStorage(
             keccak256(abi.encodePacked("ownerBidsList", _bidOwner, _index)));
     }
