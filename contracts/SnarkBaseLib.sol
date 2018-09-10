@@ -316,10 +316,17 @@ library SnarkBaseLib {
         );
     }
 
-    function setArtworkToSaleType(address _storageAddress, uint256 _artworkId, uint256 _saleType) external {
+    function setSaleTypeToArtwork(address _storageAddress, uint256 _artworkId, uint256 _saleType) external {
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artworkToSaleType", _artworkId)),
+            keccak256(abi.encodePacked("saleTypeToArtwork", _artworkId)),
             _saleType
+        );
+    }
+
+    function setSaleStatusToArtwork(address _storageAddress, uint256 _artworkId, uint256 _saleStatus) external {
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("saleStatusToArtwork", _artworkId)),
+            _saleStatus
         );
     }
 
@@ -568,11 +575,19 @@ library SnarkBaseLib {
         return SnarkStorage(_storageAddress).uintStorage(keccak256(abi.encodePacked("pendingWithdrawals", _owner)));
     }
 
-    function getArtworkToSaleType(address _storageAddress, uint256 _artworkId)
+    function getSaleTypeToArtwork(address _storageAddress, uint256 _artworkId)
         external view returns (uint256 saleType)
     {
         return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artworkToSaleType", _artworkId))
+            keccak256(abi.encodePacked("saleTypeToArtwork", _artworkId))
+        );
+    }
+
+    function getSaleStatusToArtwork(address _storageAddress, uint256 _artworkId) 
+        external view returns (uint256 saleStatus)
+    {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("saleStatusToArtwork", _artworkId))
         );
     }
 

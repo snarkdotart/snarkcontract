@@ -402,17 +402,29 @@ contract('TestSnarkBaseLib', async (accounts) => {
         assert.equal(retval.toNumber(), 100000);
     });
 
-    it("22. test ArtworkToSaleType functions", async () => {
+    it("22. test SaleTypeToArtwork functions", async () => {
         const artworkId = 12;
         const saleType = 1;
 
-        let retval = await instance.getArtworkToSaleType(artworkId);
+        let retval = await instance.getSaleTypeToArtwork(artworkId);
         assert.equal(retval.toNumber(), 0);
 
-        await instance.setArtworkToSaleType(artworkId, saleType);
+        await instance.setSaleTypeToArtwork(artworkId, saleType);
 
-        retval = await instance.getArtworkToSaleType(artworkId);
+        retval = await instance.getSaleTypeToArtwork(artworkId);
         assert.equal(retval.toNumber(), saleType);
     });
 
+    it("23 test SaleStatusToArtwork functions", async () => {
+        const artworkId = 1;
+        const saleStatus = 2;
+
+        let retval = await instance.getSaleStatusToArtwork(artworkId);
+        assert.equal(retval.toNumber(), 0);
+
+        await instance.setSaleStatusToArtwork(artworkId, saleStatus);
+
+        retval = await instance.getSaleStatusToArtwork(artworkId);
+        assert.equal(retval.toNumber(), saleStatus);
+    });
 });

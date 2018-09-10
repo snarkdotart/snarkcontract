@@ -290,7 +290,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @param _from Address of previous owner
     /// @param _to Address of new owner
     /// @param _tokenId Token Id
-    function _transfer(address _from, address _to, uint256 _tokenId) internal {
+    function _transfer(address _from, address _to, uint256 _tokenId) public {
         /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
         _storage.transferArtwork(_tokenId, _from, _to);
         // Emit ERC721 Transfer event
@@ -301,7 +301,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @param _price Price at which artwork is sold
     /// @param _tokenId Artwork token ID
     /// @param _from Seller Address
-    function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) internal { 
+    function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) public { 
         /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
         // distribute the profit according to the schedule contained in the artwork token
         uint256 lastPrice = _storage.getArtworkLastPrice(_tokenId);
@@ -346,13 +346,13 @@ contract SnarkBase is Ownable, SnarkDefinitions {
 
     /// @dev Snark platform takes it's profit share
     /// @param _profit A price of selling
-    function _takePlatformProfitShare(uint256 _profit) internal {
+    function _takePlatformProfitShare(uint256 _profit) public {
         /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
         address snarkWallet = _storage.getSnarkWalletAddress();
         _storage.addPendingWithdrawals(snarkWallet, _profit);
     }
 
-    function _calculatePlatformProfitShare(uint256 _income) internal view returns (uint256 profit, uint256 residue) {
+    function _calculatePlatformProfitShare(uint256 _income) public view returns (uint256 profit, uint256 residue) {
         /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
         profit = (_income * _storage.getPlatformProfitShare() / 100);
         residue = (_income - profit);
@@ -369,7 +369,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         // mark the price for which the artwork sold
         _storage.setArtworkLastPrice(_tokenId, _value);
         // mark the sale type to None after sale
-        _storage.setArtworkToSaleType(_tokenId, uint256(SaleType.None));
+        _storage.setSaleTypeToArtwork(_tokenId, uint256(SaleType.None));
         _transfer(_mediator, _to, _tokenId);
     }
 

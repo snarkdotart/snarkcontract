@@ -126,8 +126,12 @@ contract TestSnarkBaseLib is Ownable {
         storageAddress.setArtworkToParticipantApproving(_artworkId, _participant, _consent);
     }
 
-    function setArtworkToSaleType(uint256 _artworkId, uint256 _saleType) external {
-        storageAddress.setArtworkToSaleType(_artworkId, _saleType);
+    function setSaleTypeToArtwork(uint256 _artworkId, uint256 _saleType) external {
+        storageAddress.setSaleTypeToArtwork(_artworkId, _saleType);
+    }
+
+    function setSaleStatusToArtwork(uint256 _artworkId, uint _saleStatus) external {
+        storageAddress.setSaleStatusToArtwork(_artworkId, _saleStatus);
     }
 
     /*** DELETE ***/
@@ -258,7 +262,11 @@ contract TestSnarkBaseLib is Ownable {
         return storageAddress.getPendingWithdrawals(_owner);
     }
 
-    function getArtworkToSaleType(uint256 _artworkId) external view returns (uint256 saleType) {
-        return storageAddress.getArtworkToSaleType(_artworkId);
+    function getSaleTypeToArtwork(uint256 _artworkId) external view returns (uint256 saleType) {
+        return storageAddress.getSaleTypeToArtwork(_artworkId);
+    }
+
+    function getSaleStatusToArtwork(uint256 _artworkId) external view returns (uint256 saleStatus) {
+        return storageAddress.getSaleStatusToArtwork(_artworkId);
     }
 }
