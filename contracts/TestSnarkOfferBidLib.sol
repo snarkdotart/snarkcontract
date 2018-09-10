@@ -15,7 +15,7 @@ contract TestSnarkOfferBidLib is Ownable {
     address public storageAddress;
 
     event OfferAdded(address _offerOwner, uint256 _offerId);
-    event BidAdded(address _offerOwner, uint256 _bidId);
+    event BidAdded(address _bidOwner, uint256 _bidId);
     event OfferDeleted(uint256 _offerId);
     event BidDeleted(uint256 _bidId);
 
