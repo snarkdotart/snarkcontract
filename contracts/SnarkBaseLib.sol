@@ -4,7 +4,7 @@ import "./SnarkStorage.sol";
 
 
 library SnarkBaseLib {
-    
+
     /*** SET ***/
     function setSnarkWalletAddress(address _storageAddress, address _walletAddress) external {
         SnarkStorage(_storageAddress).setAddress(keccak256("snarkWalletAddress"), _walletAddress);
@@ -183,52 +183,28 @@ library SnarkBaseLib {
         uint256 _profitShareFromSecondarySale,
         string _artworkUrl
     ) 
-        external returns (uint256 artworkId) 
+        external
+        returns (uint256 artworkId)
     {
         artworkId = SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfArtworks")) + 1;
         SnarkStorage(_storageAddress).setUint(keccak256("totalNumberOfArtworks"), artworkId);
-
         SnarkStorage(_storageAddress).setAddress(
-            keccak256(abi.encodePacked("artwork", "artist", artworkId)), 
-            _artistAddress
-        );
-
+            keccak256(abi.encodePacked("artwork", "artist", artworkId)), _artistAddress);
         SnarkStorage(_storageAddress).setBytes(
-            keccak256(abi.encodePacked("artwork", "hashOfArtwork", artworkId)),
-            _artworkHash
-        );
-
+            keccak256(abi.encodePacked("artwork", "hashOfArtwork", artworkId)), _artworkHash);
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "limitedEdition", artworkId)), 
-            _limitedEdition
-        );
-
+            keccak256(abi.encodePacked("artwork", "limitedEdition", artworkId)), _limitedEdition);
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "editionNumber", artworkId)),
-            _editionNumber
-        );
-
+            keccak256(abi.encodePacked("artwork", "editionNumber", artworkId)), _editionNumber);
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "lastPrice", artworkId)), 
-            _lastPrice
-        );
-
+            keccak256(abi.encodePacked("artwork", "lastPrice", artworkId)), _lastPrice);
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", artworkId)),
-            _profitShareSchemeId
-        );
-
+            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", artworkId)), _profitShareSchemeId);
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "profitShareFromSecondarySale", artworkId)),
-            _profitShareFromSecondarySale
-        );
-
+            keccak256(abi.encodePacked("artwork", "profitShareFromSecondarySale", artworkId)), 
+            _profitShareFromSecondarySale);
         SnarkStorage(_storageAddress).setString(
-            keccak256(abi.encodePacked("artwork", "url", artworkId)), 
-            _artworkUrl
-        );
-
-        return artworkId;
+            keccak256(abi.encodePacked("artwork", "url", artworkId)), _artworkUrl);
     }
 
     function addProfitShareScheme(

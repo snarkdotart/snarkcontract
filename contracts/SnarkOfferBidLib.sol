@@ -67,7 +67,6 @@ library SnarkOfferBidLib {
         for (uint256 i = 0; i < amountOfOwnerOffers; i++) {
             uint256 currentOfferId = SnarkStorage(_storageAddress).uintStorage(
                 keccak256(abi.encodePacked("ownerOffersList", offerOwner, i)));
-
             if (currentOfferId == _offerId) {
                 if (i < amountOfOwnerOffers - 1) {
                     uint256 lastOfferId = SnarkStorage(_storageAddress).uintStorage(
@@ -80,6 +79,7 @@ library SnarkOfferBidLib {
                 break;
             }
         }
+
         // изменяем статус saleType = 'None' для artwork id: 
         // 0 - None, 1 - Offer, 2 - Auction, 3 - Loan
         SnarkStorage(_storageAddress).setUint(
@@ -88,6 +88,9 @@ library SnarkOfferBidLib {
         // 0 - Preparing, 1 - NotActive, 2 - Active, 3 - Finished
         SnarkStorage(_storageAddress).setUint(
             keccak256(abi.encodePacked("saleStatusToOffer", _offerId)), 3);
+
+        // удалить офер с предудщим статусом со списка и уменьшить их количетсво
+        // добавить в список с новым статусом
     }
 
     function deleteBid(address _storageAddress, uint256 _bidId) external {
@@ -174,6 +177,15 @@ library SnarkOfferBidLib {
         // 0 - Preparing, 1 - NotActive, 2 - Active, 3 - Finished
         SnarkStorage(_storageAddress).setUint(
             keccak256(abi.encodePacked("saleStatusToOffer", offerId)), 2);
+
+        // uint256 numberOfOffersBySaleStatus = SnarkStorage(_storageAddress).uintStorage(
+        //     keccak256(abi.encodePacked("numberOfOffersBySaleStatus", uint256(2))));
+        // uint256 newNumberOfOffersBySaleStatus = numberOfOffersBySaleStatus + 1;
+        // assert(newNumberOfOffersBySaleStatus >= numberOfOffersBySaleStatus);
+        // SnarkStorage(_storageAddress).setUint(
+        //     keccak256(abi.encodePacked("numberOfOffersBySaleStatus", uint256(2))), newNumberOfOffersBySaleStatus);
+        // SnarkStorage(_storageAddress).setUint(
+        //     keccak256(abi.encodePacked("OffersListBySaleStatus", uint256(2), numberOfOffersBySaleStatus)), offerId);
     }
 
     function addBid(
@@ -185,6 +197,13 @@ library SnarkOfferBidLib {
         external 
         returns (uint256 bidId) 
     {
+        // find the max bid price
+        uint256 maxBidPrice = SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("maxBidPriceForArtwork", _artworkId)));
+        assert(_price > maxBidPrice);
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("maxBidPriceForArtwork", _artworkId)), _price);
+
         // get new bid id and increase a value of total number of bids
         bidId = SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfBids")) + 1;
         SnarkStorage(_storageAddress).setUint(keccak256("totalNumberOfBids"), bidId);
@@ -198,6 +217,7 @@ library SnarkOfferBidLib {
         // increase amount of artwork's bids
         uint256 numberOfArtworkBids = SnarkStorage(_storageAddress).uintStorage(
             keccak256(abi.encodePacked("numberOfArtworkBids", _artworkId)));
+        
         SnarkStorage(_storageAddress).setUint(
             keccak256(abi.encodePacked("numberOfArtworkBids", _artworkId)), numberOfArtworkBids + 1);
         
@@ -393,7 +413,19 @@ library SnarkOfferBidLib {
         return SnarkStorage(_storageAddress).uintStorage(
             keccak256(abi.encodePacked("saleStatusToOffer", _offerId)));
     }
-
+    
+    // function getNumberOfOffersBySaleStatus(address _storageAddress, uint256 _saleStatus) 
+    //     external view returns (uint256) 
+    // {
+    //     return SnarkStorage(_storageAddress).uintStorage(
+    //         keccak256(abi.encodePacked("numberOfOffersBySaleStatus", _saleStatus)));
+    // }
+    // function getOfferBySaleStatus(address _storageAddress, uint256 _saleStatus, uint256 _index)
+    //     external view returns (uint256)
+    // {
+    //     return SnarkStorage(_storageAddress).uintStorage(
+    //         keccak256(abi.encodePacked("OffersListBySaleStatus", _saleStatus, _index)));
+    // }
     function getTotalNumberOfOwnerOffers(address _storageAddress, address _offerOwner) external view returns (uint256) {
         return SnarkStorage(_storageAddress).uintStorage(
             keccak256(abi.encodePacked("totalNumberOfOwnerOffers", _offerOwner))
@@ -408,7 +440,7 @@ library SnarkOfferBidLib {
         );
     }
 
-    function getOfferOwner(address _storageAddress, uint256 _offerId) external view returns (address) {
+    function getOwnerOfOffer(address _storageAddress, uint256 _offerId) external view returns (address) {
         return SnarkStorage(_storageAddress).addressStorage(
             keccak256(abi.encodePacked("ownerToOffer", _offerId))
         );
@@ -458,5 +490,10 @@ library SnarkOfferBidLib {
 
     function getBidSaleStatus(address _storageAddress, uint256 _bidId) external view returns (uint256) {
         return SnarkStorage(_storageAddress).uintStorage(keccak256(abi.encodePacked("bidSaleStatus", _bidId)));
+    }
+
+    function getMaxBidPriceForArtwork(address _storageAddress, uint256 _artworkId) external view returns (uint256) {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("maxBidPriceForArtwork", _artworkId)));
     }
 }

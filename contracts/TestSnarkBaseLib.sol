@@ -16,32 +16,42 @@ contract TestSnarkBaseLib is Ownable {
     }
 
     /*** ADD ***/
-    event ArtworkCreated(address _artworkOwner, uint256 _artworkId);
+    event TokenCreated(address indexed _owner, uint256 _tokenId);
     event ProfitShareSchemeCreated(address _schemeCreator, uint256 _profitShareSchemeId);
     
     function addArtwork(
         address _artistAddress, 
-        bytes32 _artworkHash,
+        bytes32 _hashOfArtwork,
         uint256 _limitedEdition,
-        uint256 _editionNumber,
         uint256 _lastPrice,
         uint256 _profitShareSchemeId,
-        uint256 _profitShareFromSecondarySale,
+        uint256 _profitShareForSecondarySale,
         string _artworkUrl
     ) 
         external 
     {
-        uint256 artworkId = storageAddress.addArtwork(
-            _artistAddress,
-            _artworkHash,
-            _limitedEdition,
-            _editionNumber,
-            _lastPrice,
-            _profitShareSchemeId,
-            _profitShareFromSecondarySale,
-            _artworkUrl
-        );
-        emit ArtworkCreated(msg.sender, artworkId);
+        for (uint8 i = 0; i < _limitedEdition; i++) {
+            uint256 _tokenId = storageAddress.addArtwork(
+                _artistAddress,
+                _hashOfArtwork,
+                _limitedEdition,
+                i + 1,
+                _lastPrice,
+                _profitShareSchemeId,
+                _profitShareForSecondarySale,
+                _artworkUrl
+            );
+            // memoraze that a digital work with this hash already loaded
+            storageAddress.setArtworkHashAsInUse(_hashOfArtwork, true);
+            // Enter the new owner
+            storageAddress.setOwnerOfArtwork(_tokenId, msg.sender);
+            // Add new token to new owner's token list
+            storageAddress.setArtworkToOwner(msg.sender, _tokenId);
+            // Add new token to new artist's token list
+            storageAddress.addArtworkToArtistList(_tokenId, msg.sender);
+            // Emit token event
+            emit TokenCreated(msg.sender, _tokenId);
+        }
     }
 
     function addProfitShareScheme(address[] _participants, uint256[] _profits) external {

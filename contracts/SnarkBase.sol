@@ -22,7 +22,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /*** EVENTS ***/
 
     /// @dev TokenCreatedEvent is executed when a new token is created.
-    event TokenCreatedEvent(address indexed _owner, uint256 _tokenId);
+    event TokenCreated(address indexed _owner, uint256 _tokenId);
     /// @dev Event occurs when profit share scheme is created.
     event ProfitShareSchemeAdded(address _schemeOwner, uint256 _profitShareSchemeId);
     /// @dev Event occurs when an artist wants to remove the profit share for secondary sale
@@ -179,8 +179,6 @@ contract SnarkBase is Ownable, SnarkDefinitions {
                 _profitShareForSecondarySale,
                 _artworkUrl
             );
-            // Check that there is no overflow
-            require(_tokenId == uint256(uint32(_tokenId)));
             // memoraze that a digital work with this hash already loaded
             _storage.setArtworkHashAsInUse(_hashOfArtwork, true);
             // Enter the new owner
@@ -189,8 +187,8 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             _storage.setArtworkToOwner(msg.sender, _tokenId);
             // Add new token to new artist's token list
             _storage.addArtworkToArtistList(_tokenId, msg.sender);
-            // Emit token event 
-            emit TokenCreatedEvent(msg.sender, _tokenId);
+            // Emit token event
+            emit TokenCreated(msg.sender, _tokenId);
         }
     }
 
@@ -284,93 +282,6 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     function getSnarkWalletAddressAndProfit() public view returns (address snarkWalletAddr, uint256 platformProfit) {
         snarkWalletAddr = _storage.getSnarkWalletAddress();
         platformProfit = _storage.getPlatformProfitShare();
-    }
-
-    /// @dev Transfer a token from one address to another 
-    /// @param _from Address of previous owner
-    /// @param _to Address of new owner
-    /// @param _tokenId Token Id
-    function _transfer(address _from, address _to, uint256 _tokenId) public {
-        /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
-        _storage.transferArtwork(_tokenId, _from, _to);
-        // Emit ERC721 Transfer event
-        emit Transfer(_from, _to, _tokenId);
-    }
-
-    /// @dev Function to distribute the profits to participants
-    /// @param _price Price at which artwork is sold
-    /// @param _tokenId Artwork token ID
-    /// @param _from Seller Address
-    function _incomeDistribution(uint256 _price, uint256 _tokenId, address _from) public { 
-        /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
-        // distribute the profit according to the schedule contained in the artwork token
-        uint256 lastPrice = _storage.getArtworkLastPrice(_tokenId);
-        uint256 profitShareSchemaId = _storage.getArtworkProfitShareSchemeId(_tokenId);
-        uint256 profitShareFromSecondarySale = _storage.getArtworkProfitShareFromSecondarySale(_tokenId);
-
-        // calculate profit
-        // in primary sale the lastPrice should be 0 while in a secondary it should be a prior sale price
-        if (lastPrice < _price && (_price - lastPrice) >= 100) {
-            uint256 profit = _price - lastPrice;
-            if (lastPrice > 0) {
-                // if it is a secondary sale, reduce the profit by the profit sharing % specified by the artist 
-                // the remaining count goes back to the seller
-                uint256 countToSeller = _price;
-                // the count to be distributed
-                profit = profit * profitShareFromSecondarySale / 100;
-                // the count that will go to the seller
-                countToSeller -= profit;
-                _storage.addPendingWithdrawals(_from, countToSeller);
-            }
-            uint256 residue = profit; // hold any uncollected count in residue after paying out all of the participants
-            uint256 participantsCount = _storage.getNumberOfParticipantsForProfitShareScheme(profitShareSchemaId);
-            address currentParticipant;
-            uint256 participantProfit;
-            for (uint256 i = 0; i < participantsCount; i++) { // one by one go through each profit sharing participant
-                (currentParticipant, participantProfit) = 
-                    _storage.getParticipantOfProfitShareScheme(profitShareSchemaId, i);
-                // calculate the payout count
-                uint256 payout = profit * participantProfit / 100;
-                // move the payout count to each participant
-                _storage.addPendingWithdrawals(currentParticipant, payout);
-                residue -= payout; // recalculate the uncollected count after the payout
-            }
-            // if there is any uncollected counts after distribution, move the count to the seller
-            lastPrice = residue;
-        } else {
-            // if there is no profit, then all goes back to the seller
-            lastPrice = _price;
-        }
-        _storage.addPendingWithdrawals(_from, lastPrice);
-    }
-
-    /// @dev Snark platform takes it's profit share
-    /// @param _profit A price of selling
-    function _takePlatformProfitShare(uint256 _profit) public {
-        /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
-        address snarkWallet = _storage.getSnarkWalletAddress();
-        _storage.addPendingWithdrawals(snarkWallet, _profit);
-    }
-
-    function _calculatePlatformProfitShare(uint256 _income) public view returns (uint256 profit, uint256 residue) {
-        /* !!!!!!!!!!! set to internal after test !!!!!!!!!!! */
-        profit = (_income * _storage.getPlatformProfitShare() / 100);
-        residue = (_income - profit);
-    }
-
-    /// @dev Function of an artwork buying
-    /// @param _tokenId Artwork ID
-    /// @param _value Selling price of artwork
-    /// @param _from Address of seller
-    /// @param _to Address of buyer
-    /// @param _mediator Address of token's temporary keeper (Snark)
-    function _buy(uint256 _tokenId, uint256 _value, address _from, address _to, address _mediator) internal {
-        _incomeDistribution(_value, _tokenId, _from);
-        // mark the price for which the artwork sold
-        _storage.setArtworkLastPrice(_tokenId, _value);
-        // mark the sale type to None after sale
-        _storage.setSaleTypeToArtwork(_tokenId, uint256(SaleType.None));
-        _transfer(_mediator, _to, _tokenId);
     }
 
 }

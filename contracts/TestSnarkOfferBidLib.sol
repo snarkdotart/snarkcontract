@@ -14,9 +14,9 @@ contract TestSnarkOfferBidLib is Ownable {
 
     address public storageAddress;
 
-    event OfferAdded(address _offerOwner, uint256 _offerId);
-    event BidAdded(address _bidOwner, uint256 _bidId);
+    event OfferAdded(address _offerOwner, uint256 _offerId, uint256 _artworkId);
     event OfferDeleted(uint256 _offerId);
+    event BidAdded(address _bidOwner, uint256 _bidId);
     event BidDeleted(uint256 _bidId);
 
     constructor(address _storageAddress) public {
@@ -74,7 +74,7 @@ contract TestSnarkOfferBidLib is Ownable {
     /*** ADD ***/
     function addOffer(address _offerOwner, uint256 _artworkId, uint256 _price) external {
         uint256 offerId = storageAddress.addOffer(_offerOwner, _artworkId, _price);
-        emit OfferAdded(_offerOwner, offerId);
+        emit OfferAdded(_offerOwner, offerId, _artworkId);
     }
 
     function addBid(address _bidOwner, uint256 _artworkId, uint256 _price) external {
@@ -159,6 +159,12 @@ contract TestSnarkOfferBidLib is Ownable {
         return storageAddress.getSaleStatusForOffer(_offerId);
     }
 
+    // function getNumberOfOffersBySaleStatus(uint256 _saleStatus) external view returns (uint256) {
+    //     return storageAddress.getNumberOfOffersBySaleStatus(_saleStatus);
+    // }
+    // function getOfferBySaleStatus(uint256 _saleStatus, uint256 _index) external view returns (uint256) {
+    //     return storageAddress.getOfferBySaleStatus(_saleStatus, _index);
+    // }
     function getTotalNumberOfOwnerOffers(address _offerOwner) external view returns (uint256) {
         return storageAddress.getTotalNumberOfOwnerOffers(_offerOwner);
     }
@@ -175,8 +181,8 @@ contract TestSnarkOfferBidLib is Ownable {
         return storageAddress.getSaleStatusToArtwork(_artworkId);
     }
 
-    function getOfferOwner(uint256 _offerId) external view returns (address) {
-        return storageAddress.getOfferOwner(_offerId);
+    function getOwnerOfOffer(uint256 _offerId) external view returns (address) {
+        return storageAddress.getOwnerOfOffer(_offerId);
     }
 
     function getTotalNumberOfBids() external view returns (uint256) {

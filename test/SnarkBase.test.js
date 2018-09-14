@@ -60,12 +60,12 @@ contract('SnarkBase', async (accounts) => {
         const profitShareSchemeId = 1;
 
         let retval = await instance.getProfitShareSchemesTotalCount();
-        assert.equal(retval.toNumber(), 1);
+        assert.equal(retval.toNumber(), 1, "error on step 1");
 
         retval = await instance.getTokensCount();
-        assert.equal(retval.toNumber(), 0);
+        assert.equal(retval.toNumber(), 0, "error on step 2");
 
-        const event = instance.TokenCreatedEvent({ fromBlock: 'latest' });
+        const event = instance.TokenCreated({ fromBlock: 'latest' });
         event.watch(function (error, result) {
             if (!error) {
                 tokenId = result.args._tokenId.toNumber();
@@ -83,13 +83,13 @@ contract('SnarkBase', async (accounts) => {
         );
 
         retval = await instance.getTokensCount();
-        assert.equal(retval.toNumber(), 10);
+        assert.equal(retval.toNumber(), 10, "error on step 3");
 
         retval = await instance.getTokensCountByOwner(web3.eth.accounts[0]);
-        assert.equal(retval.toNumber(), 10);
+        assert.equal(retval.toNumber(), 10, "error on step 4");
 
         retval = await instance.getTokensCountByArtist(web3.eth.accounts[0]);
-        assert.equal(retval.toNumber(), 10);
+        assert.equal(retval.toNumber(), 10, "error on step 5");
     });
 
     it("4. test changeProfitShareSchemeForToken function", async () => {
@@ -121,87 +121,6 @@ contract('SnarkBase', async (accounts) => {
 
         retval = await instance.getTokenDetails(1);
         assert.equal(retval[5].toNumber(), 2, "error on step 6");
-    });
-
-    it("5. test _transfer function", async () => {
-        ///////// change internal to public for testing /////////
-        const to_account = '0xC04691B99EB731536E35F375ffC85249Ec713222';
-
-        const event = instance.Transfer({ fromBlock: 'latest' });
-        event.watch(function (error, result) {
-            if (!error) {
-                _from = result.args._from;
-                _to = result.args._to;
-                _tokenId = result.args._tokenId.toNumber();
-                // console.log(`event Transfer: tokenId = ${_tokenId}; from: ${_from}; to: ${_to}`);
-                // assert.equal(tokenId, 1, "SchemeId is not equal 1");
-            }
-        });
-
-        retval = await instance.getTokensCountByOwner(web3.eth.accounts[0]);
-        assert.equal(retval.toNumber(), 10, "error on step 7");
-
-        await instance._transfer(web3.eth.accounts[0], to_account, 1);
-
-        retval = await instance.getTokensCountByOwner(web3.eth.accounts[0]);
-        assert.equal(retval.toNumber(), 9, "error on step 8");
-
-        retval = await instance.getTokensCountByOwner(to_account);
-        assert.equal(retval.toNumber(), 1, "error on step 9");
-    });
-
-    it("6. test _incomeDistribution function", async () => {
-        ///////// change internal to public for testing /////////
-        const from_account = web3.eth.accounts[0];
-        const to_account = '0xC04691B99EB731536E35F375ffC85249Ec713222';
-        const price = 1000;
-        const tokenId = 1;
-
-        let retval = await instance.getTokenDetails(tokenId);
-        const schemeId = retval[5].toNumber();
-        assert.equal(schemeId, 2, "schemeId. step 1");
-
-        retval = await instance.getWithdrawBalance(from_account);
-        assert.equal(retval.toNumber(), 0, "withdraw balance. step 2");
-
-        retval = await instance.getNumberOfParticipantsForProfitShareScheme(schemeId);
-        assert.equal(retval.toNumber(), 3, "participants number. step 3");
-
-        const participant_1_info = await instance.getParticipantOfProfitShareScheme(schemeId, 0);
-        const participant_2_info = await instance.getParticipantOfProfitShareScheme(schemeId, 1);
-        const participant_3_info = await instance.getParticipantOfProfitShareScheme(schemeId, 2);
-
-        retval = await instance.getWithdrawBalance(participant_1_info[0]);
-        assert.equal(retval.toNumber(), 0, "withdraw balance. step 4");
-
-        retval = await instance.getWithdrawBalance(participant_2_info[0]);
-        assert.equal(retval.toNumber(), 0, "withdraw balance. step 5");
-
-        retval = await instance.getWithdrawBalance(participant_3_info[0]);
-        assert.equal(retval.toNumber(), 0, "withdraw balance. step 6");
-
-        await instance._incomeDistribution(price, tokenId, from_account);
-
-        retval = await instance.getWithdrawBalance(participant_1_info[0]);
-        assert.equal(retval.toNumber(), 300, "withdraw balance. step 4");
-
-        retval = await instance.getWithdrawBalance(participant_2_info[0]);
-        assert.equal(retval.toNumber(), 600, "withdraw balance. step 5");
-
-        retval = await instance.getWithdrawBalance(participant_3_info[0]);
-        assert.equal(retval.toNumber(), 100, "withdraw balance. step 6");
-
-    });
-
-    it("7. test _calculatePlatformProfitShare function", async () => {
-        const income = 1000;
-        const profitShare = 5;
-
-        await instance.setPlatformProfitShare(profitShare);
-        retval = await instance._calculatePlatformProfitShare(income);
-        assert.equal(retval[0].toNumber(), 50);
-        assert.equal(retval[1].toNumber(), 950);
-
     });
 
 });
