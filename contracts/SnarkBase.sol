@@ -147,6 +147,10 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         return _storage.getNumberOfProfitShareSchemesForOwner(msg.sender);
     }
 
+    function getOwnerOfArtwork(uint256 _artworkId) public view returns (address) {
+        return _storage.getOwnerOfArtwork(_artworkId);
+    }
+
     /// @dev Function to add a new digital artwork to blockchain
     /// @param _hashOfArtwork Unique hash of the artwork
     /// @param _limitedEdition Number of artwork edititons
@@ -267,6 +271,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Function to withdraw funds to the owners wallet 
     function withdrawFunds() public {
         uint256 balance = _storage.getPendingWithdrawals(msg.sender);
+        require(balance > 0);
         _storage.subPendingWithdrawals(msg.sender, balance);
         msg.sender.transfer(balance);
     }

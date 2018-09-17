@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "../node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
+// import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SnarkDefinitions.sol";
 import "./SnarkBaseLib.sol";
 import "./SnarkCommonLib.sol";
@@ -10,7 +10,7 @@ import "./SnarkOfferBidLib.sol";
 
 contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
-    using SafeMath for uint256;
+    // using SafeMath for uint256;
     using SnarkBaseLib for address;
     using SnarkCommonLib for address;
     using SnarkOfferBidLib for address;
@@ -22,7 +22,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /*** EVENTS ***/
 
     // New offer event
-    event OfferAdded(address offerOwner, uint256 offerId, uint tokenId);
+    event OfferAdded(address _offerOwner, uint256 _offerId, uint _tokenId);
     // Offer deleted event
     event OfferDeleted(uint256 _offerId);
     // Offer ended (artworks sold) event
@@ -76,20 +76,14 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @dev Function to create an offer for the secondary sale.
     /// @param _tokenId Artwork IDs included in the offer
     /// @param _price The price for all artworks included in the offer
-    function addOffer(
-        uint256 _tokenId,
-        uint256 _price
-    ) 
-        public 
-        onlyOwnerOf(_tokenId)
-    {
+    function addOffer(uint256 _tokenId, uint256 _price) public onlyOwnerOf(_tokenId) {
         bool isStatusNone = true;
-        bool isSecondSale = true;
+        // bool isSecondSale = true;
         isStatusNone = (isStatusNone && (_storage.getSaleTypeToArtwork(_tokenId) == uint256(SaleType.None)));
-        uint256 lastPrice = _storage.getArtworkLastPrice(_tokenId);
-        isSecondSale = (isSecondSale && (lastPrice != 0));
-
-        require(isStatusNone && isSecondSale);
+        // uint256 lastPrice = _storage.getArtworkLastPrice(_tokenId);
+        // isSecondSale = (isSecondSale && (lastPrice > 0));
+        // require(isStatusNone && isSecondSale);
+        require(isStatusNone);
 
         // Offer creation and return of the offer ID
         uint256 offerId = _storage.addOffer(msg.sender, _tokenId, _price);
@@ -134,11 +128,11 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         } else {
             currentOwner = _storage.getOwnerOfArtwork(_tokenId);
         }
-        // Artwork token cannot belong to the bidder
+        // // Artwork token cannot belong to the bidder
         require(currentOwner != msg.sender);
         uint256 bidId = _storage.addBid(msg.sender, _tokenId, msg.value);
         // adding an amount of this bid to a contract balance
-        _storage.addPendingWithdrawals(address(this), msg.value);
+        _storage.addPendingWithdrawals(_storage, msg.value);
         // emit the bid creation event
         emit BidAdded(msg.sender, bidId, msg.value);
     }
@@ -168,7 +162,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         require(msg.sender == tokenOwner);
 
         address bidOwner = _storage.getOwnerOfBid(_bidId);
-        _storage.subPendingWithdrawals(address(this), price);
+        _storage.subPendingWithdrawals(_storage, price);
         uint256 profit;
         (profit, price) = _storage.calculatePlatformProfitShare(price);
         _storage.takePlatformProfitShare(price);
@@ -187,6 +181,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         address bidder = _storage.getOwnerOfBid(_bidId);
         uint256 tokenId = _storage.getArtworkIdByBidId(_bidId);
         uint256 price = _storage.getBidPrice(_bidId);
+        _storage.subPendingWithdrawals(_storage, price);
         _storage.deleteBid(_bidId);
         bidder.transfer(price);
         emit BidCanceled(tokenId, _bidId);
@@ -216,6 +211,18 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
     }
 
+    function getTotalNumberOfBids() public view returns (uint256) {
+        return _storage.getTotalNumberOfBids();
+    }
+
+    function getNumberOfArtworkBids(uint256 _artworkId) public view returns (uint256) {
+        return _storage.getNumberOfArtworkBids(_artworkId);
+    }
+
+    function getNumberBidsOfOwner(address _bidOwner) public view returns (uint256) {
+        return _storage.getNumberBidsOfOwner(_bidOwner);
+    }
+
     function _takeBackBidAmountsAndDeleteAllTokenBids(uint256 _tokenId) internal {
         uint256 bidsCount = _storage.getNumberOfArtworkBids(_tokenId);
         uint256 bidId;
@@ -226,7 +233,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             bidder = _storage.getOwnerOfBid(bidId);
             bidPrice = _storage.getBidPrice(bidId);
             // Moving these amount from contract's balance to the bid's one
-            _storage.subPendingWithdrawals(address(this), bidPrice);
+            _storage.subPendingWithdrawals(_storage, bidPrice);
             _storage.addPendingWithdrawals(bidder, bidPrice);
             // Delete the bid
             _storage.deleteBid(bidId);
