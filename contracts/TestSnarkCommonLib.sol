@@ -81,7 +81,7 @@ contract TestSnarkCommonLib is Ownable {
     }
 
     function createProfitShareScheme(address[] _participants, uint256[] _percentAmount) external returns (uint256) {
-        require(_participants.length == _percentAmount.length);
+        require(_participants.length == _percentAmount.length, "length of two arrays must be match");
         return storageAddress.addProfitShareScheme(msg.sender, _participants, _percentAmount);
     }
 
