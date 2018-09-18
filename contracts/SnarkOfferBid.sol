@@ -1,7 +1,6 @@
 pragma solidity ^0.4.24;
 
 import "../node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
-// import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SnarkDefinitions.sol";
 import "./SnarkBaseLib.sol";
 import "./SnarkCommonLib.sol";
@@ -10,7 +9,6 @@ import "./SnarkOfferBidLib.sol";
 
 contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
-    // using SafeMath for uint256;
     using SnarkBaseLib for address;
     using SnarkCommonLib for address;
     using SnarkOfferBidLib for address;
@@ -25,8 +23,6 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     event OfferAdded(address _offerOwner, uint256 _offerId, uint _tokenId);
     // Offer deleted event
     event OfferDeleted(uint256 _offerId);
-    // Offer ended (artworks sold) event
-    // event OfferEnded(uint256 _offerId);
     // New bid event
     event BidAdded(address indexed _bidder, uint256 _bidId, uint256 _value);
     // Canceled bid event
@@ -35,21 +31,21 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @dev Modifier that checks that an owner has a specific token
     /// @param _tokenId Token ID
     modifier onlyOwnerOf(uint256 _tokenId) {
-        require(msg.sender == _storage.getOwnerOfArtwork(_tokenId));
+        require(msg.sender == _storage.getOwnerOfArtwork(_tokenId), "it's not a token owner");
         _;
     }
 
     /// @dev Modifier that allows only the owner of the offer
     /// @param _offerId Id of offer
     modifier onlyOfferOwner(uint256 _offerId) {
-        require(msg.sender == _storage.getOwnerOfOffer(_offerId));
+        require(msg.sender == _storage.getOwnerOfOffer(_offerId), "it's not an offer owner");
         _;
     }
     
     /// @dev Modifier that permits only the owner of the Bid 
     /// @param _bidId Bid ID
     modifier onlyBidOwner(uint256 _bidId) {
-        require(msg.sender == _storage.getOwnerOfBid(_bidId));
+        require(msg.sender == _storage.getOwnerOfBid(_bidId), "it's not a bid owner");
         _;
     }
 
@@ -83,7 +79,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         // uint256 lastPrice = _storage.getArtworkLastPrice(_tokenId);
         // isSecondSale = (isSecondSale && (lastPrice > 0));
         // require(isStatusNone && isSecondSale);
-        require(isStatusNone);
+        require(isStatusNone, "the artwork should not be involved in sales");
 
         // Offer creation and return of the offer ID
         uint256 offerId = _storage.addOffer(msg.sender, _tokenId, _price);
@@ -112,7 +108,11 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         // it is possible to accept a bid unless
         // the artwork is part of an auction or a loan
         SaleType currentSaleType = SaleType(_storage.getSaleTypeToArtwork(_tokenId));
-        require(currentSaleType == SaleType.Offer || currentSaleType == SaleType.None);
+        require (
+            currentSaleType == SaleType.Offer || 
+            currentSaleType == SaleType.None, 
+            "the artwork should either be in sale by offer or not involved in sales at all"
+        );
         address currentOwner;
         uint256 offerId;
         uint256 price;
@@ -124,12 +124,14 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             // than the OFFER price.  If a BID is made at the OFFER price or HIGHER, than the platform should 
             // notify the bidder that they must BUY the artwork at an OFFER price or revise the BID to something 
             // lower than the OFFER price.
-            require(msg.value < price);
+            require(msg.value < price, "bid amount have to be less than a price of offer");
         } else {
             currentOwner = _storage.getOwnerOfArtwork(_tokenId);
         }
-        // // Artwork token cannot belong to the bidder
-        require(currentOwner != msg.sender);
+        require (
+            currentOwner != msg.sender, 
+            "The artwork token cannot belong to the bidder"
+        );
         uint256 bidId = _storage.addBid(msg.sender, _tokenId, msg.value);
         // adding an amount of this bid to a contract balance
         _storage.addPendingWithdrawals(_storage, msg.value);
@@ -144,8 +146,11 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         uint256 tokenId = _storage.getArtworkIdByBidId(_bidId);
         uint256 price = _storage.getBidPrice(_bidId);
         SaleType saleType = SaleType(_storage.getSaleTypeToArtwork(tokenId));
-        // it's forbidden to accept the Bid when it has a Loan Status
-        require(saleType == SaleType.Offer || saleType == SaleType.None);
+        require (
+            saleType == SaleType.Offer || 
+            saleType == SaleType.None,
+            "it's forbidden to accept the Bid when it has a Loan Status"
+        );
         address tokenOwner;
         address mediator;
         uint256 offerId;
@@ -158,8 +163,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             tokenOwner = _storage.getOwnerOfArtwork(tokenId);
             mediator = tokenOwner;
         }
-        // Only token's owner can accept the bid
-        require(msg.sender == tokenOwner);
+
+        require(msg.sender == tokenOwner, "Only token's owner can accept the bid");
 
         address bidOwner = _storage.getOwnerOfBid(_bidId);
         _storage.subPendingWithdrawals(_storage, price);
@@ -194,13 +199,13 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         uint256 price = _storage.getOfferPrice(_offerId);
         uint256 saleStatus = _storage.getSaleStatusForOffer(_offerId);
 
-        require(saleStatus == uint256(SaleStatus.Active));
-        require(msg.value >= price);
+        require(saleStatus == uint256(SaleStatus.Active), "Offer status must by an active");
+        require(msg.value >= price, "Amount of money should be not less then the offer price");
 
         address tokenOwner = _storage.getOwnerOfOffer(_offerId);
         address mediator = _storage.getOwnerOfArtwork(tokenId);
 
-        require(msg.sender != tokenOwner);
+        require(msg.sender != tokenOwner, "Owner of artwork can't buy his artwork");
 
         _storage.takePlatformProfitShare(price);
         _storage.buy(tokenId, price, tokenOwner, msg.sender, mediator);
