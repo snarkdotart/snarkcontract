@@ -295,19 +295,22 @@ contract('TestSnarkBaseLib', async (accounts) => {
         const artworkId = 11;
         const owner1 = '0xC04691B99EB731536E35F375ffC85249Ec713597';
         const owner2 = '0xB94691B99EB731536E35F375ffC85249Ec717233';
-        
-        let retval = await instance.getNumberOfArtistArtworks(owner1);
-        assert.equal(retval.toNumber(), 1, "error on step 1");
-        retval = await instance.getNumberOfArtistArtworks(owner2);
-        assert.equal(retval.toNumber(), 0, "error on step 2");
+
+        let numberOfArtworksForOwner1 = await instance.getNumberOfArtistArtworks(owner1);
+        numberOfArtworksForOwner1 = numberOfArtworksForOwner1.toNumber();
+
+        let numberOfArtworksForOwner2 = await instance.getNumberOfArtistArtworks(owner2);
+        numberOfArtworksForOwner2 = numberOfArtworksForOwner2.toNumber();
 
         await instance.addArtworkToArtistList(artworkId, owner1);
 
-        retval = await instance.getNumberOfArtistArtworks(owner1);
-        assert.equal(retval.toNumber(), 2, "error on step 3");
+        let retval = await instance.getNumberOfArtistArtworks(owner1);
+        assert.equal(retval.toNumber(), numberOfArtworksForOwner1 + 1, "error on step 3");
+
         retval = await instance.getNumberOfArtistArtworks(owner2);
-        assert.equal(retval.toNumber(), 0, "error on step 4");
-        retval = await instance.getArtworkIdForArtist(owner1, 1);
+        assert.equal(retval.toNumber(), numberOfArtworksForOwner2, "error on step 4");
+
+        retval = await instance.getArtworkIdForArtist(owner1, numberOfArtworksForOwner1);
         assert.equal(retval.toNumber(), artworkId, "error on step 5");
     });
 
