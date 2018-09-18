@@ -118,7 +118,7 @@ library SnarkOfferBidLib {
                 }
                 // delete the last bidId in array
                 SnarkStorage(_storageAddress).deleteUint(
-                        keccak256(abi.encodePacked("artworkBidsList", artworkId, numberOfArtworkBids - 1)));
+                    keccak256(abi.encodePacked("artworkBidsList", artworkId, numberOfArtworkBids - 1)));
                 // reduce a number of artwork bids
                 SnarkStorage(_storageAddress).setUint(
                     keccak256(abi.encodePacked("numberOfArtworkBids", artworkId)), numberOfArtworkBids - 1);
