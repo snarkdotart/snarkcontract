@@ -42,7 +42,9 @@ contract('SnarkOfferBid', async (accounts) => {
             limitedEdition,
             profitShareFromSecondarySale,
             artworkUrl,
-            profitShareSchemeId
+            profitShareSchemeId,
+            true,
+            true
         );
 
         retval = await instance_snarkbase.getTokensCountByOwner(owner);

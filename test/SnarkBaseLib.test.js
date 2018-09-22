@@ -70,13 +70,15 @@ contract('TestSnarkBaseLib', async (accounts) => {
             lastPrice,
             profitShareSchemeId,
             profitShareFromSecondarySale,
-            artworkUrl
+            artworkUrl,
+            false,
+            false
         );
 
         retval = await instance.getTotalNumberOfArtworks();
         assert.equal(retval.toNumber(), 1);
 
-        retval = await instance.getArtwork(1);
+        retval = await instance.getArtworkDetails(1);
         assert.equal(retval[0].toUpperCase(), artistAddress.toUpperCase());
         assert.equal(retval[1].toUpperCase(), artworkHash.toUpperCase());
         assert.equal(retval[2].toNumber(), limitedEdition);

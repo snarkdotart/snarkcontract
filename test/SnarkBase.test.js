@@ -31,7 +31,7 @@ contract('SnarkBase', async (accounts) => {
         const event = instance.ProfitShareSchemeAdded({ fromBlock: 'latest' });
         event.watch(function (error, result) {
             if (!error) {
-                schemeId = result.args._profitShareSchemeId.toNumber();
+                schemeId = result.args.profitShareSchemeId.toNumber();
                 // console.log("SchemeId = ", schemeId);
                 // assert.equal(schemeId, 1, "SchemeId is not equal 1");
             }
@@ -68,7 +68,7 @@ contract('SnarkBase', async (accounts) => {
         const event = instance.TokenCreated({ fromBlock: 'latest' });
         event.watch(function (error, result) {
             if (!error) {
-                tokenId = result.args._tokenId.toNumber();
+                tokenId = result.args.tokenId.toNumber();
                 console.log("event TokenCreatedEvent: tokenId = ", tokenId);
                 // assert.equal(tokenId, 1, "SchemeId is not equal 1");
             }
@@ -79,7 +79,9 @@ contract('SnarkBase', async (accounts) => {
             limitedEdition,
             profitShareFromSecondarySale,
             artworkUrl,
-            profitShareSchemeId
+            profitShareSchemeId,
+            true,
+            true
         );
 
         retval = await instance.getTokensCount();

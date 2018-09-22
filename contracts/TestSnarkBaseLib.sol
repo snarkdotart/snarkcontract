@@ -26,7 +26,9 @@ contract TestSnarkBaseLib is Ownable {
         uint256 _lastPrice,
         uint256 _profitShareSchemeId,
         uint256 _profitShareForSecondarySale,
-        string _artworkUrl
+        string _artworkUrl,
+        bool isAcceptLoanRequestFromSnark,
+        bool isAcceptLoanRequestFromOthers
     ) 
         external 
     {
@@ -39,7 +41,9 @@ contract TestSnarkBaseLib is Ownable {
                 _lastPrice,
                 _profitShareSchemeId,
                 _profitShareForSecondarySale,
-                _artworkUrl
+                _artworkUrl,
+                isAcceptLoanRequestFromSnark,
+                isAcceptLoanRequestFromOthers
             );
             // memoraze that a digital work with this hash already loaded
             storageAddress.setArtworkHashAsInUse(_hashOfArtwork, true);
@@ -194,7 +198,7 @@ contract TestSnarkBaseLib is Ownable {
         return storageAddress.getArtworkURL(_artworkId);
     }
 
-    function getArtwork(uint256 _artworkId) external view returns (
+    function getArtworkDetails(uint256 _artworkId) external view returns (
         address artistAddress, 
         bytes32 artworkHash,
         uint256 limitedEdition,
@@ -202,9 +206,11 @@ contract TestSnarkBaseLib is Ownable {
         uint256 lastPrice,
         uint256 profitShareSchemeId,
         uint256 profitShareFromSecondarySale,
-        string artworkUrl) 
+        string artworkUrl,
+        bool isAcceptOfLoanRequestFromSnark,
+        bool isAcceptOfLoanRequestFromOthers) 
     {
-        return storageAddress.getArtwork(_artworkId);
+        return storageAddress.getArtworkDetails(_artworkId);
     }
 
     function getTotalNumberOfProfitShareSchemes() external view returns (uint256) {

@@ -105,7 +105,9 @@ contract('TestSnarkCommonLib', async (accounts) => {
             lastPrice,
             profitShareSchemeId,
             profitShareFromSecondarySale,
-            artworkUrl
+            artworkUrl,
+            true,
+            true
         );
 
         let retval = await instance.getTotalNumberOfArtworks();

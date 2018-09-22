@@ -32,7 +32,9 @@ contract TestSnarkCommonLib is Ownable {
         uint256 _lastPrice,
         uint256 _profitShareSchemeId,
         uint256 _profitShareForSecondarySale,
-        string _artworkUrl
+        string _artworkUrl,
+        bool isAcceptLoanRequestFromSnark,
+        bool isAcceptLoanRequestFromOthers
     ) 
         external 
     {
@@ -45,7 +47,9 @@ contract TestSnarkCommonLib is Ownable {
                 _lastPrice,
                 _profitShareSchemeId,
                 _profitShareForSecondarySale,
-                _artworkUrl
+                _artworkUrl,
+                isAcceptLoanRequestFromSnark,
+                isAcceptLoanRequestFromOthers
             );
             // memoraze that a digital work with this hash already loaded
             storageAddress.setArtworkHashAsInUse(_hashOfArtwork, true);
