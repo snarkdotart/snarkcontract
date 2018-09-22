@@ -6,382 +6,184 @@ import "./SnarkStorage.sol";
 library SnarkBaseLib {
 
     /*** SET ***/
-    function setSnarkWalletAddress(address _storageAddress, address _walletAddress) external {
-        SnarkStorage(_storageAddress).setAddress(keccak256("snarkWalletAddress"), _walletAddress);
+    function setSnarkWalletAddress(address storageAddress, address walletAddress) public {
+        SnarkStorage(storageAddress).setAddress(keccak256("snarkWalletAddress"), walletAddress);
     }
 
-    function setPlatformProfitShare(address _storageAddress, uint256 _platformProfitShare) external {
-        SnarkStorage(_storageAddress).setUint(keccak256("platformProfitShare"), _platformProfitShare);
+    function setPlatformProfitShare(address storageAddress, uint256 platformProfitShare) public {
+        SnarkStorage(storageAddress).setUint(keccak256("platformProfitShare"), platformProfitShare);
     }
 
-    function setArtworkArtist(address _storageAddress, uint256 _artworkId, address _artistAddress) external {
-        SnarkStorage(_storageAddress).setAddress(
-            keccak256(abi.encodePacked("artwork", "artist", _artworkId)), 
-            _artistAddress
+    function setArtworkArtist(address storageAddress, uint256 artworkId, address artistAddress) public {
+        SnarkStorage(storageAddress).setAddress(
+            keccak256(abi.encodePacked("artwork", "artist", artworkId)), 
+            artistAddress
         );
     }
 
-    function setArtworkLimitedEdition(address _storageAddress, uint256 _artworkId, uint256 _limitedEdition) external {
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "limitedEdition", _artworkId)), 
-            _limitedEdition
+    function setArtworkLimitedEdition(address storageAddress, uint256 artworkId, uint256 limitedEdition) public {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artwork", "limitedEdition", artworkId)), 
+            limitedEdition
         );
     }
 
-    function setArtworkEditionNumber(address _storageAddress, uint256 _artworkId, uint256 _editionNumber) external {
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "editionNumber", _artworkId)),
-            _editionNumber
+    function setArtworkEditionNumber(address storageAddress, uint256 artworkId, uint256 editionNumber) public {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artwork", "editionNumber", artworkId)),
+            editionNumber
         );
     }
 
-    function setArtworkLastPrice(address _storageAddress, uint256 _artworkId, uint256 _lastPrice) external {
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "lastPrice", _artworkId)), 
-            _lastPrice
+    function setArtworkLastPrice(address storageAddress, uint256 artworkId, uint256 lastPrice) public {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artwork", "lastPrice", artworkId)), 
+            lastPrice
         );
     }
 
-    function setArtworkHash(address _storageAddress, uint256 _artworkId, bytes32 _artworkHash) external {
-        SnarkStorage(_storageAddress).setBytes(
-            keccak256(abi.encodePacked("artwork", "hashOfArtwork", _artworkId)),
-            _artworkHash
+    function setArtworkHash(address storageAddress, uint256 artworkId, bytes32 artworkHash) public {
+        SnarkStorage(storageAddress).setBytes(
+            keccak256(abi.encodePacked("artwork", "hashOfArtwork", artworkId)),
+            artworkHash
         );
     }
 
-    function setArtworkProfitShareSchemeId(address _storageAddress, uint256 _artworkId, uint256 _schemeId) external {
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", _artworkId)),
-            _schemeId
+    function setArtworkProfitShareSchemeId(address storageAddress, uint256 artworkId, uint256 schemeId) public {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", artworkId)),
+            schemeId
         );
     }
 
-    function setArtworkProfitShareFromSecondarySale(address _storageAddress, uint256 _artworkId, uint256 _profitShare) 
-        external 
+    function setArtworkProfitShareFromSecondarySale(address storageAddress, uint256 artworkId, uint256 profitShare) 
+        public 
     {
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "profitShareFromSecondarySale", _artworkId)),
-            _profitShare
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artwork", "profitShareFromSecondarySale", artworkId)),
+            profitShare
         );
     }
 
-    function setArtworkURL(address _storageAddress, uint256 _artworkId, string _url) external {
-        SnarkStorage(_storageAddress).setString(
-            keccak256(abi.encodePacked("artwork", "url", _artworkId)),
-            _url
+    function setArtworkURL(address storageAddress, uint256 artworkId, string url) public {
+        SnarkStorage(storageAddress).setString(
+            keccak256(abi.encodePacked("artwork", "url", artworkId)),
+            url
         );
     }
 
-    function setArtworkToOwner(address _storageAddress, address _artworkOwner, uint256 _artworkId) external {
-        uint256 index = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _artworkOwner))
+    function setArtworkToOwner(address storageAddress, address artworkOwner, uint256 artworkId) public {
+        uint256 _index = SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", artworkOwner))
         ); 
 
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artworkOfOwner", _artworkOwner, index)),
-            _artworkId
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artworkOfOwner", artworkOwner, _index)),
+            artworkId
         );
 
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _artworkOwner)),
-            index + 1
-        );
-    }
-
-    function setOwnerOfArtwork(address _storageAddress, uint256 _artworkId, address _artworkOwner) external {
-        SnarkStorage(_storageAddress).setAddress(
-            keccak256(abi.encodePacked("ownerOfArtwork", _artworkId)),
-            _artworkOwner
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", artworkOwner)),
+            _index + 1
         );
     }
 
-    function setArtworkHashAsInUse(address _storageAddress, bytes32 _artworkHash, bool _isUsed) external {
-        SnarkStorage(_storageAddress).setBool(
-            keccak256(abi.encodePacked("hashIsUsed", _artworkHash)),
-            _isUsed
+    function setOwnerOfArtwork(address storageAddress, uint256 artworkId, address artworkOwner) public {
+        SnarkStorage(storageAddress).setAddress(
+            keccak256(abi.encodePacked("ownerOfArtwork", artworkId)),
+            artworkOwner
+        );
+    }
+
+    function setArtworkHashAsInUse(address storageAddress, bytes32 artworkHash, bool isUsed) public {
+        SnarkStorage(storageAddress).setBool(
+            keccak256(abi.encodePacked("hashIsUsed", artworkHash)),
+            isUsed
         );
     }
 
     function setApprovalsToOperator(
-        address _storageAddress, 
-        address _owner, 
-        address _operator, 
-        bool _isApproved
+        address storageAddress, 
+        address owner, 
+        address operator, 
+        bool isApproved
     ) 
-        external 
+        public 
     {
-        SnarkStorage(_storageAddress).setBool(
-            keccak256(abi.encodePacked("approvedOperator", _owner, _operator)),
-            _isApproved
+        SnarkStorage(storageAddress).setBool(
+            keccak256(abi.encodePacked("approvedOperator", owner, operator)),
+            isApproved
         );
     }
 
     function setApprovalsToArtwork(
-        address _storageAddress, 
-        address _owner, 
-        uint256 _artworkId, 
-        bool _isApproved
+        address storageAddress, 
+        address owner, 
+        uint256 artworkId, 
+        bool isApproved
     ) 
-        external 
+        public 
     {
-        SnarkStorage(_storageAddress).setBool(
-            keccak256(abi.encodePacked("approvalsToArtwork", _owner, _artworkId)),
-            _isApproved
+        SnarkStorage(storageAddress).setBool(
+            keccak256(abi.encodePacked("approvalsToArtwork", owner, artworkId)),
+            isApproved
         );
     }
 
     function setArtworkToParticipantApproving(
-        address _storageAddress, 
-        uint256 _artworkId, 
-        address _participant, 
-        bool _consent
+        address storageAddress, 
+        uint256 artworkId, 
+        address participant, 
+        bool consent
     ) 
-        external
+        public
     {
-        SnarkStorage(_storageAddress).setBool(
-            keccak256(abi.encodePacked("artworkToParticipantApproving", _artworkId, _participant)),
-            _consent
+        SnarkStorage(storageAddress).setBool(
+            keccak256(abi.encodePacked("artworkToParticipantApproving", artworkId, participant)),
+            consent
         );
     }
 
+    function setArtworkAcceptOfLoanRequestFromSnark(address storageAddress, uint256 artworkId, bool isAccept) public {
+        SnarkStorage(storageAddress).setBool(
+            keccak256(abi.encodePacked("artwork", "isArtworkAcceptOfLoanRequestFromSnark", artworkId)), isAccept);
+    }
+
+    function setArtworkAcceptOfLoanRequestFromOthers(address storageAddress, uint256 artworkId, bool isAccept) public {
+        SnarkStorage(storageAddress).setBool(
+            keccak256(abi.encodePacked("artwork", "isArtworkAcceptOfLoanRequestFromOthers", artworkId)), isAccept);
+    }
+
     /*** DELETE ***/
-    function deleteArtworkFromOwner(address _storageAddress, address _artworkOwner, uint256 _index) external {
-        uint256 maxIndex = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _artworkOwner))
+    function deleteArtworkFromOwner(address storageAddress, address artworkOwner, uint256 index) public {
+        uint256 maxIndex = SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", artworkOwner))
         ) - 1;
 
-        if (maxIndex != _index) {
-            uint256 artworkId = SnarkStorage(_storageAddress).uintStorage(
-                keccak256(abi.encodePacked("artworkOfOwner", _artworkOwner, maxIndex))
+        if (maxIndex != index) {
+            uint256 artworkId = SnarkStorage(storageAddress).uintStorage(
+                keccak256(abi.encodePacked("artworkOfOwner", artworkOwner, maxIndex))
             );
 
-            SnarkStorage(_storageAddress).setUint(
-                keccak256(abi.encodePacked("artworkOfOwner", _artworkOwner, _index)),
+            SnarkStorage(storageAddress).setUint(
+                keccak256(abi.encodePacked("artworkOfOwner", artworkOwner, index)),
                 artworkId
             );
         }
 
-        SnarkStorage(_storageAddress).deleteUint(
-            keccak256(abi.encodePacked("artworkOfOwner", _artworkOwner, maxIndex))
+        SnarkStorage(storageAddress).deleteUint(
+            keccak256(abi.encodePacked("artworkOfOwner", artworkOwner, maxIndex))
         );
 
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _artworkOwner)),
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", artworkOwner)),
             maxIndex
         );
     }
 
     /*** ADD ***/
     function addArtwork(
-        address _storageAddress, 
-        address _artistAddress, 
-        bytes32 _artworkHash,
-        uint256 _limitedEdition,
-        uint256 _editionNumber,
-        uint256 _lastPrice,
-        uint256 _profitShareSchemeId,
-        uint256 _profitShareFromSecondarySale,
-        string _artworkUrl
-    ) 
-        external
-        returns (uint256 artworkId)
-    {
-        artworkId = SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfArtworks")) + 1;
-        SnarkStorage(_storageAddress).setUint(keccak256("totalNumberOfArtworks"), artworkId);
-        SnarkStorage(_storageAddress).setAddress(
-            keccak256(abi.encodePacked("artwork", "artist", artworkId)), _artistAddress);
-        SnarkStorage(_storageAddress).setBytes(
-            keccak256(abi.encodePacked("artwork", "hashOfArtwork", artworkId)), _artworkHash);
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "limitedEdition", artworkId)), _limitedEdition);
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "editionNumber", artworkId)), _editionNumber);
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "lastPrice", artworkId)), _lastPrice);
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", artworkId)), _profitShareSchemeId);
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artwork", "profitShareFromSecondarySale", artworkId)), 
-            _profitShareFromSecondarySale);
-        SnarkStorage(_storageAddress).setString(
-            keccak256(abi.encodePacked("artwork", "url", artworkId)), _artworkUrl);
-    }
-
-    function addProfitShareScheme(
-        address _storageAddress,
-        address _schemeOwner,
-        address[] _participants,
-        uint256[] _profits
-    )
-        external
-        returns (uint256 schemeId) 
-    {
-        schemeId = SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfProfitShareSchemes")) + 1;
-        SnarkStorage(_storageAddress).setUint(keccak256("totalNumberOfProfitShareSchemes"), schemeId);
-
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("numberOfParticipantsForProfitShareScheme", schemeId)), 
-            _participants.length
-        );
-
-        for (uint256 i = 0; i < _participants.length; i++) {
-
-            SnarkStorage(_storageAddress).setAddress(
-                keccak256(abi.encodePacked("participantAddressForProfitShareScheme", schemeId, i)), 
-                _participants[i]
-            );
-
-            SnarkStorage(_storageAddress).setUint(
-                keccak256(abi.encodePacked("participantProfitForProfitShareScheme", schemeId, i)), 
-                _profits[i]
-            );
-        }
-
-        uint256 numberOfSchemesForOwner = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", _schemeOwner)));
-
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", _schemeOwner)), 
-            numberOfSchemesForOwner + 1
-        );
-
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("profitShareSchemeIdsForOwner", _schemeOwner, numberOfSchemesForOwner)),
-            schemeId
-        );
-    }
-
-    function addArtworkToArtistList(address _storageAddress, uint256 _artworkId, address _artistAddress) external {
-        uint256 numberOfArtworks = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artist", "numberOfArtworks", _artistAddress))
-        );
-
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artist", "artworkList", _artistAddress, numberOfArtworks)),
-            _artworkId
-        );
-
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("artist", "numberOfArtworks", _artistAddress)),
-            numberOfArtworks + 1
-        );
-    }
-
-    function addPendingWithdrawals(address _storageAddress, address _owner, uint256 _balance) external {
-        uint256 currentBalance = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("pendingWithdrawals", _owner)));
-
-        uint256 sum = currentBalance + _balance;
-        assert(sum >= currentBalance);
-
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("pendingWithdrawals", _owner)),
-            sum
-        );
-    }
-
-    function subPendingWithdrawals(address _storageAddress, address _owner, uint256 _balance) external {
-        uint256 currentBalance = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("pendingWithdrawals", _owner)));
-
-        assert(_balance <= currentBalance);
-
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("pendingWithdrawals", _owner)),
-            currentBalance - _balance
-        );
-    }
-
-    function setSaleTypeToArtwork(address _storageAddress, uint256 _artworkId, uint256 _saleType) external {
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("saleTypeToArtwork", _artworkId)),
-            _saleType
-        );
-    }
-
-    function setSaleStatusToArtwork(address _storageAddress, uint256 _artworkId, uint256 _saleStatus) external {
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("saleStatusToArtwork", _artworkId)),
-            _saleStatus
-        );
-    }
-
-    /*** GET ***/
-    function getSnarkWalletAddress(address _storageAddress) external view returns (address walletAddress) {
-        return SnarkStorage(_storageAddress).addressStorage(keccak256("snarkWalletAddress"));
-    }
-
-    function getPlatformProfitShare(address _storageAddress) external view returns (uint256 platformProfit) {
-        return SnarkStorage(_storageAddress).uintStorage(keccak256("platformProfitShare"));
-    }
-
-    function getTotalNumberOfArtworks(address _storageAddress) external view returns (uint256 numberOfArtworks) {
-        return SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfArtworks"));
-    }
-
-    function getArtworkArtist(address _storageAddress, uint256 _artworkId) 
-        external view returns (address artistAddress) 
-    {
-        return SnarkStorage(_storageAddress).addressStorage(
-            keccak256(abi.encodePacked("artwork", "artist", _artworkId))
-        );
-    }
-
-    function getArtworkLimitedEdition(address _storageAddress, uint256 _artworkId) external view 
-        returns (uint256 limitedEdition) 
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "limitedEdition", _artworkId))
-        );
-    }
-
-    function getArtworkEditionNumber(address _storageAddress, uint256 _artworkId) external view 
-        returns (uint256 editionNumber) 
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "editionNumber", _artworkId))
-        );
-    }
-
-    function getArtworkLastPrice(address _storageAddress, uint256 _artworkId) external view
-        returns (uint256 lastPrice)
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "lastPrice", _artworkId))
-        );
-    }
-
-    function getArtworkHash(address _storageAddress, uint256 _artworkId) external view 
-        returns (bytes32 artworkHash)
-    {
-        return SnarkStorage(_storageAddress).bytesStorage(
-            keccak256(abi.encodePacked("artwork", "hashOfArtwork", _artworkId))
-        );
-    }
-
-    function getArtworkProfitShareSchemeId(address _storageAddress, uint256 _artworkId) external view
-        returns (uint256 profitShareSchemeId)
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", _artworkId))
-        );
-    }
-
-    function getArtworkProfitShareFromSecondarySale(address _storageAddress, uint256 _artworkId) external view
-        returns (uint256 profitShare)
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "profitShareFromSecondarySale", _artworkId))
-        );
-    }
-
-    function getArtworkURL(address _storageAddress, uint256 _artworkId) external view returns (string artworkUrl) {
-        return SnarkStorage(_storageAddress).stringStorage(
-            keccak256(abi.encodePacked("artwork", "url", _artworkId))
-        );
-    }
-
-    function getArtwork(address _storageAddress, uint256 _artworkId) external view returns (
+        address storageAddress, 
         address artistAddress, 
         bytes32 artworkHash,
         uint256 limitedEdition,
@@ -389,182 +191,375 @@ library SnarkBaseLib {
         uint256 lastPrice,
         uint256 profitShareSchemeId,
         uint256 profitShareFromSecondarySale,
-        string artworkUrl) 
-    {
-        artistAddress = SnarkStorage(_storageAddress).addressStorage(
-            keccak256(abi.encodePacked("artwork", "artist", _artworkId))
-        );
-
-        artworkHash = SnarkStorage(_storageAddress).bytesStorage(
-            keccak256(abi.encodePacked("artwork", "hashOfArtwork", _artworkId))
-        );
-
-        limitedEdition = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "limitedEdition", _artworkId))
-        );
-
-        editionNumber = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "editionNumber", _artworkId))
-        );
-
-        lastPrice = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "lastPrice", _artworkId))
-        );
-
-        profitShareSchemeId = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", _artworkId))
-        );
-
-        profitShareFromSecondarySale = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "profitShareFromSecondarySale", _artworkId))
-        );
-
-        artworkUrl = SnarkStorage(_storageAddress).stringStorage(
-            keccak256(abi.encodePacked("artwork", "url", _artworkId))
-        );
-    }
-
-    function getTotalNumberOfProfitShareSchemes(address _storageAddress) external view returns (uint256 number) {
-        return SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfProfitShareSchemes"));
-    }
-
-    function getNumberOfParticipantsForProfitShareScheme(address _storageAddress, uint256 _schemeId) external view 
-        returns (uint256 number) 
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfParticipantsForProfitShareScheme", _schemeId))
-        );
-    }
-
-    function getParticipantOfProfitShareScheme(address _storageAddress, uint256 _schemeId, uint256 _index) 
-        external
-        view
-        returns (address participant, uint256 profit)
-    {
-        participant = SnarkStorage(_storageAddress).addressStorage(
-            keccak256(abi.encodePacked("participantAddressForProfitShareScheme", _schemeId, _index)) 
-        );
-
-        profit = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("participantProfitForProfitShareScheme", _schemeId, _index))
-        );
-    }
-
-    function getNumberOfProfitShareSchemesForOwner(address _storageAddress, address _schemeOwner) 
-        external 
-        view 
-        returns (uint256 number)
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", _schemeOwner)));
-    }
-
-    function getProfitShareSchemeIdForOwner(address _storageAddress, address _schemeOwner, uint256 _index)
-        external
-        view
-        returns (uint256 schemeId)
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("profitShareSchemeIdsForOwner", _schemeOwner, _index))
-        );
-    }
-
-    function getNumberOfOwnerArtworks(address _storageAddress, address _artworkOwner) 
-        external 
-        view 
-        returns (uint256 number) 
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _artworkOwner))
-        );
-    }
-
-    function getArtworkIdOfOwner(address _storageAddress, address _artworkOwner, uint256 _index) 
-        external 
-        view
+        string artworkUrl,
+        bool isAcceptLoanRequestFromSnark,
+        bool isAcceptLoanRequestFromOthers
+    ) 
+        public
         returns (uint256 artworkId)
     {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artworkOfOwner", _artworkOwner, _index))
+        artworkId = SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfArtworks")) + 1;
+        SnarkStorage(storageAddress).setUint(keccak256("totalNumberOfArtworks"), artworkId);
+        SnarkStorage(storageAddress).setAddress(
+            keccak256(abi.encodePacked("artwork", "artist", artworkId)), artistAddress);
+        SnarkStorage(storageAddress).setBytes(
+            keccak256(abi.encodePacked("artwork", "hashOfArtwork", artworkId)), artworkHash);
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artwork", "limitedEdition", artworkId)), limitedEdition);
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artwork", "editionNumber", artworkId)), editionNumber);
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artwork", "lastPrice", artworkId)), lastPrice);
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", artworkId)), profitShareSchemeId);
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artwork", "profitShareFromSecondarySale", artworkId)), 
+            profitShareFromSecondarySale);
+        SnarkStorage(storageAddress).setString(
+            keccak256(abi.encodePacked("artwork", "url", artworkId)), artworkUrl);
+        setArtworkAcceptOfLoanRequestFromSnark(storageAddress, artworkId, isAcceptLoanRequestFromSnark);
+        setArtworkAcceptOfLoanRequestFromOthers(storageAddress, artworkId, isAcceptLoanRequestFromOthers);
+    }
+
+    function addProfitShareScheme(
+        address storageAddress,
+        address schemeOwner,
+        address[] participants,
+        uint256[] profits
+    )
+        public
+        returns (uint256 schemeId) 
+    {
+        schemeId = SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfProfitShareSchemes")) + 1;
+        SnarkStorage(storageAddress).setUint(keccak256("totalNumberOfProfitShareSchemes"), schemeId);
+
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("numberOfParticipantsForProfitShareScheme", schemeId)), 
+            participants.length
+        );
+
+        for (uint256 i = 0; i < participants.length; i++) {
+
+            SnarkStorage(storageAddress).setAddress(
+                keccak256(abi.encodePacked("participantAddressForProfitShareScheme", schemeId, i)), 
+                participants[i]
+            );
+
+            SnarkStorage(storageAddress).setUint(
+                keccak256(abi.encodePacked("participantProfitForProfitShareScheme", schemeId, i)), 
+                profits[i]
+            );
+        }
+
+        uint256 numberOfSchemesForOwner = SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", schemeOwner)));
+
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", schemeOwner)), 
+            numberOfSchemesForOwner + 1
+        );
+
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("profitShareSchemeIdsForOwner", schemeOwner, numberOfSchemesForOwner)),
+            schemeId
         );
     }
 
-    function getOwnerOfArtwork(address _storageAddress, uint256 _artworkId) 
-        external 
+    function addArtworkToArtistList(address storageAddress, uint256 artworkId, address artistAddress) public {
+        uint256 numberOfArtworks = SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artist", "numberOfArtworks", artistAddress))
+        );
+
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artist", "artworkList", artistAddress, numberOfArtworks)),
+            artworkId
+        );
+
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("artist", "numberOfArtworks", artistAddress)),
+            numberOfArtworks + 1
+        );
+    }
+
+    function addPendingWithdrawals(address storageAddress, address owner, uint256 balance) public {
+        uint256 currentBalance = SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("pendingWithdrawals", owner)));
+
+        uint256 sum = currentBalance + balance;
+        assert(sum >= currentBalance);
+
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("pendingWithdrawals", owner)),
+            sum
+        );
+    }
+
+    function subPendingWithdrawals(address storageAddress, address owner, uint256 balance) public {
+        uint256 currentBalance = SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("pendingWithdrawals", owner)));
+
+        assert(balance <= currentBalance);
+
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("pendingWithdrawals", owner)),
+            currentBalance - balance
+        );
+    }
+
+    function setSaleTypeToArtwork(address storageAddress, uint256 artworkId, uint256 saleType) public {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("saleTypeToArtwork", artworkId)),
+            saleType
+        );
+    }
+
+    function setSaleStatusToArtwork(address storageAddress, uint256 artworkId, uint256 saleStatus) public {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("saleStatusToArtwork", artworkId)),
+            saleStatus
+        );
+    }
+
+    /*** GET ***/
+    function getSnarkWalletAddress(address storageAddress) public view returns (address walletAddress) {
+        return SnarkStorage(storageAddress).addressStorage(keccak256("snarkWalletAddress"));
+    }
+
+    function getPlatformProfitShare(address storageAddress) public view returns (uint256 platformProfit) {
+        return SnarkStorage(storageAddress).uintStorage(keccak256("platformProfitShare"));
+    }
+
+    function getTotalNumberOfArtworks(address storageAddress) public view returns (uint256 numberOfArtworks) {
+        return SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfArtworks"));
+    }
+
+    function getArtworkArtist(address storageAddress, uint256 artworkId) 
+        public view returns (address artistAddress) 
+    {
+        return SnarkStorage(storageAddress).addressStorage(
+            keccak256(abi.encodePacked("artwork", "artist", artworkId))
+        );
+    }
+
+    function getArtworkLimitedEdition(address storageAddress, uint256 artworkId) public view 
+        returns (uint256 limitedEdition) 
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artwork", "limitedEdition", artworkId))
+        );
+    }
+
+    function getArtworkEditionNumber(address storageAddress, uint256 artworkId) public view 
+        returns (uint256 editionNumber) 
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artwork", "editionNumber", artworkId))
+        );
+    }
+
+    function getArtworkLastPrice(address storageAddress, uint256 artworkId) public view
+        returns (uint256 lastPrice)
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artwork", "lastPrice", artworkId))
+        );
+    }
+
+    function getArtworkHash(address storageAddress, uint256 artworkId) public view 
+        returns (bytes32 artworkHash)
+    {
+        return SnarkStorage(storageAddress).bytesStorage(
+            keccak256(abi.encodePacked("artwork", "hashOfArtwork", artworkId))
+        );
+    }
+
+    function getArtworkProfitShareSchemeId(address storageAddress, uint256 artworkId) public view
+        returns (uint256 profitShareSchemeId)
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", artworkId))
+        );
+    }
+
+    function getArtworkProfitShareFromSecondarySale(address storageAddress, uint256 artworkId) public view
+        returns (uint256 profitShare)
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artwork", "profitShareFromSecondarySale", artworkId))
+        );
+    }
+
+    function getArtworkURL(address storageAddress, uint256 artworkId) public view returns (string artworkUrl) {
+        return SnarkStorage(storageAddress).stringStorage(
+            keccak256(abi.encodePacked("artwork", "url", artworkId))
+        );
+    }
+
+    function isArtworkAcceptOfLoanRequestFromSnark(address storageAddress, uint256 artworkId) public view 
+        returns (bool) 
+    {
+        return SnarkStorage(storageAddress).boolStorage(
+            keccak256(abi.encodePacked("artwork", "isArtworkAcceptOfLoanRequestFromSnark", artworkId)));
+    }
+
+    function isArtworkAcceptOfLoanRequestFromOthers(address storageAddress, uint256 artworkId) 
+        public 
         view 
-        returns (address artworkOwner) 
-    {
-        return SnarkStorage(_storageAddress).addressStorage(
-            keccak256(abi.encodePacked("ownerOfArtwork", _artworkId))
-        );
-    }
-
-    function getNumberOfArtistArtworks(address _storageAddress, address _artistAddress)
-        external
-        view
-        returns (uint256 number)
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artist", "numberOfArtworks", _artistAddress))
-        );
-    }
-
-    function getArtworkIdForArtist(address _storageAddress, address _artistAddress, uint256 _index)
-        external
-        view
-        returns (uint256 artworkId) 
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artist", "artworkList", _artistAddress, _index))
-        );
-    }
-
-    function getArtworkHashAsInUse(address _storageAddress, bytes32 _artworkHash) external view returns (bool isUsed) {
-        return SnarkStorage(_storageAddress).boolStorage(keccak256(abi.encodePacked("hashIsUsed", _artworkHash)));
-    }
-
-    function getApprovalsToOperator(address _storageAddress, address _owner, address _operator) external view 
         returns (bool)
     {
-        return SnarkStorage(_storageAddress).boolStorage(
-            keccak256(abi.encodePacked("approvedOperator", _owner, _operator))
+        return SnarkStorage(storageAddress).boolStorage(
+            keccak256(abi.encodePacked("artwork", "isArtworkAcceptOfLoanRequestFromOthers", artworkId)));
+    }
+
+    function getArtworkDetails(address storageAddress, uint256 artworkId) 
+        public 
+        view 
+        returns (
+            address artistAddress, 
+            bytes32 artworkHash,
+            uint256 limitedEdition,
+            uint256 editionNumber,
+            uint256 lastPrice,
+            uint256 profitShareSchemeId,
+            uint256 profitShareFromSecondarySale,
+            string artworkUrl,
+            bool isAcceptOfLoanRequestFromSnark,
+            bool isAcceptOfLoanRequestFromOthers
+        )
+    {
+        artistAddress = getArtworkArtist(storageAddress, artworkId);
+        artworkHash = getArtworkHash(storageAddress, artworkId);
+        limitedEdition = getArtworkLimitedEdition(storageAddress, artworkId);
+        editionNumber = getArtworkEditionNumber(storageAddress, artworkId);
+        lastPrice = getArtworkLastPrice(storageAddress, artworkId);
+        profitShareSchemeId = getArtworkProfitShareSchemeId(storageAddress, artworkId);
+        profitShareFromSecondarySale = getArtworkProfitShareFromSecondarySale(storageAddress, artworkId);
+        artworkUrl = getArtworkURL(storageAddress, artworkId);
+        isAcceptOfLoanRequestFromSnark = isArtworkAcceptOfLoanRequestFromSnark(storageAddress, artworkId);
+        isAcceptOfLoanRequestFromOthers = isArtworkAcceptOfLoanRequestFromOthers(storageAddress, artworkId);
+    }
+
+    function getTotalNumberOfProfitShareSchemes(address storageAddress) public view returns (uint256 number) {
+        return SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfProfitShareSchemes"));
+    }
+
+    function getNumberOfParticipantsForProfitShareScheme(address storageAddress, uint256 schemeId) 
+        public 
+        view 
+        returns (uint256)
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("numberOfParticipantsForProfitShareScheme", schemeId)));
+    }
+
+    function getParticipantOfProfitShareScheme(address storageAddress, uint256 schemeId, uint256 index) 
+        public
+        view
+        returns (
+            address participant, 
+            uint256 profit
+        )
+    {
+        participant = SnarkStorage(storageAddress).addressStorage(
+            keccak256(abi.encodePacked("participantAddressForProfitShareScheme", schemeId, index)) 
+        );
+
+        profit = SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("participantProfitForProfitShareScheme", schemeId, index))
         );
     }
 
-    function getApprovalsToArtwork(address _storageAddress, address _owner, uint256 _artworkId) external view
+    function getNumberOfProfitShareSchemesForOwner(address storageAddress, address schemeOwner) 
+        public 
+        view 
+        returns (uint256)
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", schemeOwner)));
+    }
+
+    function getProfitShareSchemeIdForOwner(address storageAddress, address schemeOwner, uint256 index)
+        public
+        view
+        returns (uint256)
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("profitShareSchemeIdsForOwner", schemeOwner, index)));
+    }
+
+    function getNumberOfOwnerArtworks(address storageAddress, address artworkOwner) public view returns (uint256) {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", artworkOwner)));
+    }
+
+    function getArtworkIdOfOwner(address storageAddress, address artworkOwner, uint256 index) 
+        public 
+        view
+        returns (uint256)
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artworkOfOwner", artworkOwner, index)));
+    }
+
+    function getOwnerOfArtwork(address storageAddress, uint256 artworkId) public view returns (address) {
+        return SnarkStorage(storageAddress).addressStorage(keccak256(abi.encodePacked("ownerOfArtwork", artworkId)));
+    }
+
+    function getNumberOfArtistArtworks(address storageAddress, address artistAddress) public view returns (uint256) {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artist", "numberOfArtworks", artistAddress)));
+    }
+
+    function getArtworkIdForArtist(address storageAddress, address artistAddress, uint256 index)
+        public
+        view
+        returns (uint256) 
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("artist", "artworkList", artistAddress, index)));
+    }
+
+    function getArtworkHashAsInUse(address storageAddress, bytes32 artworkHash) public view returns (bool) {
+        return SnarkStorage(storageAddress).boolStorage(keccak256(abi.encodePacked("hashIsUsed", artworkHash)));
+    }
+
+    function getApprovalsToOperator(address storageAddress, address owner, address operator) 
+        public 
+        view 
         returns (bool)
     {
-        return SnarkStorage(_storageAddress).boolStorage(
-            keccak256(abi.encodePacked("approvalsToArtwork", _owner, _artworkId))
-        );
+        return SnarkStorage(storageAddress).boolStorage(
+            keccak256(abi.encodePacked("approvedOperator", owner, operator)));
     }
 
-    function getArtworkToParticipantApproving(address _storageAddress, uint256 _artworkId, address _participant)
-        external view returns (bool)
+    function getApprovalsToArtwork(address storageAddress, address owner, uint256 artworkId) 
+        public 
+        view
+        returns (bool)
     {
-        return SnarkStorage(_storageAddress).boolStorage(
-            keccak256(abi.encodePacked("artworkToParticipantApproving", _artworkId, _participant))
-        );
+        return SnarkStorage(storageAddress).boolStorage(
+            keccak256(abi.encodePacked("approvalsToArtwork", owner, artworkId)));
     }
 
-    function getPendingWithdrawals(address _storageAddress, address _owner) external view returns (uint256 balance) {
-        return SnarkStorage(_storageAddress).uintStorage(keccak256(abi.encodePacked("pendingWithdrawals", _owner)));
-    }
-
-    function getSaleTypeToArtwork(address _storageAddress, uint256 _artworkId)
-        external view returns (uint256 saleType)
+    function getArtworkToParticipantApproving(address storageAddress, uint256 artworkId, address participant)
+        public 
+        view 
+        returns (bool)
     {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("saleTypeToArtwork", _artworkId))
-        );
+        return SnarkStorage(storageAddress).boolStorage(
+            keccak256(abi.encodePacked("artworkToParticipantApproving", artworkId, participant)));
     }
 
-    function getSaleStatusToArtwork(address _storageAddress, uint256 _artworkId) 
-        external view returns (uint256 saleStatus)
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("saleStatusToArtwork", _artworkId))
-        );
+    function getPendingWithdrawals(address storageAddress, address owner) public view returns (uint256) {
+        return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("pendingWithdrawals", owner)));
+    }
+
+    function getSaleTypeToArtwork(address storageAddress, uint256 artworkId) public view returns (uint256) {
+        return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("saleTypeToArtwork", artworkId)));
+    }
+
+    function getSaleStatusToArtwork(address storageAddress, uint256 artworkId) public view returns (uint256) {
+        return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("saleStatusToArtwork", artworkId)));
     }
 
 }
