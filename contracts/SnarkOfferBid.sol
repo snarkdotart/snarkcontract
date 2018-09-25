@@ -108,7 +108,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         // it is possible to accept a bid unless
         // the artwork is part of an auction or a loan
         SaleType currentSaleType = SaleType(_storage.getSaleTypeToArtwork(_tokenId));
-        require (
+        require(
             currentSaleType == SaleType.Offer || 
             currentSaleType == SaleType.None, 
             "the artwork should either be in sale by offer or not involved in sales at all"
@@ -128,7 +128,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         } else {
             currentOwner = _storage.getOwnerOfArtwork(_tokenId);
         }
-        require (
+        require(
             currentOwner != msg.sender, 
             "The artwork token cannot belong to the bidder"
         );
@@ -146,7 +146,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         uint256 tokenId = _storage.getArtworkIdByBidId(_bidId);
         uint256 price = _storage.getBidPrice(_bidId);
         SaleType saleType = SaleType(_storage.getSaleTypeToArtwork(tokenId));
-        require (
+        require(
             saleType == SaleType.Offer || 
             saleType == SaleType.None,
             "it's forbidden to accept the Bid when it has a Loan Status"
