@@ -35,6 +35,13 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         public 
         payable
     {
+        // check if there are any own's artworks
+        bool isItMyArtwork = false;
+        for (uint256 i = 0; i < artworksIds.length; i++) {
+            if (_storage.getOwnerOfArtwork(artworksIds[i]) == msg.sender) isItMyArtwork = true;
+        }
+        require(isItMyArtwork == false, "borrower can't create loan for it's own artwork");
+
         // Create new entry for a Loan 
         uint256 loanId = _storage.createLoan(
             artworksIds,
@@ -50,7 +57,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         // Enter automatic accept for those tokens,
         // that agreed to automatic Loan acceptance 
         bool isAgree = false;
-        for (uint256 i = 0; i < artworksIds.length; i++) {
+        for (i = 0; i < artworksIds.length; i++) {
             isAgree = (msg.sender == owner) ? 
                 _storage.isArtworkAcceptOfLoanRequestFromSnark(artworksIds[i]) :
                 _storage.isArtworkAcceptOfLoanRequestFromOthers(artworksIds[i]);
@@ -83,7 +90,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     // Only the contract can initiate loan according to schedule 
     function startLoan(uint256 loanId) public onlyOwner {
         // Get loan price of the Artwork
-        uint256 _price = _storage.getLoanPriceOfArtwork(loanId);
+        uint256 _price = getLoanPriceOfArtwork(loanId);
         // Check across all tokens if the Loan has been accepted
         uint256 _totalNumberOfArtworks = _storage.getTotalNumberOfLoanArtworks(loanId);
         uint256 _artworkId;
@@ -162,7 +169,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
 
         // Check amount that has been transferred.  If it is less than  
         // amount for one artwork for loan - exit
-        uint256 _price = _storage.getLoanPriceOfArtwork(_loanId);
+        uint256 _price = getLoanPriceOfArtwork(_loanId);
         require(msg.value >= _price, "Payment has to be equal to cost of loan artwork");
         if (_price > 0) {
             _storage.addPendingWithdrawals(_borrower, _price);
@@ -182,6 +189,15 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         emit LoanOfArtworkCanceled(_loanId, artworkId);
     } 
 
+    function getArtworkListForLoan(uint256 loanId) public view returns (uint256[]) {
+        uint256 _count = _storage.getTotalNumberOfLoanArtworks(loanId);
+        uint256[] memory _retarray = new uint256[](_count);
+        for (uint256 i = 0; i < _count; i++) {
+            _retarray[i] = _storage.getArtworkFromLoanList(loanId, i);
+        }
+        return _retarray;
+    }
+
     // Automatic function on token level 
     // Ability to accept artloans
     function _acceptLoan(uint256 loanId, uint256 artworkId, address artworkOwner) internal {
@@ -189,4 +205,12 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         _storage.acceptArtworkForLoan(loanId, artworkId);
         _storage.setCurrentArtworkOwnerForLoan(loanId, artworkId, artworkOwner);
     }
+
+    function getLoanPriceOfArtwork(uint256 loanId) internal view returns (uint256) {
+        uint256 _commonPrice = _storage.getTotalPriceOfLoan(loanId);
+        uint256 _amountOfArtworks = _storage.getTotalNumberOfLoanArtworks(loanId);
+        uint256 _price = (_commonPrice > 0) ? _commonPrice / _amountOfArtworks : 0;
+        return _price;
+    }
+
 }

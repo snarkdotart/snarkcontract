@@ -163,13 +163,6 @@ library SnarkLoanLib {
         );
     }
 
-    function getLoanPriceOfArtwork(address storageAddress, uint256 loanId) public view returns (uint256) {
-        uint256 _commonPrice = getTotalPriceOfLoan(storageAddress, loanId);
-        uint256 _amountOfArtworks = getTotalNumberOfLoanArtworks(storageAddress, loanId);
-        uint256 _price = (_commonPrice > 0) ? _commonPrice / _amountOfArtworks : 0;
-        return _price;
-    }
-
     function getTotalNumberOfLoans(address storageAddress) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfLoans"));
     }
