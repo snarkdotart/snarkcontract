@@ -26,7 +26,13 @@ contract('SnarkLoan', async (accounts) => {
             if (!error) {
                 const retLoanId = result.args.loanId.toNumber();
                 const retLoanOwner = result.args.loanBidOwner;
-                console.log(`event LoanCreated: owner - ${retLoanOwner}, loan Id - ${retLoanId}`);
+                const retArray = result.args.unacceptedArtworks;
+                const retNumberOfElements = result.args.numberOfUnaccepted.toNumber();
+                console.log(`event LoanCreated:`);
+                console.log(`owner - ${retLoanOwner}`);
+                console.log(`loan Id - ${retLoanId}`);
+                console.log(`count unaccepted - ${retNumberOfElements}`);
+                console.log(`array - ${retArray}`);
             }
         });
 
@@ -44,8 +50,8 @@ contract('SnarkLoan', async (accounts) => {
             profitShareFromSecondarySale,
             artworkUrl,
             profitShareSchemeId,
-            true,
-            true
+            false,
+            false
         );
 
         let retval = await instance_snarkbase.getTokensCountByOwner(artworkOwner);
@@ -65,8 +71,43 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval[0], 1, "error on step 3");
         assert.equal(retval[1], 2, "error on step 4");
         assert.equal(retval[2], 3, "error on step 5");
-
-        
     });
+
+    it("3. test acceptLoan function", async () => {
+        const eventLoanAccepted = instance.LoanAccepted({ fromBlock: 'latest' });
+        eventLoanAccepted.watch(function (error, result) {
+            if (!error) {
+                const retLoanId = result.args.loanId.toNumber();
+                const retArtworkOwner = result.args.artworkOwner;
+                const retArtworkId = result.args.artworkId.toNumber();
+                console.log(`event LoanCreated: owner - ${retArtworkOwner}, 
+                    loan Id - ${retLoanId}, artwork Id - ${retArtworkId}`);
+            }
+        });
+        
+        let retval = await instance.getArtworkListForLoan(1);
+        assert.equal(retval.length, 3, "error on step 2");
+
+        retval = await instance.getArtworkAcceptedStatusListForLoan(1);
+        assert.equal(retval.length, 3, "error on step 3");
+        assert.equal(retval[0], false, "error on step 4");
+        assert.equal(retval[1], false, "error on step 5");
+        assert.equal(retval[2], false, "error on step 6");
+        
+        await instance.acceptLoan([1,2]);
+
+        retval = await instance.getArtworkAcceptedStatusListForLoan(1);
+        assert.equal(retval.length, 3, "error on step 3");
+        assert.equal(retval[0], true, "error on step 4");
+        assert.equal(retval[1], true, "error on step 5");
+        assert.equal(retval[2], false, "error on step 6");
+    });
+
+    // it("4. test startLoan function", async () => {
+
+    //     let retval = await instance.getArtworkListForLoan(1);
+    //     assert.equal(retval.length, 3, "error on step 2");
+
+    // });
 
 });
