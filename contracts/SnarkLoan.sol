@@ -15,7 +15,13 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
 
     address private _storage;
 
-    event LoanCreated(address indexed loanBidOwner, uint256 loanId);
+    event LoanCreated(
+        address indexed loanBidOwner, 
+        uint256 loanId, 
+        uint256[] unacceptedArtworks, 
+        uint256 numberOfUnaccepted
+    );
+
     event LoanAccepted(address indexed artworkOwner, uint256 loanId, uint256 artworkId);
     event LoanStarted(uint256 loanId);
     event LoanFinished(uint256 loanId);
@@ -56,11 +62,17 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
 
         // Enter automatic accept for those tokens,
         // that agreed to automatic Loan acceptance 
+        uint256 _counter = 0;
+        uint256[] memory _unaccepterArtworks = new uint256[](artworksIds.length);
         bool isAgree = false;
         for (i = 0; i < artworksIds.length; i++) {
             isAgree = (msg.sender == owner) ? 
                 _storage.isArtworkAcceptOfLoanRequestFromSnark(artworksIds[i]) :
                 _storage.isArtworkAcceptOfLoanRequestFromOthers(artworksIds[i]);
+            if (!isAgree) {
+                _unaccepterArtworks[_counter] = artworksIds[i];
+                _counter++;
+            }
             // Check status of the token ... change of token status is only possible if it is not for sale,
             // Another words, if there is no Offer, no Auction, or no existing Loan, then change of status is possible
             uint256 saleType = _storage.getSaleTypeToArtwork(artworksIds[i]);
@@ -71,20 +83,22 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 _acceptLoan(loanId, artworksIds[i], _storage.getOwnerOfArtwork(artworksIds[i]));
             }
         }
-        emit LoanCreated(msg.sender, loanId);
+
+        emit LoanCreated(msg.sender, loanId, _unaccepterArtworks, _counter);
     }
 
-    function acceptLoan(uint256 artworkId) public {
-        address _ownerOfArtwork = _storage.getOwnerOfArtwork(artworkId);
-        uint256 _saleType = _storage.getSaleTypeToArtwork(artworkId);
-        uint256 _loanId = _storage.getLoanByArtwork(artworkId);
+    function acceptLoan(uint256[] artworkIds) public {
+        for (uint256 i = 0; i < artworkIds.length; i++) {
+            address _ownerOfArtwork = _storage.getOwnerOfArtwork(artworkIds[i]);
+            uint256 _saleType = _storage.getSaleTypeToArtwork(artworkIds[i]);
+            uint256 _loanId = _storage.getLoanByArtwork(artworkIds[i]);
 
-        require(msg.sender == _ownerOfArtwork, "Only an artwork owner can accept a loan request.");
-        require(_saleType == uint256(SaleType.None), "Token must be free");
+            require(msg.sender == _ownerOfArtwork, "Only an artwork owner can accept a loan request.");
+            require(_saleType == uint256(SaleType.None), "Token must be free");
 
-        _acceptLoan(_loanId, artworkId, _ownerOfArtwork);
-
-        emit LoanAccepted(msg.sender, _loanId, artworkId);
+            _acceptLoan(_loanId, artworkIds[i], _ownerOfArtwork);
+            emit LoanAccepted(msg.sender, _loanId, artworkIds[i]);
+        }
     }
 
     // Only the contract can initiate loan according to schedule 
@@ -194,6 +208,17 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         uint256[] memory _retarray = new uint256[](_count);
         for (uint256 i = 0; i < _count; i++) {
             _retarray[i] = _storage.getArtworkFromLoanList(loanId, i);
+        }
+        return _retarray;
+    }
+
+    function getArtworkAcceptedStatusListForLoan(uint256 loanId) public view returns (bool[]) {
+        uint256 _count = _storage.getTotalNumberOfLoanArtworks(loanId);
+        bool[] memory _retarray = new bool[](_count);
+        uint256 _artworkId;
+        for (uint256 i = 0; i < _count; i++) {
+            _artworkId = _storage.getArtworkFromLoanList(loanId, i);
+            _retarray[i] = _storage.isArtworkAcceptedForLoan(loanId, _artworkId);
         }
         return _retarray;
     }
