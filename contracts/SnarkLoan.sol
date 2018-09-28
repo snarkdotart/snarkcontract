@@ -46,7 +46,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         for (uint256 i = 0; i < artworksIds.length; i++) {
             if (_storage.getOwnerOfArtwork(artworksIds[i]) == msg.sender) isItMyArtwork = true;
         }
-        require(isItMyArtwork == false, "borrower can't create loan for it's own artwork");
+        require(isItMyArtwork == false, "borrower can't create loan for it's own artworks");
 
         // Create new entry for a Loan 
         uint256 loanId = _storage.createLoan(
@@ -80,7 +80,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 // !!! We may need to check the number of days that the token has already been loaned 
                 // !!! and if the number of days exceeds the agreed number, then decline the Loan request 
                 // !!! Perhaps we should do this check on the front-end during Loan Creation
-                _acceptLoan(loanId, artworksIds[i], _storage.getOwnerOfArtwork(artworksIds[i]));
+                address artworkOwner = _storage.getOwnerOfArtwork(artworksIds[i]);
+                _acceptLoan(loanId, artworksIds[i], artworkOwner);
             }
         }
 
@@ -96,7 +97,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             require(msg.sender == _ownerOfArtwork, "Only an artwork owner can accept a loan request.");
             require(_saleType == uint256(SaleType.None), "Token must be free");
 
-            _acceptLoan(_loanId, artworkIds[i], _ownerOfArtwork);
+            _acceptLoan(_loanId, artworkIds[i], msg.sender);
             emit LoanAccepted(msg.sender, _loanId, artworkIds[i]);
         }
     }
@@ -162,7 +163,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         address _ownerOfArtwork;
         for (uint256 i = 0; i < _totalNumberOfArtworks; i++) {
             _artworkId = _storage.getArtworkFromLoanList(loanId, i);
-            _ownerOfArtwork = _storage.getOwnerOfArtwork(_artworkId);
+            _ownerOfArtwork = _storage.getCurrentArtworkOwnerForLoan(loanId, _artworkId);
             _storage.deleteLoanToArtwork(_artworkId);
             _storage.setSaleTypeToArtwork(_artworkId, uint256(SaleType.None));
             _storage.transferArtwork(_artworkId, _borrower, _ownerOfArtwork);
@@ -172,14 +173,17 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
 
     // Ability to terminate Loan can be called only by the token owner
     function cancelLoanArtwork(uint256 artworkId) public payable {
-        address _ownerOfArtwork = _storage.getOwnerOfArtwork(artworkId);
+        uint256 _loanId = _storage.getLoanByArtwork(artworkId);
+        uint256 _loanSaleStatus = getLoanSaleStatus(_loanId);
+        address _ownerOfArtwork = (_loanSaleStatus == uint256(SaleStatus.NotActive)) ? 
+            _storage.getOwnerOfArtwork(artworkId) :
+            _storage.getCurrentArtworkOwnerForLoan(_loanId, artworkId);
         address _borrower = _storage.getDestinationWalletOfLoan(_loanId);
         require(msg.sender == _ownerOfArtwork, "Only an artwork owner can accept a loan request.");
 
         // Check if the loan is active, otherwise end function
-        uint256 _loanId = _storage.getLoanByArtwork(artworkId);
-        uint256 _status = _storage.getLoanSaleStatus(_loanId);
-        require(_status == uint256(SaleStatus.Active), "Loan has to be in 'active' status");
+        // uint256 _status = _storage.getLoanSaleStatus(_loanId);
+        // require(_status == uint256(SaleStatus.Active), "Loan has to be in 'active' status");
 
         // Check amount that has been transferred.  If it is less than  
         // amount for one artwork for loan - exit
@@ -223,12 +227,24 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         return _retarray;
     }
 
+    function getLoanSaleStatus(uint256 loanId) public view returns (uint256) {
+        return _storage.getLoanSaleStatus(loanId);
+    }
+
+    function getSaleTypeToArtwork(uint256 artworkId) public view returns (uint256) {
+        return _storage.getSaleTypeToArtwork(artworkId);
+    }
+
+    function getCurrentArtworkOwnerForLoan(uint256 loanId, uint256 artworkId) public view returns (address) {
+        return _storage.getCurrentArtworkOwnerForLoan(loanId, artworkId);
+    }
+
     // Automatic function on token level 
     // Ability to accept artloans
     function _acceptLoan(uint256 loanId, uint256 artworkId, address artworkOwner) internal {
+        _storage.setCurrentArtworkOwnerForLoan(loanId, artworkId, artworkOwner);
         _storage.setSaleTypeToArtwork(artworkId, uint256(SaleType.Loan));
         _storage.acceptArtworkForLoan(loanId, artworkId);
-        _storage.setCurrentArtworkOwnerForLoan(loanId, artworkId, artworkOwner);
     }
 
     function getLoanPriceOfArtwork(uint256 loanId) internal view returns (uint256) {

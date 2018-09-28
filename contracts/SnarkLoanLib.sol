@@ -91,13 +91,13 @@ library SnarkLoanLib {
         address storageAddress, 
         uint256 loanId, 
         uint256 artworkId, 
-        address ownerOfArtwork
+        address artworkOwner
     ) 
         public 
     {
         SnarkStorage(storageAddress).setAddress(
-            keccak256(abi.encodePacked("currentArtworkOwnerForLoan", loanId, artworkId)), 
-            ownerOfArtwork
+            keccak256(abi.encodePacked("currentArtworkOwnerForLoan", loanId, artworkId)),
+            artworkOwner
         );
     }
 
@@ -124,7 +124,7 @@ library SnarkLoanLib {
         setStartDateOfLoan(storageAddress, loanId, startDate);
         setDurationOfLoan(storageAddress, loanId, duration);
         setDestinationWalletOfLoan(storageAddress, loanId, destinationWallet);
-        setLoanSaleStatus(storageAddress, loanId, 0);
+        setLoanSaleStatus(storageAddress, loanId, 1);
     }
 
     function getLoanDetails(address storageAddress, uint256 loanId) 
@@ -212,7 +212,7 @@ library SnarkLoanLib {
         view
         returns (address)
     {
-        SnarkStorage(storageAddress).addressStorage(
+        return SnarkStorage(storageAddress).addressStorage(
             keccak256(abi.encodePacked("currentArtworkOwnerForLoan", loanId, artworkId))
         );
     }
