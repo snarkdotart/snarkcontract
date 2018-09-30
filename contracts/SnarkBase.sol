@@ -113,6 +113,14 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         if (isApproved) _storage.setArtworkProfitShareFromSecondarySale(tokenId, 0);
     }
 
+    function setArtworkAcceptOfLoanRequestFromSnark(uint256 tokenId, bool isAccept) public onlyOwnerOf(tokenId) {
+        _storage.setArtworkAcceptOfLoanRequestFromSnark(tokenId, isAccept);
+    }
+
+    function setArtworkAcceptOfLoanRequestFromOthers(uint256 tokenId, bool isAccept) public onlyOwnerOf(tokenId) {
+        _storage.setArtworkAcceptOfLoanRequestFromOthers(tokenId, isAccept);
+    }
+
     /// @dev Create a scheme of profit share for user
     /// @param participants List of profit sharing participants
     /// @param percentAmount List of profit share % of participants
