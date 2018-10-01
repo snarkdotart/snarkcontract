@@ -42,7 +42,7 @@ contract('TestSnarkCommonLib', async (accounts) => {
 
         await instance.changeProfitShareSchemeForToken(1, 1);
 
-        retval = await instance.getArtworkProfitShareSchemeId(tokenId);
+        retval = await instance.getTokenProfitShareSchemeId(tokenId);
         const schemeId = retval.toNumber();
         assert.equal(schemeId, 1, "schemeId. step 1");
 
@@ -91,37 +91,37 @@ contract('TestSnarkCommonLib', async (accounts) => {
     it("4. test transfer function", async () => {
         const to_account = '0xC04691B99EB731536E35F375ffC85249Ec713222';
         const artist = web3.eth.accounts[0];
-        const artworkHash = web3.sha3("artworkHash");
+        const tokenHash = web3.sha3("tokenHash");
         const limitedEdition = 10;
         const lastPrice = 5000;
         const profitShareSchemeId = 1;
         const profitShareFromSecondarySale = 20;
-        const artworkUrl = "http://snark.art";
+        const tokenUrl = "http://snark.art";
 
-        await instance.addArtwork(
+        await instance.addToken(
             artist,
-            artworkHash,
+            tokenHash,
             limitedEdition,
             lastPrice,
             profitShareSchemeId,
             profitShareFromSecondarySale,
-            artworkUrl,
+            tokenUrl,
             true,
             true
         );
 
-        let retval = await instance.getTotalNumberOfArtworks();
+        let retval = await instance.getTotalNumberOfTokens();
         assert.equal(retval.toNumber(), 10, "error on step 0");
 
-        retval = await instance.getNumberOfOwnerArtworks(artist);
+        retval = await instance.getOwnedTokensCount(artist);
         assert.equal(retval.toNumber(), 10, "error on step 1");
 
-        await instance.transferArtwork(1, artist, to_account);
+        await instance.transferToken(1, artist, to_account);
 
-        retval = await instance.getNumberOfOwnerArtworks(artist);
+        retval = await instance.getOwnedTokensCount(artist);
         assert.equal(retval.toNumber(), 9, "error on step 4");
 
-        retval = await instance.getNumberOfOwnerArtworks(to_account);
+        retval = await instance.getOwnedTokensCount(to_account);
         assert.equal(retval.toNumber(), 1, "error on step 5");
     });
 

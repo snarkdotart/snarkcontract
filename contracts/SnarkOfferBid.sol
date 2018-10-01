@@ -26,12 +26,12 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     // New bid event
     event BidAdded(address indexed _bidder, uint256 _bidId, uint256 _value);
     // Canceled bid event
-    event BidCanceled(uint256 _artworkId, uint256 _bidId);
+    event BidCanceled(uint256 _tokenId, uint256 _bidId);
 
     /// @dev Modifier that checks that an owner has a specific token
     /// @param _tokenId Token ID
     modifier onlyOwnerOf(uint256 _tokenId) {
-        require(msg.sender == _storage.getOwnerOfArtwork(_tokenId), "it's not a token owner");
+        require(msg.sender == _storage.getOwnerOfToken(_tokenId), "it's not a token owner");
         _;
     }
 
@@ -70,16 +70,16 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     }
 
     /// @dev Function to create an offer for the secondary sale.
-    /// @param _tokenId Artwork IDs included in the offer
-    /// @param _price The price for all artworks included in the offer
+    /// @param _tokenId Token IDs included in the offer
+    /// @param _price The price for all tokens included in the offer
     function addOffer(uint256 _tokenId, uint256 _price) public onlyOwnerOf(_tokenId) {
         bool isStatusNone = true;
         // bool isSecondSale = true;
-        isStatusNone = (isStatusNone && (_storage.getSaleTypeToArtwork(_tokenId) == uint256(SaleType.None)));
-        // uint256 lastPrice = _storage.getArtworkLastPrice(_tokenId);
+        isStatusNone = (isStatusNone && (_storage.getSaleTypeToToken(_tokenId) == uint256(SaleType.None)));
+        // uint256 lastPrice = _storage.getTokenLastPrice(_tokenId);
         // isSecondSale = (isSecondSale && (lastPrice > 0));
         // require(isStatusNone && isSecondSale);
-        require(isStatusNone, "the artwork should not be involved in sales");
+        require(isStatusNone, "the token should not be involved in sales");
 
         // Offer creation and return of the offer ID
         uint256 offerId = _storage.addOffer(msg.sender, _tokenId, _price);
@@ -89,11 +89,11 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         emit OfferAdded(msg.sender, offerId, _tokenId);
     }
 
-    /// @dev Delete offer. This is also done during the sale of the last artwork in the offer.  
+    /// @dev Delete offer. This is also done during the sale of the last token in the offer.  
     /// @param _offerId Offer ID
     function deleteOffer(uint256 _offerId) public onlyOfferOwner(_offerId) {
-        // clear all data in the artwork
-        uint256 tokenId = _storage.getArtworkIdByOfferId(_offerId);
+        // clear all data in the token
+        uint256 tokenId = _storage.getTokenIdByOfferId(_offerId);
         _storage.deleteOffer(_offerId);
         // unlock token
         _unlockOffersToken(_offerId, tokenId);
@@ -101,36 +101,36 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         emit OfferDeleted(_offerId);
     }
 
-    /// @dev Function to set bid for an artwork
-    /// @param _tokenId Artwork token ID
+    /// @dev Function to set bid for an token
+    /// @param _tokenId Token token ID
     function addBid(uint256 _tokenId) public payable {
         // it does not matter if the token is available for sale
         // it is possible to accept a bid unless
-        // the artwork is part of an auction or a loan
-        SaleType currentSaleType = SaleType(_storage.getSaleTypeToArtwork(_tokenId));
+        // the token is part of an auction or a loan
+        SaleType currentSaleType = SaleType(_storage.getSaleTypeToToken(_tokenId));
         require(
             currentSaleType == SaleType.Offer || 
             currentSaleType == SaleType.None, 
-            "the artwork should either be in sale by offer or not involved in sales at all"
+            "the token should either be in sale by offer or not involved in sales at all"
         );
         address currentOwner;
         uint256 offerId;
         uint256 price;
         if (currentSaleType == SaleType.Offer) {
-            offerId = _storage.getOfferIdByArtworkId(_tokenId);
+            offerId = _storage.getOfferIdByTokenId(_tokenId);
             currentOwner = _storage.getOwnerOfOffer(offerId);
             price = _storage.getOfferPrice(offerId);
-            // If an OFFER exists for an artwork, ANY collector can BID for the artwork at a price LOWER 
+            // If an OFFER exists for an token, ANY collector can BID for the token at a price LOWER 
             // than the OFFER price.  If a BID is made at the OFFER price or HIGHER, than the platform should 
-            // notify the bidder that they must BUY the artwork at an OFFER price or revise the BID to something 
+            // notify the bidder that they must BUY the token at an OFFER price or revise the BID to something 
             // lower than the OFFER price.
             require(msg.value < price, "bid amount have to be less than a price of offer");
         } else {
-            currentOwner = _storage.getOwnerOfArtwork(_tokenId);
+            currentOwner = _storage.getOwnerOfToken(_tokenId);
         }
         require(
             currentOwner != msg.sender, 
-            "The artwork token cannot belong to the bidder"
+            "The token token cannot belong to the bidder"
         );
         uint256 bidId = _storage.addBid(msg.sender, _tokenId, msg.value);
         // adding an amount of this bid to a contract balance
@@ -143,9 +143,9 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @param _bidId Id of bid
     function acceptBid(uint256 _bidId) public {
         // To persuade if this function called a token owner
-        uint256 tokenId = _storage.getArtworkIdByBidId(_bidId);
+        uint256 tokenId = _storage.getTokenIdByBidId(_bidId);
         uint256 price = _storage.getBidPrice(_bidId);
-        SaleType saleType = SaleType(_storage.getSaleTypeToArtwork(tokenId));
+        SaleType saleType = SaleType(_storage.getSaleTypeToToken(tokenId));
         require(
             saleType == SaleType.Offer || 
             saleType == SaleType.None,
@@ -156,11 +156,11 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         uint256 offerId;
         if (saleType == SaleType.Offer) {
             // in this case the token is blocked and we can get a real address via an offer
-            offerId = _storage.getOfferIdByArtworkId(tokenId);
+            offerId = _storage.getOfferIdByTokenId(tokenId);
             tokenOwner = _storage.getOwnerOfOffer(offerId);
-            mediator = _storage.getOwnerOfArtwork(tokenId);
+            mediator = _storage.getOwnerOfToken(tokenId);
         } else {
-            tokenOwner = _storage.getOwnerOfArtwork(tokenId);
+            tokenOwner = _storage.getOwnerOfToken(tokenId);
             mediator = tokenOwner;
         }
 
@@ -184,7 +184,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @param _bidId Bid ID
     function cancelBid(uint256 _bidId) public onlyBidOwner(_bidId) {
         address bidder = _storage.getOwnerOfBid(_bidId);
-        uint256 tokenId = _storage.getArtworkIdByBidId(_bidId);
+        uint256 tokenId = _storage.getTokenIdByBidId(_bidId);
         uint256 price = _storage.getBidPrice(_bidId);
         _storage.subPendingWithdrawals(_storage, price);
         _storage.deleteBid(_bidId);
@@ -195,7 +195,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @dev Accepting the artist's offer
     /// @param _offerId Offer ID
     function buyOffer(uint256 _offerId) public payable {
-        uint256 tokenId = _storage.getArtworkIdByOfferId(_offerId);
+        uint256 tokenId = _storage.getTokenIdByOfferId(_offerId);
         uint256 price = _storage.getOfferPrice(_offerId);
         uint256 saleStatus = _storage.getSaleStatusForOffer(_offerId);
 
@@ -203,9 +203,9 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         require(msg.value >= price, "Amount of money should be not less then the offer price");
 
         address tokenOwner = _storage.getOwnerOfOffer(_offerId);
-        address mediator = _storage.getOwnerOfArtwork(tokenId);
+        address mediator = _storage.getOwnerOfToken(tokenId);
 
-        require(msg.sender != tokenOwner, "Owner of artwork can't buy his artwork");
+        require(msg.sender != tokenOwner, "Owner of token can't buy his token");
 
         _storage.takePlatformProfitShare(price);
         _storage.buy(tokenId, price, tokenOwner, msg.sender, mediator);
@@ -220,8 +220,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         return _storage.getTotalNumberOfBids();
     }
 
-    function getNumberOfArtworkBids(uint256 _artworkId) public view returns (uint256) {
-        return _storage.getNumberOfArtworkBids(_artworkId);
+    function getNumberOfTokenBids(uint256 _tokenId) public view returns (uint256) {
+        return _storage.getNumberOfTokenBids(_tokenId);
     }
 
     function getNumberBidsOfOwner(address _bidOwner) public view returns (uint256) {
@@ -229,12 +229,12 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     }
 
     function _takeBackBidAmountsAndDeleteAllTokenBids(uint256 _tokenId) internal {
-        uint256 bidsCount = _storage.getNumberOfArtworkBids(_tokenId);
+        uint256 bidsCount = _storage.getNumberOfTokenBids(_tokenId);
         uint256 bidId;
         address bidder;
         uint256 bidPrice;
         for (uint256 i = 0; i < bidsCount; i++) {
-            bidId = _storage.getBidIdForArtwork(_tokenId, 0);
+            bidId = _storage.getBidIdForToken(_tokenId, 0);
             bidder = _storage.getOwnerOfBid(bidId);
             bidPrice = _storage.getBidPrice(bidId);
             // Moving these amount from contract's balance to the bid's one
@@ -251,7 +251,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @param _tokenId Token Id
     function _lockOffersToken(uint256 _offerId, uint256 _tokenId) private {
         address realOwner = _storage.getOwnerOfOffer(_offerId);
-        _storage.transferArtwork(_tokenId, realOwner, owner);
+        _storage.transferToken(_tokenId, realOwner, owner);
     }
 
     /// @dev Unlock Token
@@ -259,7 +259,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @param _tokenId Token Id
     function _unlockOffersToken(uint256 _offerId, uint256 _tokenId) private {
         address realOwner = _storage.getOwnerOfOffer(_offerId);
-        _storage.transferArtwork(_tokenId, owner, realOwner);
+        _storage.transferToken(_tokenId, owner, realOwner);
     }
 
 }

@@ -33,7 +33,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Modifier that checks that an owner has a specific token
     /// @param tokenId Token ID
     modifier onlyOwnerOf(uint256 tokenId) {
-        require(msg.sender == _storage.getOwnerOfArtwork(tokenId));
+        require(msg.sender == _storage.getOwnerOfToken(tokenId));
         _;
     }
 
@@ -43,16 +43,16 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         bool isOwnerOfAll = true;
         for (uint8 i = 0; i < tokenIds.length; i++) {
             isOwnerOfAll = isOwnerOfAll && 
-                (msg.sender == _storage.getOwnerOfArtwork(tokenIds[i]));
+                (msg.sender == _storage.getOwnerOfToken(tokenIds[i]));
         }
         require(isOwnerOfAll);
         _;
     }
 
     /// @dev Modifier that allows do an operation by an artist only
-    /// @param tokenId Artwork Id
+    /// @param tokenId Token Id
     modifier onlyArtistOf(uint256 tokenId) {
-        address artist = _storage.getArtworkArtist(tokenId);
+        address artist = _storage.getTokenArtist(tokenId);
         require(msg.sender == artist);
         _;
     }
@@ -60,7 +60,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Modifier that allows access for a participant only
     modifier onlyParticipantOf(uint256 tokenId) {
         bool isItParticipant = false;
-        uint256 schemeId = _storage.getArtworkProfitShareSchemeId(tokenId);
+        uint256 schemeId = _storage.getTokenProfitShareSchemeId(tokenId);
         uint256 participantsCount = _storage.getNumberOfParticipantsForProfitShareScheme(schemeId);
         address participant;
         for (uint256 i = 0; i < participantsCount; i++) {
@@ -86,14 +86,14 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     }
 
     /// @dev Generating event to approval from each participant of token
-    /// @param tokenId Id of artwork
+    /// @param tokenId Id of token
     function sendRequestForApprovalOfProfitShareRemovalForSecondarySale(uint tokenId) external onlyArtistOf(tokenId) {
-        uint256 schemeId = _storage.getArtworkProfitShareSchemeId(tokenId);
+        uint256 schemeId = _storage.getTokenProfitShareSchemeId(tokenId);
         uint256 participantsCount = _storage.getNumberOfParticipantsForProfitShareScheme(schemeId);
         address participant;
         for (uint256 i = 0; i < participantsCount; i++) {
             (participant,) = _storage.getParticipantOfProfitShareScheme(schemeId, i);
-            _storage.setArtworkToParticipantApproving(tokenId, participant, false);
+            _storage.setTokenToParticipantApproving(tokenId, participant, false);
             emit NeedApproveProfitShareRemoving(participant, tokenId);
         }
     }
@@ -101,24 +101,32 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Delete a profit share from secondary sale
     /// @param tokenId Token Id
     function approveRemovingProfitShareFromSecondarySale(uint256 tokenId) external onlyParticipantOf(tokenId) {
-        _storage.setArtworkToParticipantApproving(tokenId, msg.sender, true);
-        uint256 schemeId = _storage.getArtworkProfitShareSchemeId(tokenId);
+        _storage.setTokenToParticipantApproving(tokenId, msg.sender, true);
+        uint256 schemeId = _storage.getTokenProfitShareSchemeId(tokenId);
         uint256 participantsCount = _storage.getNumberOfParticipantsForProfitShareScheme(schemeId);
         address participant;
         bool isApproved = true;
         for (uint256 i = 0; i < participantsCount; i++) {
             (participant,) = _storage.getParticipantOfProfitShareScheme(schemeId, i);
-            isApproved = isApproved && _storage.getArtworkToParticipantApproving(tokenId, participant);
+            isApproved = isApproved && _storage.getTokenToParticipantApproving(tokenId, participant);
         }
-        if (isApproved) _storage.setArtworkProfitShareFromSecondarySale(tokenId, 0);
+        if (isApproved) _storage.setTokenProfitShareFromSecondarySale(tokenId, 0);
     }
 
-    function setArtworkAcceptOfLoanRequestFromSnark(uint256 tokenId, bool isAccept) public onlyOwnerOf(tokenId) {
-        _storage.setArtworkAcceptOfLoanRequestFromSnark(tokenId, isAccept);
+    function setTokenAcceptOfLoanRequestFromSnark(uint256 tokenId, bool isAccept) public onlyOwnerOf(tokenId) {
+        _storage.setTokenAcceptOfLoanRequestFromSnark(tokenId, isAccept);
     }
 
-    function setArtworkAcceptOfLoanRequestFromOthers(uint256 tokenId, bool isAccept) public onlyOwnerOf(tokenId) {
-        _storage.setArtworkAcceptOfLoanRequestFromOthers(tokenId, isAccept);
+    function setTokenAcceptOfLoanRequestFromOthers(uint256 tokenId, bool isAccept) public onlyOwnerOf(tokenId) {
+        _storage.setTokenAcceptOfLoanRequestFromOthers(tokenId, isAccept);
+    }
+
+    function setTokenName(string tokenName) public onlyOwner {
+        _storage.setTokenName(tokenName);
+    }
+
+    function setTokenSymbol(string tokenSymbol) public onlyOwner {
+        _storage.setTokenSymbol(tokenSymbol);
     }
 
     /// @dev Create a scheme of profit share for user
@@ -155,77 +163,77 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         return _storage.getNumberOfProfitShareSchemesForOwner(msg.sender);
     }
 
-    function getOwnerOfArtwork(uint256 artworkId) public view returns (address) {
-        return _storage.getOwnerOfArtwork(artworkId);
+    function getOwnerOfToken(uint256 tokenId) public view returns (address) {
+        return _storage.getOwnerOfToken(tokenId);
     }
 
-    /// @dev Function to add a new digital artwork to blockchain
-    /// @param hashOfArtwork Unique hash of the artwork
-    /// @param limitedEdition Number of artwork edititons
+    /// @dev Function to add a new digital token to blockchain
+    /// @param hashOfToken Unique hash of the token
+    /// @param limitedEdition Number of token edititons
     /// @param profitShareForSecondarySale Profit share % during secondary sale
     ///        going back to the artist and their list of participants
-    /// @param artworkUrl IPFS URL to digital work
+    /// @param tokenUrl IPFS URL to digital work
     /// @param profitShareSchemeId Profit share scheme Id
-    function addArtwork(
-        bytes32 hashOfArtwork,
+    function addToken(
+        bytes32 hashOfToken,
         uint8 limitedEdition,
         uint8 profitShareForSecondarySale,
-        string artworkUrl,
+        string tokenUrl,
         uint8 profitShareSchemeId,
         bool isAcceptOfLoanRequestFromSnark,
         bool isAcceptOfLoanRequestFromOthers
     ) 
         public
     {
-        // Check for an identical hash of the digital artwork in existence to prevent uploading a duplicate artwork
-        require(_storage.getArtworkHashAsInUse(hashOfArtwork) == false);
-        // Check that the number of artwork editions is >= 1
+        // Check for an identical hash of the digital token in existence to prevent uploading a duplicate token
+        require(_storage.getTokenHashAsInUse(hashOfToken) == false);
+        // Check that the number of token editions is >= 1
         require(limitedEdition >= 1);
         // Create the number of editions specified by the limitEdition
         for (uint8 i = 0; i < limitedEdition; i++) {
-            uint256 tokenId = _storage.addArtwork(
+            uint256 tokenId = _storage.addToken(
                 msg.sender,
-                hashOfArtwork,
+                hashOfToken,
                 limitedEdition,
                 i + 1,
                 0,
                 profitShareSchemeId,
                 profitShareForSecondarySale,
-                artworkUrl,
+                tokenUrl,
                 isAcceptOfLoanRequestFromSnark,
                 isAcceptOfLoanRequestFromOthers
             );
             // memoraze that a digital work with this hash already loaded
-            _storage.setArtworkHashAsInUse(hashOfArtwork, true);
+            _storage.setTokenHashAsInUse(hashOfToken, true);
             // Enter the new owner
-            _storage.setOwnerOfArtwork(tokenId, msg.sender);
+            _storage.setOwnerOfToken(tokenId, msg.sender);
             // Add new token to new owner's token list
-            _storage.setArtworkToOwner(msg.sender, tokenId);
+            _storage.setTokenToOwner(msg.sender, tokenId);
             // Add new token to new artist's token list
-            _storage.addArtworkToArtistList(tokenId, msg.sender);
+            _storage.addTokenToArtistList(tokenId, msg.sender);
             // Emit token event
             emit TokenCreated(msg.sender, tokenId);
         }
     }
 
     function getTokensCount() public view returns (uint256) {
-        return _storage.getTotalNumberOfArtworks();
+        return _storage.getTotalNumberOfTokens();
     }
 
     function getTokensCountByArtist(address artist) public view returns (uint256) {
-        return _storage.getNumberOfArtistArtworks(artist);
+        return _storage.getNumberOfArtistTokens(artist);
     }
 
     function getTokensCountByOwner(address tokenOwner) public view returns (uint256) {
-        return _storage.getNumberOfOwnerArtworks(tokenOwner);
+        return _storage.getOwnedTokensCount(tokenOwner);
     }
 
-    function isArtworkAcceptOfLoanRequestFromSnark(uint256 artworkId) public view returns (bool) {
-        return _storage.isArtworkAcceptOfLoanRequestFromSnark(artworkId);
+    function isTokenAcceptOfLoanRequestFromSnark(uint256 tokenId) public view returns (bool) {
+        return _storage.isTokenAcceptOfLoanRequestFromSnark(tokenId);
     }
 
-    function isArtworkAcceptOfLoanRequestFromOthers(uint256 artworkId) public view returns (bool) {
-        return _storage.isArtworkAcceptOfLoanRequestFromOthers(artworkId);
+    function isTokenAcceptOfLoanRequestFromOthers(uint256 tokenId) public view returns (bool) {
+        return _storage.isTokenAcceptOfLoanRequestFromOthers(tokenId);
     }
     
     // /// @dev Return details about token
@@ -235,18 +243,18 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         view 
         returns (
             address artist,
-            bytes32 hashOfArtwork, 
+            bytes32 hashOfToken, 
             uint256 limitedEdition, 
             uint256 editionNumber, 
             uint256 lastPrice,
             uint256 profitShareSchemeId,
             uint256 profitShareFromSecondarySale, 
-            string artworkUrl,
+            string tokenUrl,
             bool isAcceptOfLoanRequestFromSnark,
             bool isAcceptOfLoanRequestFromOthers
         ) 
     {
-        return _storage.getArtworkDetails(tokenId);
+        return _storage.getTokenDetails(tokenId);
     }
 
     /// @dev Change in profit sharing. Change can only be to the percentages for already registered wallet addresses.
@@ -259,7 +267,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         public
         onlyOwnerOf(tokenId) 
     {
-        _storage.setArtworkProfitShareSchemeId(tokenId, newProfitShareSchemeId);
+        _storage.setTokenProfitShareSchemeId(tokenId, newProfitShareSchemeId);
     }
     
     /// @dev Function to view the balance in our contract that an owner can withdraw 

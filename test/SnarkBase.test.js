@@ -52,11 +52,11 @@ contract('SnarkBase', async (accounts) => {
         assert.equal(retval.toNumber(), 1);
     });
 
-    it("3. test addArtwork function", async () => {
-        const artworkHash = web3.sha3("artworkHash");
+    it("3. test addToken function", async () => {
+        const tokenHash = web3.sha3("tokenHash");
         const limitedEdition = 10;
         const profitShareFromSecondarySale = 20;
-        const artworkUrl = "http://snark.art";
+        const tokenUrl = "http://snark.art";
         const profitShareSchemeId = 1;
 
         let retval = await instance.getProfitShareSchemesTotalCount();
@@ -74,11 +74,11 @@ contract('SnarkBase', async (accounts) => {
             }
         });
 
-        await instance.addArtwork(
-            artworkHash,
+        await instance.addToken(
+            tokenHash,
             limitedEdition,
             profitShareFromSecondarySale,
-            artworkUrl,
+            tokenUrl,
             profitShareSchemeId,
             true,
             true

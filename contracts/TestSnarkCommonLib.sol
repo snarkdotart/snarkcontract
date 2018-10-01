@@ -15,61 +15,61 @@ contract TestSnarkCommonLib is Ownable {
     address public storageAddress;
 
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
-    event TokenCreated(address _artworkOwner, uint256 _artworkId);
+    event TokenCreated(address _tokenOwner, uint256 _tokenId);
 
     constructor(address _storageAddress) public {
         storageAddress = _storageAddress;
     }
 
-    function transferArtwork(uint256 _artworkId, address _from, address _to) external {
-        storageAddress.transferArtwork(_artworkId, _from, _to);
+    function transferToken(uint256 _tokenId, address _from, address _to) external {
+        storageAddress.transferToken(_tokenId, _from, _to);
     }
 
-    function addArtwork(
+    function addToken(
         address _artistAddress, 
-        bytes32 _hashOfArtwork,
+        bytes32 _hashOfToken,
         uint256 _limitedEdition,
         uint256 _lastPrice,
         uint256 _profitShareSchemeId,
         uint256 _profitShareForSecondarySale,
-        string _artworkUrl,
+        string _tokenUrl,
         bool isAcceptLoanRequestFromSnark,
         bool isAcceptLoanRequestFromOthers
     ) 
         external 
     {
         for (uint8 i = 0; i < _limitedEdition; i++) {
-            uint256 _tokenId = storageAddress.addArtwork(
+            uint256 _tokenId = storageAddress.addToken(
                 _artistAddress,
-                _hashOfArtwork,
+                _hashOfToken,
                 _limitedEdition,
                 i + 1,
                 _lastPrice,
                 _profitShareSchemeId,
                 _profitShareForSecondarySale,
-                _artworkUrl,
+                _tokenUrl,
                 isAcceptLoanRequestFromSnark,
                 isAcceptLoanRequestFromOthers
             );
             // memoraze that a digital work with this hash already loaded
-            storageAddress.setArtworkHashAsInUse(_hashOfArtwork, true);
+            storageAddress.setTokenHashAsInUse(_hashOfToken, true);
             // Enter the new owner
-            storageAddress.setOwnerOfArtwork(_tokenId, msg.sender);
+            storageAddress.setOwnerOfToken(_tokenId, msg.sender);
             // Add new token to new owner's token list
-            storageAddress.setArtworkToOwner(msg.sender, _tokenId);
+            storageAddress.setTokenToOwner(msg.sender, _tokenId);
             // Add new token to new artist's token list
-            storageAddress.addArtworkToArtistList(_tokenId, msg.sender);
+            storageAddress.addTokenToArtistList(_tokenId, msg.sender);
             // Emit token event
             emit TokenCreated(msg.sender, _tokenId);
         }
     }
     
-    function setOwnerOfArtwork(uint256 _artworkId, address _artworkOwner) external {
-        storageAddress.setOwnerOfArtwork(_artworkId, _artworkOwner);
+    function setOwnerOfToken(uint256 _tokenId, address _tokenOwner) external {
+        storageAddress.setOwnerOfToken(_tokenId, _tokenOwner);
     }
     
-    function setArtworkToOwner(address _owner, uint256 _artworkId) external {
-        storageAddress.setArtworkToOwner(_owner, _artworkId);
+    function setTokenToOwner(address _owner, uint256 _tokenId) external {
+        storageAddress.setTokenToOwner(_owner, _tokenId);
     }
 
     function incomeDistribution(uint256 _price, uint256 _tokenId, address _from) external {
@@ -81,7 +81,7 @@ contract TestSnarkCommonLib is Ownable {
     }
 
     function changeProfitShareSchemeForToken(uint256 _tokenId, uint256 _newProfitShareSchemeId) external {
-        storageAddress.setArtworkProfitShareSchemeId(_tokenId, _newProfitShareSchemeId);
+        storageAddress.setTokenProfitShareSchemeId(_tokenId, _newProfitShareSchemeId);
     }
 
     function createProfitShareScheme(address[] _participants, uint256[] _percentAmount) external returns (uint256) {
@@ -89,22 +89,22 @@ contract TestSnarkCommonLib is Ownable {
         return storageAddress.addProfitShareScheme(msg.sender, _participants, _percentAmount);
     }
 
-    function getTotalNumberOfArtworks() external view returns (uint256) {
-        return storageAddress.getTotalNumberOfArtworks();
+    function getTotalNumberOfTokens() external view returns (uint256) {
+        return storageAddress.getTotalNumberOfTokens();
     }
 
-    function getNumberOfOwnerArtworks(address _sender) external view returns (uint256 number) {
-        return storageAddress.getNumberOfOwnerArtworks(_sender);
+    function getOwnedTokensCount(address _sender) external view returns (uint256 number) {
+        return storageAddress.getOwnedTokensCount(_sender);
     }
 
-    function getArtworkIdOfOwner(address _owner, uint256 _index) external view returns (uint256 artworkId) {
-        return storageAddress.getArtworkIdOfOwner(_owner, _index);
+    function getTokenIdOfOwner(address _owner, uint256 _index) external view returns (uint256 tokenId) {
+        return storageAddress.getTokenIdOfOwner(_owner, _index);
     }
 
-    function getArtworkProfitShareSchemeId(uint256 _artworkId) external view
+    function getTokenProfitShareSchemeId(uint256 _tokenId) external view
         returns (uint256 profitShareSchemeId)
     {
-        return storageAddress.getArtworkProfitShareSchemeId(_artworkId);
+        return storageAddress.getTokenProfitShareSchemeId(_tokenId);
     }
 
     function getWithdrawBalance(address _owner) external view returns (uint256) {

@@ -14,7 +14,7 @@ contract TestSnarkOfferBidLib is Ownable {
 
     address public storageAddress;
 
-    event OfferAdded(address _offerOwner, uint256 _offerId, uint256 _artworkId);
+    event OfferAdded(address _offerOwner, uint256 _offerId, uint256 _tokenId);
     event OfferDeleted(uint256 _offerId);
     event BidAdded(address _bidOwner, uint256 _bidId);
     event BidDeleted(uint256 _bidId);
@@ -28,12 +28,12 @@ contract TestSnarkOfferBidLib is Ownable {
         storageAddress.setPriceForOffer(_offerId, _price);
     }
 
-    function setArtworkIdForOffer(uint256 _offerId, uint256 _artworkId) external {
-        storageAddress.setArtworkIdForOffer(_offerId, _artworkId);
+    function setTokenIdForOffer(uint256 _offerId, uint256 _tokenId) external {
+        storageAddress.setTokenIdForOffer(_offerId, _tokenId);
     }
 
-    function setOfferIdForArtworkId(uint256 _artworkId, uint256 _offerId) external {
-        storageAddress.setOfferIdForArtworkId(_artworkId, _offerId);
+    function setOfferIdForTokenId(uint256 _tokenId, uint256 _offerId) external {
+        storageAddress.setOfferIdForTokenId(_tokenId, _offerId);
     }
 
     function setSaleStatusForOffer(uint256 _offerId, uint256 _saleStatus) external {
@@ -48,8 +48,8 @@ contract TestSnarkOfferBidLib is Ownable {
         storageAddress.setOwnerOfBid(_bidId, _bidOwner);
     }
 
-    function setArtworkToBid(uint256 _bidId, uint256 _artworkId) external {
-        storageAddress.setArtworkToBid(_bidId, _artworkId);
+    function setTokenToBid(uint256 _bidId, uint256 _tokenId) external {
+        storageAddress.setTokenToBid(_bidId, _tokenId);
     }
 
     function setPriceToBid(uint256 _bidId, uint256 _price) external {
@@ -72,18 +72,18 @@ contract TestSnarkOfferBidLib is Ownable {
     }
 
     /*** ADD ***/
-    function addOffer(address _offerOwner, uint256 _artworkId, uint256 _price) external {
-        uint256 offerId = storageAddress.addOffer(_offerOwner, _artworkId, _price);
-        emit OfferAdded(_offerOwner, offerId, _artworkId);
+    function addOffer(address _offerOwner, uint256 _tokenId, uint256 _price) external {
+        uint256 offerId = storageAddress.addOffer(_offerOwner, _tokenId, _price);
+        emit OfferAdded(_offerOwner, offerId, _tokenId);
     }
 
-    function addBid(address _bidOwner, uint256 _artworkId, uint256 _price) external {
-        uint256 bidId = storageAddress.addBid(_bidOwner, _artworkId, _price);
+    function addBid(address _bidOwner, uint256 _tokenId, uint256 _price) external {
+        uint256 bidId = storageAddress.addBid(_bidOwner, _tokenId, _price);
         emit BidAdded(_bidOwner, bidId);
     }
 
-    function addBidToArtworkBidsList(uint256 _artworkId, uint256 _bidId) external {
-        storageAddress.addBidToArtworkBidsList(_artworkId, _bidId);
+    function addBidToTokenBidsList(uint256 _tokenId, uint256 _bidId) external {
+        storageAddress.addBidToTokenBidsList(_tokenId, _bidId);
     }
 
     function increaseTotalNumberOfOffers() external {
@@ -110,12 +110,12 @@ contract TestSnarkOfferBidLib is Ownable {
         storageAddress.decreaseTotalNumberOfBids();
     }
 
-    function increaseNumberOfArtworkBids(uint256 _artworkId) external {
-        storageAddress.increaseNumberOfArtworkBids(_artworkId);
+    function increaseNumberOfTokenBids(uint256 _tokenId) external {
+        storageAddress.increaseNumberOfTokenBids(_tokenId);
     }
 
-    function decreaseNumberOfArtworkBids(uint256 _artworkId) external {
-        storageAddress.decreaseNumberOfArtworkBids(_artworkId);
+    function decreaseNumberOfTokenBids(uint256 _tokenId) external {
+        storageAddress.decreaseNumberOfTokenBids(_tokenId);
     }
 
     function increaseNumberOfOwnerBids(address _bidOwner) 
@@ -147,12 +147,12 @@ contract TestSnarkOfferBidLib is Ownable {
         return storageAddress.getOfferPrice(_offerId);
     }
 
-    function getArtworkIdByOfferId(uint256 _offerId) external view returns (uint256 artworkId) {
-        return storageAddress.getArtworkIdByOfferId(_offerId);
+    function getTokenIdByOfferId(uint256 _offerId) external view returns (uint256 tokenId) {
+        return storageAddress.getTokenIdByOfferId(_offerId);
     }
 
-    function getOfferIdByArtworkId(uint256 _artworkId) external view returns (uint256) {
-        return storageAddress.getOfferIdByArtworkId(_artworkId);
+    function getOfferIdByTokenId(uint256 _tokenId) external view returns (uint256) {
+        return storageAddress.getOfferIdByTokenId(_tokenId);
     }
 
     function getSaleStatusForOffer(uint256 _offerId) external view returns (uint256) {
@@ -173,12 +173,12 @@ contract TestSnarkOfferBidLib is Ownable {
         return storageAddress.getOfferIdOfOwner(_offerOwner, _index);
     }
 
-    function getSaleTypeToArtwork(uint256 _artworkId) external view returns (uint256) {
-        return storageAddress.getSaleTypeToArtwork(_artworkId);
+    function getSaleTypeToToken(uint256 _tokenId) external view returns (uint256) {
+        return storageAddress.getSaleTypeToToken(_tokenId);
     }
 
-    function getSaleStatusToArtwork(uint256 _artworkId) external view returns (uint256) {
-        return storageAddress.getSaleStatusToArtwork(_artworkId);
+    function getSaleStatusToToken(uint256 _tokenId) external view returns (uint256) {
+        return storageAddress.getSaleStatusToToken(_tokenId);
     }
 
     function getOwnerOfOffer(uint256 _offerId) external view returns (address) {
@@ -193,8 +193,8 @@ contract TestSnarkOfferBidLib is Ownable {
         return storageAddress.getOwnerOfBid(_bidId);
     }
 
-    function getNumberOfArtworkBids(uint256 _artworkId) external view returns (uint256) {
-        return storageAddress.getNumberOfArtworkBids(_artworkId);
+    function getNumberOfTokenBids(uint256 _tokenId) external view returns (uint256) {
+        return storageAddress.getNumberOfTokenBids(_tokenId);
     }
 
     function getNumberBidsOfOwner(address _bidOwner) external view returns (uint256) {
@@ -205,12 +205,12 @@ contract TestSnarkOfferBidLib is Ownable {
         return storageAddress.getBidOfOwner(_bidOwner, _index);
     }
 
-    function getBidIdForArtwork(uint256 _artworkId, uint256 _index) external view returns (uint256) {
-        return storageAddress.getBidIdForArtwork(_artworkId, _index);
+    function getBidIdForToken(uint256 _tokenId, uint256 _index) external view returns (uint256) {
+        return storageAddress.getBidIdForToken(_tokenId, _index);
     }
 
-    function getArtworkIdByBidId(uint256 _bidId) external view returns (uint256) {
-        return storageAddress.getArtworkIdByBidId(_bidId);
+    function getTokenIdByBidId(uint256 _bidId) external view returns (uint256) {
+        return storageAddress.getTokenIdByBidId(_bidId);
     }
 
     function getBidPrice(uint256 _bidId) external view returns (uint256) {

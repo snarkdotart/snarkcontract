@@ -9,47 +9,47 @@ library SnarkCommonLib {
 
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
 
-    function transferArtwork(address _storageAddress, uint256 _artworkId, address _from, address _to) internal {
-        if (_artworkId <= SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfArtworks")) &&
+    function transferToken(address _storageAddress, uint256 _tokenId, address _from, address _to) internal {
+        if (_tokenId <= SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfTokens")) &&
             _from == SnarkStorage(_storageAddress).addressStorage(
-                keccak256(abi.encodePacked("ownerOfArtwork", _artworkId)))
+                keccak256(abi.encodePacked("ownerOfToken", _tokenId)))
         ) {
-            uint256 numberOfArtworks = SnarkStorage(_storageAddress).uintStorage(
-                keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _from)));
-            for (uint256 i = 0; i < numberOfArtworks; i++) {
-                if (_artworkId == SnarkStorage(_storageAddress).uintStorage(
-                    keccak256(abi.encodePacked("artworkOfOwner", _from, i))
+            uint256 numberOfTokens = SnarkStorage(_storageAddress).uintStorage(
+                keccak256(abi.encodePacked("tokenOfOwner", "numberOfOwnerTokens", _from)));
+            for (uint256 i = 0; i < numberOfTokens; i++) {
+                if (_tokenId == SnarkStorage(_storageAddress).uintStorage(
+                    keccak256(abi.encodePacked("tokenOfOwner", _from, i))
                 )) {
                     uint256 _index = i;
                     break;
                 }
             }
-            uint256 maxIndex = numberOfArtworks.sub(1);
+            uint256 maxIndex = numberOfTokens.sub(1);
             if (maxIndex != _index) {
-                uint256 artworkId = SnarkStorage(_storageAddress).uintStorage(
-                    keccak256(abi.encodePacked("artworkOfOwner", _from, maxIndex)));
+                uint256 tokenId = SnarkStorage(_storageAddress).uintStorage(
+                    keccak256(abi.encodePacked("tokenOfOwner", _from, maxIndex)));
                 SnarkStorage(_storageAddress).setUint(
-                    keccak256(abi.encodePacked("artworkOfOwner", _from, _index)), 
-                    artworkId);
+                    keccak256(abi.encodePacked("tokenOfOwner", _from, _index)), 
+                    tokenId);
             }
             SnarkStorage(_storageAddress).deleteUint(
-                keccak256(abi.encodePacked("artworkOfOwner", _from, maxIndex)));
+                keccak256(abi.encodePacked("tokenOfOwner", _from, maxIndex)));
             SnarkStorage(_storageAddress).setUint(
-                keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _from)),
+                keccak256(abi.encodePacked("tokenOfOwner", "numberOfOwnerTokens", _from)),
                 maxIndex);
             SnarkStorage(_storageAddress).setAddress(
-                keccak256(abi.encodePacked("ownerOfArtwork", _artworkId)),
+                keccak256(abi.encodePacked("ownerOfToken", _tokenId)),
                 _to);
             _index = SnarkStorage(_storageAddress).uintStorage(
-                keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _to))); 
+                keccak256(abi.encodePacked("tokenOfOwner", "numberOfOwnerTokens", _to))); 
             SnarkStorage(_storageAddress).setUint(
-                keccak256(abi.encodePacked("artworkOfOwner", _to, _index)),
-                _artworkId);
+                keccak256(abi.encodePacked("tokenOfOwner", _to, _index)),
+                _tokenId);
             SnarkStorage(_storageAddress).setUint(
-                keccak256(abi.encodePacked("artworkOfOwner", "numberOfOwnerArtworks", _to)),
+                keccak256(abi.encodePacked("tokenOfOwner", "numberOfOwnerTokens", _to)),
                 _index.add(1));
         }
-        emit Transfer(_from, _to, _artworkId);
+        emit Transfer(_from, _to, _tokenId);
     }
 
     /// @dev Snark platform takes it's profit share
@@ -65,16 +65,16 @@ library SnarkCommonLib {
     }
 
     /// @dev Function to distribute the profits to participants
-    /// @param _price Price at which artwork is sold
-    /// @param _tokenId Artwork token ID
+    /// @param _price Price at which token is sold
+    /// @param _tokenId Token token ID
     /// @param _from Seller Address
     function incomeDistribution(address _storageAddress, uint256 _price, uint256 _tokenId, address _from) internal {
         uint256 lastPrice = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "lastPrice", _tokenId)));
+            keccak256(abi.encodePacked("token", "lastPrice", _tokenId)));
         uint256 profitShareSchemaId = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "profitShareSchemeId", _tokenId)));
+            keccak256(abi.encodePacked("token", "profitShareSchemeId", _tokenId)));
         uint256 profitShareFromSecondarySale = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("artwork", "profitShareFromSecondarySale", _tokenId)));
+            keccak256(abi.encodePacked("token", "profitShareFromSecondarySale", _tokenId)));
         uint256 profit = _price - lastPrice;
         if (profit >= 100) {
             if (lastPrice > 0) {
@@ -123,10 +123,10 @@ library SnarkCommonLib {
         residue = _income.sub(profit);
     }
 
-    /// @dev Function of an artwork buying
+    /// @dev Function of an token buying
     /// @param _storageAddress Address of storage
-    /// @param _tokenId Artwork ID
-    /// @param _value Selling price of artwork
+    /// @param _tokenId Token ID
+    /// @param _value Selling price of token
     /// @param _from Address of seller
     /// @param _to Address of buyer
     /// @param _mediator Address of token's temporary keeper (Snark)
@@ -141,8 +141,8 @@ library SnarkCommonLib {
         internal 
     {
         incomeDistribution(_storageAddress, _value, _tokenId, _from);
-        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("artwork", "lastPrice", _tokenId)), _value);
-        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("saleTypeToArtwork", _tokenId)), 0);
-        transferArtwork(_storageAddress, _tokenId, _mediator, _to);
+        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("token", "lastPrice", _tokenId)), _value);
+        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("saleTypeToToken", _tokenId)), 0);
+        transferToken(_storageAddress, _tokenId, _mediator, _to);
     }
 }
