@@ -30,6 +30,11 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     constructor(address storageAddress) public {
         _storage = storageAddress;
     }
+    
+    /// @dev Function to destroy a contract in the blockchain
+    function kill() external onlyOwner {
+        selfdestruct(owner);
+    }
 
     // Loan can be requested by user 
     // Loan can also be requested by Snark

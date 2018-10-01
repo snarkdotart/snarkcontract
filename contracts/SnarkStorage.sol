@@ -21,6 +21,11 @@ contract SnarkStorage is Ownable, ISnarkStorage {
         boolStorage[keccak256(abi.encodePacked("accessAllowed", msg.sender))] = true;
     }
     
+    /// @dev Function to destroy a contract in the blockchain
+    function kill() external onlyOwner {
+        selfdestruct(owner);
+    }
+    
     function allowAccess(address _allowedAddress) external onlyPlatform {
         boolStorage[keccak256(abi.encodePacked("accessAllowed", _allowedAddress))] = true;
     }

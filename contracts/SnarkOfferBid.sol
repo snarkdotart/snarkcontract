@@ -53,6 +53,11 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _storage = _storageAddress;
     }
 
+    /// @dev Function to destroy a contract in the blockchain
+    function kill() external onlyOwner {
+        selfdestruct(owner);
+    }
+
     // /// @dev Function returns the offer count with a specific status 
     // /// @param _status Sale status
     // function getOffersCount(uint256 _status) public view returns (uint256) {        
