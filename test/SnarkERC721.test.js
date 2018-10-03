@@ -20,4 +20,16 @@ contract('SnarkERC721', async (accounts) => {
         console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
     });
 
+    it("2. test name and symbol functions", async () => {
+        const _name = 'Snark Art Token';
+        const _symbol = 'SAT';
+
+        let retval = await instance.name();
+        assert.equal(retval, _name);
+        
+        retval = await instance.symbol();
+        assert.equal(retval, _symbol);
+    });
+
+    it("3. test ", async () => {});
 });
