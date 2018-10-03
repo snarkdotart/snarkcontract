@@ -49,13 +49,13 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /********************/
     /// @dev Gets the token name
     /// @return string representing the token name
-    function name() external view returns (string) {
+    function name() public view returns (string) {
         return _storage.getTokenName();
     }
 
     /// @dev Gets the token symbol
     /// @return string representing the token symbol
-    function symbol() external view returns (string) {
+    function symbol() public view returns (string) {
         return _storage.getTokenSymbol();
     }
 
