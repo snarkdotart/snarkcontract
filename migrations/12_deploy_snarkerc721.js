@@ -1,6 +1,5 @@
 var SafeMath = artifacts.require("openzeppelin/SafeMath.sol");
 var AddressUtils = artifacts.require("openzeppelin/AddressUtils.sol");
-
 var SnarkCommonLib = artifacts.require("snarklibs/SnarkCommonLib");
 var SnarkBaseLib = artifacts.require("snarklibs/SnarkBaseLib");
 var SnarkERC721 = artifacts.require("SnarkERC721");
@@ -11,7 +10,6 @@ module.exports = function(deployer) {
     deployer.link(AddressUtils, SnarkERC721);
     deployer.link(SnarkCommonLib, SnarkERC721);
     deployer.link(SnarkBaseLib, SnarkERC721);
-
     deployer.deploy(SnarkERC721, SnarkStorage.address).then(
         function(snarkERC721_instance) {
             SnarkStorage.deployed().then(
