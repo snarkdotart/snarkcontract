@@ -11,10 +11,10 @@ module.exports = function(deployer) {
             SnarkStorage.deployed().then(
                 function(storage_instance) {
                     storage_instance.allowAccess(snarkbase_instance.address);
+                    snarkbase_instance.setTokenName("Snark Art Token");
+                    snarkbase_instance.setTokenSymbol("SAT");
                 }
             );
-            snarkbase_instance.setTokenName("Snark Art Token");
-            snarkbase_instance.setTokenSymbol("SAT");
         }
     );
 };
