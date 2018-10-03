@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
-import "./openzeppelin/SafeMath.sol";
-import "./SnarkStorage.sol";
+import "../openzeppelin/SafeMath.sol";
+import "../SnarkStorage.sol";
 
 
 library SnarkCommonLib {

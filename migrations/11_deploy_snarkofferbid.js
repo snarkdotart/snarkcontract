@@ -1,7 +1,7 @@
-var SafeMath = artifacts.require("../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol");
-var SnarkCommonLib = artifacts.require("SnarkCommonLib");
-var SnarkBaseLib = artifacts.require("SnarkBaseLib");
-var SnarkOfferBidLib = artifacts.require("SnarkOfferBidLib");
+var SafeMath = artifacts.require("openzeppelin/SafeMath.sol");
+var SnarkCommonLib = artifacts.require("snarklibs/SnarkCommonLib");
+var SnarkBaseLib = artifacts.require("snarklibs/SnarkBaseLib");
+var SnarkOfferBidLib = artifacts.require("snarklibs/SnarkOfferBidLib");
 var SnarkOfferBid = artifacts.require("SnarkOfferBid");
 var SnarkStorage = artifacts.require("SnarkStorage");
 

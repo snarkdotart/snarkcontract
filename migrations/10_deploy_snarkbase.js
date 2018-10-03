@@ -1,6 +1,6 @@
 var SnarkStorage = artifacts.require("SnarkStorage");
-var SnarkCommonLib = artifacts.require("SnarkCommonLib");
-var SnarkBaseLib = artifacts.require("SnarkBaseLib");
+var SnarkCommonLib = artifacts.require("snarklibs/SnarkCommonLib");
+var SnarkBaseLib = artifacts.require("snarklibs/SnarkBaseLib");
 var SnarkBase = artifacts.require("SnarkBase");
 
 module.exports = function(deployer) {

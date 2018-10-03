@@ -7,8 +7,8 @@ import "./openzeppelin/ERC721.sol";
 import "./openzeppelin/ERC721Receiver.sol";
 import "./openzeppelin/SafeMath.sol";
 import "./openzeppelin/AddressUtils.sol";
-import "./SnarkBaseLib.sol";
-import "./SnarkCommonLib.sol";
+import "./snarklibs/SnarkBaseLib.sol";
+import "./snarklibs/SnarkCommonLib.sol";
 
 
 contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC721 {

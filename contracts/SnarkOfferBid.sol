@@ -2,9 +2,9 @@ pragma solidity ^0.4.24;
 
 import "./openzeppelin/Ownable.sol";
 import "./SnarkDefinitions.sol";
-import "./SnarkBaseLib.sol";
-import "./SnarkCommonLib.sol";
-import "./SnarkOfferBidLib.sol";
+import "./snarklibs/SnarkBaseLib.sol";
+import "./snarklibs/SnarkCommonLib.sol";
+import "./snarklibs/SnarkOfferBidLib.sol";
 
 
 contract SnarkOfferBid is Ownable, SnarkDefinitions {

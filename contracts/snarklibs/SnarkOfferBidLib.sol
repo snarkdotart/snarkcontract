@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./SnarkStorage.sol";
+import "../SnarkStorage.sol";
 
 
 library SnarkOfferBidLib {
