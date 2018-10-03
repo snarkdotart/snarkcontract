@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "./ISnarkStorage.sol";
-import "../node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "./openzeppelin/Ownable.sol";
 
 
 contract SnarkStorage is Ownable, ISnarkStorage {

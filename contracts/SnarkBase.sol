@@ -2,8 +2,8 @@
 /// @dev See the Snark contract documentation to understand how the various contract facets are arranged.
 pragma solidity ^0.4.24;
 
-import "../node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "./openzeppelin/Ownable.sol";
+import "./openzeppelin/SafeMath.sol";
 import "./SnarkDefinitions.sol";
 import "./SnarkBaseLib.sol";
 import "./SnarkCommonLib.sol";

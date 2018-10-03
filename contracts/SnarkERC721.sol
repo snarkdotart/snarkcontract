@@ -1,12 +1,12 @@
 pragma solidity ^0.4.24;
 
-import "../node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../node_modules/openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
-import "../node_modules/openzeppelin-solidity/contracts/token/ERC721/ERC721Basic.sol";
-import "../node_modules/openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
-import "../node_modules/openzeppelin-solidity/contracts/token/ERC721/ERC721Receiver.sol";
-import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../node_modules/openzeppelin-solidity/contracts/AddressUtils.sol";
+import "./openzeppelin/Ownable.sol";
+import "./openzeppelin/SupportsInterfaceWithLookup.sol";
+import "./openzeppelin/ERC721Basic.sol";
+import "./openzeppelin/ERC721.sol";
+import "./openzeppelin/ERC721Receiver.sol";
+import "./openzeppelin/SafeMath.sol";
+import "./openzeppelin/AddressUtils.sol";
 import "./SnarkBaseLib.sol";
 import "./SnarkCommonLib.sol";
 
@@ -22,14 +22,6 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
 
     bytes4 private constant ERC721_RECEIVED = 0x150b7a02;
 
-    // /// @dev This emits when the approved address for an NFT is changed or
-    // ///  reaffirmed. The zero address indicates there is no approved address.
-    // ///  When a Transfer event emits, this also indicates that the approved
-    // ///  address for that NFT (if any) is reset to none.
-    // event Approval(address indexed _owner, address indexed _approved, uint256 _tokenId);
-    // /// @dev This emits when an operator is enabled or disabled for an owner.
-    // ///  The operator can manage all NFTs of the owner.
-    // event ApprovalForAll(address indexed _owner, address indexed _operator, bool _approved);
     /// @dev Checks msg.sender can transfer a token, by being owner, approved, or operator
     /// @param _tokenId uint256 ID of the token to validate
     modifier canTransfer(uint256 _tokenId) {
@@ -41,10 +33,10 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         // get an address of a storage
         _storage = storageAddress;
         // register the supported interfaces to conform to ERC721 via ERC165
-        _registerInterface(InterfaceId_ERC721);
-        _registerInterface(InterfaceId_ERC721Exists);
-        _registerInterface(InterfaceId_ERC721Enumerable);
-        _registerInterface(InterfaceId_ERC721Metadata);
+        _registerInterface(INTERFACEID_ERC721);
+        _registerInterface(INTERFACEID_ERC721EXISTS);
+        _registerInterface(INTERFACEID_ERC721ENUMERABLE);
+        _registerInterface(INTERFACEID_ERC721METADATA);
     }
 
     /// @dev Function to destroy a contract in the blockchain
@@ -135,7 +127,6 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         require(tokenOwner != _to);
         require(msg.sender == tokenOwner || isApprovedForAll(tokenOwner, msg.sender));
         if (getApproved(_tokenId) != address(0) || _to != address(0)) {
-            // tokenToApprovalsMap[_tokenId] = _to;
             _storage.setApprovalsToToken(tokenOwner, _tokenId, _to);
             emit Approval(msg.sender, _to, _tokenId);
         }
@@ -147,7 +138,6 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @return The approved address for this NFT, or the zero address if there is none
     function getApproved(uint256 _tokenId) public view returns (address _operator) {
         require(_tokenId < totalSupply());
-        // return tokenToApprovalsMap[_tokenId];
         address tokenOwner = ownerOf(_tokenId);
         return _storage.getApprovalsToToken(tokenOwner, _tokenId);
     }
@@ -159,7 +149,6 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @param _approved True if the operators is approved, false to revoke approval
     function setApprovalForAll(address _operator, bool _approved) public {
         require(_operator != msg.sender);
-        // operatorToApprovalsMap[msg.sender][_operator] = _approved;
         _storage.setApprovalsToOperator(msg.sender, _operator, _approved);
         emit ApprovalForAll(msg.sender, _operator, _approved);
     }
@@ -169,7 +158,6 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @param _operator The address that acts on behalf of the owner
     /// @return True if `_operator` is an approved operator for `_owner`, false otherwise
     function isApprovedForAll(address _owner, address _operator) public view returns (bool) {
-        // return operatorToApprovalsMap[_owner][_operator];
         return _storage.getApprovalsToOperator(_owner, _operator);
     }
 

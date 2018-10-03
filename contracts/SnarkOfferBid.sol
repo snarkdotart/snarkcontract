@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "../node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "./openzeppelin/Ownable.sol";
 import "./SnarkDefinitions.sol";
 import "./SnarkBaseLib.sol";
 import "./SnarkCommonLib.sol";
