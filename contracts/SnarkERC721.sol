@@ -1,20 +1,26 @@
 pragma solidity ^0.4.24;
 
-import "./SnarkTrade.sol";
-import "./OpenZeppelin/ERC721Holder.sol";
+import "./openzeppelin/Ownable.sol";
+import "./openzeppelin/SupportsInterfaceWithLookup.sol";
+import "./openzeppelin/ERC721Basic.sol";
+import "./openzeppelin/ERC721.sol";
+import "./openzeppelin/ERC721Receiver.sol";
+import "./openzeppelin/SafeMath.sol";
+import "./openzeppelin/AddressUtils.sol";
+import "./SnarkBaseLib.sol";
+import "./SnarkCommonLib.sol";
 
 
-contract SnarkERC721 is SnarkTrade, ERC721Receiver {
+contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC721 {
 
-    /// @dev This emits when the approved address for an NFT is changed or
-    ///  reaffirmed. The zero address indicates there is no approved address.
-    ///  When a Transfer event emits, this also indicates that the approved
-    ///  address for that NFT (if any) is reset to none.
-    event Approval(address indexed _owner, address indexed _approved, uint256 _tokenId);
+    using SafeMath for uint256;
+    using AddressUtils for address;
+    using SnarkBaseLib for address;
+    using SnarkCommonLib for address;
 
-    /// @dev This emits when an operator is enabled or disabled for an owner.
-    ///  The operator can manage all NFTs of the owner.
-    event ApprovalForAll(address indexed _owner, address indexed _operator, bool _approved);
+    address private _storage;
+
+    bytes4 private constant ERC721_RECEIVED = 0x150b7a02;
 
     /// @dev Checks msg.sender can transfer a token, by being owner, approved, or operator
     /// @param _tokenId uint256 ID of the token to validate
@@ -22,33 +28,55 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
         require(_isApprovedOrOwner(msg.sender, _tokenId));
         _;
     }
-    
+
+    constructor(address storageAddress) public {
+        // get an address of a storage
+        _storage = storageAddress;
+        // register the supported interfaces to conform to ERC721 via ERC165
+        _registerInterface(INTERFACEID_ERC721);
+        _registerInterface(INTERFACEID_ERC721EXISTS);
+        _registerInterface(INTERFACEID_ERC721ENUMERABLE);
+        _registerInterface(INTERFACEID_ERC721METADATA);
+    }
+
+    /// @dev Function to destroy a contract in the blockchain
+    function kill() external onlyOwner {
+        selfdestruct(owner);
+    }
+
     /********************/
     /** ERC721Metadata **/
     /********************/
-    function name() public pure returns (string) {
-        return "Snark Art Token";
+    /// @dev Gets the token name
+    /// @return string representing the token name
+    function name() external view returns (string) {
+        return _storage.getTokenName();
     }
 
-    function symbol() public pure returns (string) {
-        return "SAT";
+    /// @dev Gets the token symbol
+    /// @return string representing the token symbol
+    function symbol() external view returns (string) {
+        return _storage.getTokenSymbol();
     }
 
+    /// @dev Returns an URI for a given token ID
+    /// Throws if the token ID does not exist. May return an empty string.
+    /// @param _tokenId uint256 ID of the token to query
     function tokenURI(uint256 _tokenId) public view returns (string) {
-        require(_tokenId < digitalWorks.length);
-        return digitalWorks[_tokenId].digitalWorkUrl;
+        require(_tokenId < _storage.getTotalNumberOfTokens());
+        return _storage.getTokenURL(_tokenId);
     }
 
     /**********************/
     /** ERC721Enumerable **/
     /**********************/
     function totalSupply() public view returns (uint256) {
-        return digitalWorks.length;
+        return _storage.getTotalNumberOfTokens();
     }
 
     function tokenOfOwnerByIndex(address _owner, uint256 _index) public view returns (uint256 _tokenId) {
         require(_index < balanceOf(_owner));
-        return ownerToTokensMap[_owner][_index];
+        return _storage.getTokenIdOfOwner(_owner, _index);
     }
 
     function tokenByIndex(uint256 _index) public view returns (uint256) {
@@ -66,7 +94,7 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
     /// @return The number of NFTs owned by `_owner`, possibly zero
     function balanceOf(address _owner) public view returns (uint256) {
         require(_owner != address(0));
-        return ownerToTokensMap[_owner].length;
+        return _storage.getOwnedTokensCount(_owner);
     }
 
     /// @notice Find the owner of an NFT
@@ -75,30 +103,32 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
     ///      about them do throw.
     /// @return The address of the owner of the NFT
     function ownerOf(uint256 _tokenId) public view returns (address) {
-        require(_tokenId < digitalWorks.length);
-        return tokenToOwnerMap[_tokenId];
+        require(_tokenId < _storage.getTotalNumberOfTokens());
+        address tokenOwner = _storage.getOwnerOfToken(_tokenId);
+        require(tokenOwner != address(0));
+        return tokenOwner;
     }
 
     /// @dev Returns whether the specified token exists
     /// @param _tokenId uint256 ID of the token to query the existance of
     /// @return whether the token exists
     function exists(uint256 _tokenId) public view returns (bool _exists) {
-        return (tokenToOwnerMap[_tokenId] != address(0));
+        return (_storage.getOwnerOfToken(_tokenId) != address(0));
     }
 
     /// @notice Set or reaffirm the approved address for an NFT
     /// @dev The zero address indicates there is no approved address.
     /// @dev Throws unless `msg.sender` is the current NFT owner, or an authorized
     ///  operator of the current owner.
-    /// @param _approved The new approved NFT controller
-    /// @param _tokenId The NFT to approve
-    function approve(address _approved, uint256 _tokenId) public {
-        address tokenOwner = tokenToOwnerMap[_tokenId];
-        require(tokenOwner != _approved);
-        require(msg.sender == owner || isApprovedForAll(tokenOwner, msg.sender));
-        if (getApproved(_tokenId) != address(0) || _approved != address(0)) {
-            tokenToApprovalsMap[_tokenId] = _approved;
-            emit Approval(msg.sender, _approved, _tokenId);
+    /// @param _to address to be approved for the given token ID
+    /// @param _tokenId uint256 ID of the token to be approved
+    function approve(address _to, uint256 _tokenId) public {
+        address tokenOwner = ownerOf(_tokenId);
+        require(tokenOwner != _to);
+        require(msg.sender == tokenOwner || isApprovedForAll(tokenOwner, msg.sender));
+        if (getApproved(_tokenId) != address(0) || _to != address(0)) {
+            _storage.setApprovalsToToken(tokenOwner, _tokenId, _to);
+            emit Approval(msg.sender, _to, _tokenId);
         }
     }
 
@@ -108,7 +138,8 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
     /// @return The approved address for this NFT, or the zero address if there is none
     function getApproved(uint256 _tokenId) public view returns (address _operator) {
         require(_tokenId < totalSupply());
-        return tokenToApprovalsMap[_tokenId];
+        address tokenOwner = ownerOf(_tokenId);
+        return _storage.getApprovalsToToken(tokenOwner, _tokenId);
     }
 
     /// @notice Enable or disable approval for a third party ("operator") to manage
@@ -118,7 +149,7 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
     /// @param _approved True if the operators is approved, false to revoke approval
     function setApprovalForAll(address _operator, bool _approved) public {
         require(_operator != msg.sender);
-        operatorToApprovalsMap[msg.sender][_operator] = _approved;
+        _storage.setApprovalsToOperator(msg.sender, _operator, _approved);
         emit ApprovalForAll(msg.sender, _operator, _approved);
     }
 
@@ -127,7 +158,7 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
     /// @param _operator The address that acts on behalf of the owner
     /// @return True if `_operator` is an approved operator for `_owner`, false otherwise
     function isApprovedForAll(address _owner, address _operator) public view returns (bool) {
-        return operatorToApprovalsMap[_owner][_operator];
+        return _storage.getApprovalsToOperator(_owner, _operator);
     }
 
     /// @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
@@ -143,8 +174,16 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
     function transferFrom(address _from, address _to, uint256 _tokenId) public canTransfer(_tokenId) payable {
         require(_from != address(0));
         require(_to != address(0));
+        require(_from != _to);
         _clearApproval(_from, _tokenId);
-        buyToken(_from, _to, _tokenId);
+
+        uint256 profit;
+        uint256 price;
+        (profit, price) = _storage.calculatePlatformProfitShare(msg.value);
+        _storage.takePlatformProfitShare(price);
+
+        _storage.buy(_tokenId, price, _from, _to, _from);
+
         emit Transfer(_from, _to, _tokenId);
     }
 
@@ -177,8 +216,8 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
         bytes _data
     ) 
         public 
-        canTransfer(_tokenId) 
-        payable 
+        canTransfer(_tokenId)
+        payable
     {
         transferFrom(_from, _to, _tokenId);
         require(_checkAndCallSafeTransfer(_from, _to, _tokenId, _data));
@@ -190,8 +229,8 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
     /// @param _tokenId uint256 ID of the token to be transferred
     function _clearApproval(address _owner, uint256 _tokenId) internal {
         require(ownerOf(_tokenId) == _owner);
-        if (tokenToApprovalsMap[_tokenId] != address(0)) {
-            tokenToApprovalsMap[_tokenId] = address(0);
+        if (_storage.getApprovalsToToken(_owner, _tokenId) != address(0)) {
+            _storage.setApprovalsToToken(_owner, _tokenId, address(0));
             emit Approval(_owner, address(0), _tokenId);
         }
     }
@@ -203,7 +242,11 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
     ///  is an operator of the owner, or is the owner of the token
     function _isApprovedOrOwner(address _spender, uint256 _tokenId) internal view returns (bool) {
         address tokenOwner = ownerOf(_tokenId);
-        return _spender == tokenOwner || getApproved(_tokenId) == _spender || isApprovedForAll(tokenOwner, _spender);
+        return (
+            _spender == tokenOwner || 
+            getApproved(_tokenId) == _spender || 
+            isApprovedForAll(tokenOwner, _spender)
+        );
     }
 
     /// @dev Internal function to invoke `onERC721Received` on a target address
@@ -225,7 +268,7 @@ contract SnarkERC721 is SnarkTrade, ERC721Receiver {
         if (!_to.isContract()) {
             return true;
         }
-        bytes4 retval = ERC721Receiver(_to).onERC721Received(_from, _tokenId, _data);
+        bytes4 retval = ERC721Receiver(_to).onERC721Received(msg.sender, _from, _tokenId, _data);
         return (retval == ERC721_RECEIVED);
     }
 
