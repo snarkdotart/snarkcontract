@@ -81,7 +81,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
 
     function tokenByIndex(uint256 _index) public view returns (uint256) {
         require(_index < totalSupply());
-        return _index;
+        return _index + 1;
     }
 
     /*****************/
