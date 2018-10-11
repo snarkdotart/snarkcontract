@@ -136,8 +136,6 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     function createProfitShareScheme(address[] participants, uint256[] percentAmount) public returns(uint256) {
         require(participants.length == percentAmount.length);
         uint256 schemeId = _storage.addProfitShareScheme(msg.sender, participants, percentAmount);
-        // нужно ли хранить связь id схемы с владельцем, для быстрого получения адреса владельца по id схемы???
-        // _storage.addaddressToProfitShareSchemesMap(msg.sender, schemeId);
         emit ProfitShareSchemeAdded(msg.sender, schemeId);
     }
 
