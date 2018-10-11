@@ -81,7 +81,7 @@ library SnarkOfferBidLib {
         }
 
         // изменяем статус saleType = 'None' для token id: 
-        // 0 - None, 1 - Offer, 2 - Auction, 3 - Loan
+        // 0 - None, 1 - Offer, 2 - Loan
         SnarkStorage(_storageAddress).setUint(
             keccak256(abi.encodePacked("saleTypeToToken", tokenId)), 0);
         // изменяем статус saleStatus = Finished:
@@ -170,7 +170,7 @@ library SnarkOfferBidLib {
             keccak256(abi.encodePacked("ownerToOffer", offerId)),
             _offerOwner);
         // изменяем статус saleType = 'Offer' для token id: 
-        // 0 - None, 1 - Offer, 2 - Auction, 3 - Loan
+        // 0 - None, 1 - Offer, 2 - Loan
         SnarkStorage(_storageAddress).setUint(
             keccak256(abi.encodePacked("saleTypeToToken", _tokenId)), 1);
         // изменяем статус офера saleStatus = Active:

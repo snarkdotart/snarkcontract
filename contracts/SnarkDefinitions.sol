@@ -10,6 +10,6 @@ contract SnarkDefinitions {
     // Finished - finished when the artwork has sold 
     enum SaleStatus { Preparing, NotActive, Active, Finished }
 
-    // Sale type (none, offer sale, auction, art loan)
-    enum SaleType { None, Offer, Auction, Loan }
+    // Sale type (none, offer sale, art loan)
+    enum SaleType { None, Offer, Loan }
 }

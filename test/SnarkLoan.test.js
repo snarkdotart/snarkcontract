@@ -162,10 +162,10 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval[2], false, "error on step 17");
 
         retval = await instance.getSaleTypeToToken(1);
-        assert.equal(retval.toNumber(), 3, "error on step 18");
+        assert.equal(retval.toNumber(), 2, "error on step 18");
 
         retval = await instance.getSaleTypeToToken(2);
-        assert.equal(retval.toNumber(), 3, "error on step 19");
+        assert.equal(retval.toNumber(), 2, "error on step 19");
 
         retval = await instance.getSaleTypeToToken(3);
         assert.equal(retval.toNumber(), 0, "error on step 20");
@@ -279,7 +279,7 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 4");
 
         retval = await instance.getSaleTypeToToken(tokenId);
-        assert.equal(retval.toNumber(), 3, "error on step 5");
+        assert.equal(retval.toNumber(), 2, "error on step 5");
 
         await instance.stopLoan(loanId);
 

@@ -111,7 +111,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     function addBid(uint256 _tokenId) public payable {
         // it does not matter if the token is available for sale
         // it is possible to accept a bid unless
-        // the token is part of an auction or a loan
+        // the token is part of a loan
         SaleType currentSaleType = SaleType(_storage.getSaleTypeToToken(_tokenId));
         require(
             currentSaleType == SaleType.Offer || 
