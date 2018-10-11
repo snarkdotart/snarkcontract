@@ -80,17 +80,17 @@ library SnarkOfferBidLib {
             }
         }
 
-        // изменяем статус saleType = 'None' для token id: 
+        // change status saleType = 'None' for token id:
         // 0 - None, 1 - Offer, 2 - Loan
         SnarkStorage(_storageAddress).setUint(
             keccak256(abi.encodePacked("saleTypeToToken", tokenId)), 0);
-        // изменяем статус saleStatus = Finished:
+        // change status saleStatus = Finished:
         // 0 - Preparing, 1 - NotActive, 2 - Active, 3 - Finished
         SnarkStorage(_storageAddress).setUint(
             keccak256(abi.encodePacked("saleStatusToOffer", _offerId)), 3);
 
-        // удалить офер с предудщим статусом со списка и уменьшить их количетсво
-        // добавить в список с новым статусом
+        // delete offer with a previous status from list and reduce their count
+        // add to list with a new status
     }
 
     function deleteBid(address _storageAddress, uint256 _bidId) external {
@@ -225,7 +225,7 @@ library SnarkOfferBidLib {
         SnarkStorage(_storageAddress).setUint(
             keccak256(abi.encodePacked("tokenBidsList", _tokenId, numberOfTokenBids)), bidId);
         
-        // тоже самое, но для owner-а... нужно знать список его бидов
+        // the same but for the owner ... need to know the list of their bids
         uint256 numberBidsOfOwner = SnarkStorage(_storageAddress).uintStorage(
             keccak256(abi.encodePacked("numberBidsOfOwner", _bidOwner)));
         uint256 newNumberOfOwnerBids = numberBidsOfOwner + 1;

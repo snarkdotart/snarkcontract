@@ -116,7 +116,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         require(
             currentSaleType == SaleType.Offer || 
             currentSaleType == SaleType.None, 
-            "the token should either be in sale by offer or not involved in sales at all"
+            "Bids are not allowed while the token is in Loan status"
         );
         address currentOwner;
         uint256 offerId;
@@ -129,7 +129,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             // than the OFFER price.  If a BID is made at the OFFER price or HIGHER, than the platform should 
             // notify the bidder that they must BUY the token at an OFFER price or revise the BID to something 
             // lower than the OFFER price.
-            require(msg.value < price, "bid amount have to be less than a price of offer");
+            require(msg.value < price, "Bid amount must be less than the offer price");
         } else {
             currentOwner = _storage.getOwnerOfToken(_tokenId);
         }
@@ -147,20 +147,20 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @dev Function to accept bid
     /// @param _bidId Id of bid
     function acceptBid(uint256 _bidId) public {
-        // To persuade if this function called a token owner
+        // Check if the function is called by the token owner
         uint256 tokenId = _storage.getTokenIdByBidId(_bidId);
         uint256 price = _storage.getBidPrice(_bidId);
         SaleType saleType = SaleType(_storage.getSaleTypeToToken(tokenId));
         require(
             saleType == SaleType.Offer || 
             saleType == SaleType.None,
-            "it's forbidden to accept the Bid when it has a Loan Status"
+            "Bids are not allowed while the token is in Loan status"
         );
         address tokenOwner;
         address mediator;
         uint256 offerId;
         if (saleType == SaleType.Offer) {
-            // in this case the token is blocked and we can get a real address via an offer
+            // In this case, the token is blocked and we can find the owner address in the offer
             offerId = _storage.getOfferIdByTokenId(tokenId);
             tokenOwner = _storage.getOwnerOfOffer(offerId);
             mediator = _storage.getOwnerOfToken(tokenId);
@@ -169,7 +169,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             mediator = tokenOwner;
         }
 
-        require(msg.sender == tokenOwner, "Only token's owner can accept the bid");
+        require(msg.sender == tokenOwner, "Only owner can accept a bid for their token");
 
         address bidOwner = _storage.getOwnerOfBid(_bidId);
         _storage.subPendingWithdrawals(_storage, price);
@@ -180,8 +180,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _storage.buy(tokenId, price, tokenOwner, bidOwner, mediator);
         _storage.deleteBid(_bidId);
 
-        // deleting all bids relating with the token
-        // but we have to take back bid amounts to their owners as well
+        // deleting all bids related to the token
+        // return bid amounts to bidders
         _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
     }
     
@@ -197,27 +197,27 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         emit BidCanceled(tokenId, _bidId);
     }
 
-    /// @dev Accepting the artist's offer
+    /// @dev Accept the artist's offer
     /// @param _offerId Offer ID
     function buyOffer(uint256 _offerId) public payable {
         uint256 tokenId = _storage.getTokenIdByOfferId(_offerId);
         uint256 price = _storage.getOfferPrice(_offerId);
         uint256 saleStatus = _storage.getSaleStatusForOffer(_offerId);
 
-        require(saleStatus == uint256(SaleStatus.Active), "Offer status must by an active");
-        require(msg.value >= price, "Amount of money should be not less then the offer price");
+        require(saleStatus == uint256(SaleStatus.Active), "Offer status must be active");
+        require(msg.value >= price, "Amount should not be less than the offer price");
 
         address tokenOwner = _storage.getOwnerOfOffer(_offerId);
         address mediator = _storage.getOwnerOfToken(tokenId);
 
-        require(msg.sender != tokenOwner, "Owner of token can't buy his token");
+        require(msg.sender != tokenOwner, "Token owner can't buy their own token");
 
         _storage.takePlatformProfitShare(price);
         _storage.buy(tokenId, price, tokenOwner, msg.sender, mediator);
         _storage.setSaleStatusForOffer(_offerId, uint256(SaleStatus.Finished));
 
-        // If there are bids for the offer than we takes back an amount to their owners. 
-        // After that we can delete bids.
+        // Outstanding bids are returned to bidders
+        // And then bids are deleted
         _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
     }
 
@@ -242,7 +242,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             bidId = _storage.getBidIdForToken(_tokenId, 0);
             bidder = _storage.getOwnerOfBid(bidId);
             bidPrice = _storage.getBidPrice(bidId);
-            // Moving these amount from contract's balance to the bid's one
+            // Move bid amount from contract to the bidder
             _storage.subPendingWithdrawals(_storage, bidPrice);
             _storage.addPendingWithdrawals(bidder, bidPrice);
             // Delete the bid

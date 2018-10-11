@@ -46,12 +46,12 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         public 
         payable
     {
-        // check if there are any own's tokens
+        // check if the user requested their own tokens
         bool isItMyToken = false;
         for (uint256 i = 0; i < tokensIds.length; i++) {
             if (_storage.getOwnerOfToken(tokensIds[i]) == msg.sender) isItMyToken = true;
         }
-        require(isItMyToken == false, "borrower can't create loan for it's own tokens");
+        require(isItMyToken == false, "Borrower can't request loan for their own tokens");
 
         // Create new entry for a Loan 
         uint256 loanId = _storage.createLoan(
@@ -79,7 +79,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 _counter++;
             }
             // Check status of the token ... change of token status is only possible if it is not for sale,
-            // Another words, if there is no Offer, no Auction, or no existing Loan, then change of status is possible
+            // Another words, if there is no Offer or existing Loan, then change of status is possible
             uint256 saleType = _storage.getSaleTypeToToken(tokensIds[i]);
             if (isAgree && saleType == uint256(SaleType.None)) {
                 // !!! We may need to check the number of days that the token has already been loaned 
@@ -99,8 +99,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             uint256 _saleType = _storage.getSaleTypeToToken(tokenIds[i]);
             uint256 _loanId = _storage.getLoanByToken(tokenIds[i]);
 
-            require(msg.sender == _ownerOfToken, "Only an token owner can accept a loan request.");
-            require(_saleType == uint256(SaleType.None), "Token must be free");
+            require(msg.sender == _ownerOfToken, "Only the token owner can accept a loan request.");
+            require(_saleType == uint256(SaleType.None), "Token must be available");
 
             _acceptLoan(_loanId, tokenIds[i], msg.sender);
             emit LoanAccepted(msg.sender, _loanId, tokenIds[i]);
@@ -136,7 +136,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 // !!! Perhaps we can do this on the back-end, 
                 // !!! and not here and now !!!!
             } else {
-                // Return funds for Art Loans that have not been accepted.
+                // Return funds related to Loans that have not been accepted.
                 if (_price > 0) {
                     address _borrower = _storage.getDestinationWalletOfLoan(loanId);
                     _storage.subPendingWithdrawals(_storage, _price);
@@ -201,7 +201,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             _storage.addPendingWithdrawals(msg.sender, (msg.value - _price));
         }
 
-        // Remove token token from loan entry
+        // Remove token from loan entry
         _storage.deleteTokenFromListOfLoan(_loanId, tokenId);
         _storage.deleteLoanToToken(tokenId);
 
@@ -245,7 +245,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     }
 
     // Automatic function on token level 
-    // Ability to accept artloans
+    // Allows for acceptance of art loans
     function _acceptLoan(uint256 loanId, uint256 tokenId, address tokenOwner) internal {
         _storage.setCurrentTokenOwnerForLoan(loanId, tokenId, tokenOwner);
         _storage.setSaleTypeToToken(tokenId, uint256(SaleType.Loan));
