@@ -1,5 +1,5 @@
 /// @title Base contract for Snark. Holds all common structs, events and base variables.
-/// @dev See the Snark contract documentation to understand how the various contract facets are arranged.
+/// @dev See the Snark contract documentation to understand how the contract is structured.
 pragma solidity ^0.4.24;
 
 import "./openzeppelin/Ownable.sol";
@@ -48,8 +48,8 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         require(isOwnerOfAll);
         _;
     }
-
-    /// @dev Modifier that allows do an operation by an artist only
+    
+    /// @dev Modifier that only allows the artist to do an operation
     /// @param tokenId Token Id
     modifier onlyArtistOf(uint256 tokenId) {
         address artist = _storage.getTokenArtist(tokenId);
@@ -85,7 +85,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         selfdestruct(owner);
     }
 
-    /// @dev Generating event to approval from each participant of token
+    /// @dev Generate event to get approval from each participant of the token
     /// @param tokenId Id of token
     function sendRequestForApprovalOfProfitShareRemovalForSecondarySale(uint tokenId) external onlyArtistOf(tokenId) {
         uint256 schemeId = _storage.getTokenProfitShareSchemeId(tokenId);
@@ -98,7 +98,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         }
     }
 
-    /// @dev Delete a profit share from secondary sale
+    /// @dev Delete profit share from secondary sale
     /// @param tokenId Token Id
     function approveRemovingProfitShareFromSecondarySale(uint256 tokenId) external onlyParticipantOf(tokenId) {
         _storage.setTokenToParticipantApproving(tokenId, msg.sender, true);
@@ -136,7 +136,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     function createProfitShareScheme(address[] participants, uint256[] percentAmount) public returns(uint256) {
         require(participants.length == percentAmount.length);
         uint256 schemeId = _storage.addProfitShareScheme(msg.sender, participants, percentAmount);
-        // нужно ли хранить связь id схемы с владельцем, для быстрого получения адреса владельца по id схемы???
+        // should we store the link between id schema and owners in order to get owner address from id schema???
         // _storage.addaddressToProfitShareSchemesMap(msg.sender, schemeId);
         emit ProfitShareSchemeAdded(msg.sender, schemeId);
     }
@@ -151,7 +151,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         return _storage.getNumberOfProfitShareSchemesForOwner(msg.sender);
     }
 
-    /// @dev Return a scheme Id for user by an index
+    /// @dev Return a scheme Id for user by index
     /// @param index Index of scheme for current user's address
     function getProfitShareSchemeIdByIndex(uint256 index) public view returns (uint256) {
         return _storage.getProfitShareSchemeIdForOwner(msg.sender, index);
@@ -203,7 +203,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
                 isAcceptOfLoanRequestFromSnark,
                 isAcceptOfLoanRequestFromOthers
             );
-            // memoraze that a digital work with this hash already loaded
+            // set that a digital work with this hash has already been loaded
             _storage.setTokenHashAsInUse(hashOfToken, true);
             // Enter the new owner
             _storage.setOwnerOfToken(tokenId, msg.sender);
