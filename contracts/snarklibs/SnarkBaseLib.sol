@@ -1,9 +1,11 @@
 pragma solidity ^0.4.24;
 
 import "../SnarkStorage.sol";
+import "../openzeppelin/SafeMath.sol";
 
 
 library SnarkBaseLib {
+    using SafeMath for uint256;
 
     /*** SET ***/
     function setSnarkWalletAddress(address storageAddress, address walletAddress) public {
@@ -80,7 +82,7 @@ library SnarkBaseLib {
         );
     }
 
-    function setTokenToOwner(address storageAddress, address tokenOwner, uint256 tokenId) public {
+    function addTokenToOwner(address storageAddress, address tokenOwner, uint256 tokenId) public {
         uint256 _index = SnarkStorage(storageAddress).uintStorage(
             keccak256(abi.encodePacked("tokenOfOwner", "numberOfOwnerTokens", tokenOwner))
         ); 
@@ -166,7 +168,7 @@ library SnarkBaseLib {
     function deleteTokenFromOwner(address storageAddress, address tokenOwner, uint256 index) public {
         uint256 maxIndex = SnarkStorage(storageAddress).uintStorage(
             keccak256(abi.encodePacked("tokenOfOwner", "numberOfOwnerTokens", tokenOwner))
-        ) - 1;
+        ).sub(1);
 
         if (maxIndex != index) {
             uint256 tokenId = SnarkStorage(storageAddress).uintStorage(
@@ -285,7 +287,7 @@ library SnarkBaseLib {
 
         SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("artist", "numberOfTokens", artistAddress)),
-            numberOfTokens + 1
+            numberOfTokens.add(1)
         );
     }
 
@@ -293,12 +295,9 @@ library SnarkBaseLib {
         uint256 currentBalance = SnarkStorage(storageAddress).uintStorage(
             keccak256(abi.encodePacked("pendingWithdrawals", owner)));
 
-        uint256 sum = currentBalance + balance;
-        assert(sum >= currentBalance);
-
         SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("pendingWithdrawals", owner)),
-            sum
+            currentBalance.add(balance)
         );
     }
 
@@ -306,11 +305,9 @@ library SnarkBaseLib {
         uint256 currentBalance = SnarkStorage(storageAddress).uintStorage(
             keccak256(abi.encodePacked("pendingWithdrawals", owner)));
 
-        assert(balance <= currentBalance);
-
         SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("pendingWithdrawals", owner)),
-            currentBalance - balance
+            currentBalance.sub(balance)
         );
     }
 
