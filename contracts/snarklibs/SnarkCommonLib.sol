@@ -14,18 +14,19 @@ library SnarkCommonLib {
     function transferToken(address _storageAddress, uint256 _tokenId, address _from, address _to) internal {
         if (_tokenId <= _storageAddress.getTotalNumberOfTokens() &&
             _from == _storageAddress.getOwnerOfToken(_tokenId)) {
+            uint256 _index = 0;
             uint256 numberOfTokens = _storageAddress.getOwnedTokensCount(_from);
             for (uint256 i = 0; i < numberOfTokens; i++) {
                 if (_tokenId == _storageAddress.getTokenIdOfOwner(_from, i)) {
-                    uint256 _index = i;
+                    _index = i;
                     break;
                 }
             }
             _storageAddress.deleteTokenFromOwner(_from, _index);
             _storageAddress.setOwnerOfToken(_tokenId, _to);
             _storageAddress.addTokenToOwner(_to, _tokenId);
+            emit Transfer(_from, _to, _tokenId);
         }
-        emit Transfer(_from, _to, _tokenId);
     }
 
     /// @dev Snark platform takes it's profit share
