@@ -94,7 +94,7 @@ library SnarkBaseLib {
 
         SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("tokenOfOwner", "numberOfOwnerTokens", tokenOwner)),
-            _index + 1
+            _index.add(1)
         );
     }
 
@@ -166,15 +166,9 @@ library SnarkBaseLib {
 
     /*** DELETE ***/
     function deleteTokenFromOwner(address storageAddress, address tokenOwner, uint256 index) public {
-        uint256 maxIndex = SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("tokenOfOwner", "numberOfOwnerTokens", tokenOwner))
-        ).sub(1);
-
+        uint256 maxIndex = getOwnedTokensCount(storageAddress, tokenOwner).sub(1);
         if (maxIndex != index) {
-            uint256 tokenId = SnarkStorage(storageAddress).uintStorage(
-                keccak256(abi.encodePacked("tokenOfOwner", tokenOwner, maxIndex))
-            );
-
+            uint256 tokenId = getTokenIdOfOwner(storageAddress, tokenOwner, maxIndex);
             SnarkStorage(storageAddress).setUint(
                 keccak256(abi.encodePacked("tokenOfOwner", tokenOwner, index)),
                 tokenId
