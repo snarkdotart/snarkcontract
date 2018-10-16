@@ -87,10 +87,10 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getTokensCount();
         assert.equal(retval.toNumber(), 10, "error on step 3");
 
-        retval = await instance.getTokensCountByOwner(web3.eth.accounts[0]);
+        retval = await instance.getTokensCountByOwner(accounts[0]);
         assert.equal(retval.toNumber(), 10, "error on step 4");
 
-        retval = await instance.getTokensCountByArtist(web3.eth.accounts[0]);
+        retval = await instance.getTokensCountByArtist(accounts[0]);
         assert.equal(retval.toNumber(), 10, "error on step 5");
     });
 
@@ -113,7 +113,7 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getProfitShareSchemeCountByAddress();
         assert.equal(retval.toNumber(), 2, "error on step 3");
 
-        retval = await instance.getTokensCountByOwner(web3.eth.accounts[0]);
+        retval = await instance.getTokensCountByOwner(accounts[0]);
         assert.equal(retval.toNumber(), 10, "error on step 4");
 
         await instance.changeProfitShareSchemeForToken(1, 2);

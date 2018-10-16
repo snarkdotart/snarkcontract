@@ -37,7 +37,7 @@ contract('SnarkLoan', async (accounts) => {
         });
 
         /// START preparing
-        const tokenOwner = web3.eth.accounts[0];
+        const tokenOwner = accounts[0];
         const tokenHash = web3.sha3("tokenHash");
         const limitedEdition = 3;
         const profitShareFromSecondarySale = 20;
@@ -56,22 +56,22 @@ contract('SnarkLoan', async (accounts) => {
         );
 
         let retval = await instance_snarkbase.getOwnerOfToken(1);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error: there isn't any owner for the first token");
+        assert.equal(retval, tokenOwner, "error: there isn't any owner for the first token");
         console.log(`owner of 1 token after run addToken: ${retval}`)
 
         retval = await instance_snarkbase.getOwnerOfToken(2);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error: there isn't any owner for the second token");
+        assert.equal(retval, tokenOwner, "error: there isn't any owner for the second token");
         console.log(`owner of 2 token after run addToken: ${retval}`)
 
         retval = await instance_snarkbase.getOwnerOfToken(3);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error: there isn't any owner for the third token");
+        assert.equal(retval, tokenOwner, "error: there isn't any owner for the third token");
         console.log(`owner of 3 token after run addToken: ${retval}`)
 
         retval = await instance_snarkbase.getTokensCountByOwner(tokenOwner);
         assert.equal(retval.toNumber(), 3, "error on step 1");
         /// END preparing
         
-        const borrower = web3.eth.accounts[1];
+        const borrower = accounts[1];
         const loanCost = 9000000000;
         const startDateTimestamp = (new Date()).getTime() / 1000;
         const duration = 3;
@@ -105,8 +105,8 @@ contract('SnarkLoan', async (accounts) => {
     });
 
     it("3. test acceptLoan function", async () => {
-        const tokenOwner = web3.eth.accounts[0];
-        const borrower = web3.eth.accounts[1];
+        const tokenOwner = accounts[0];
+        const borrower = accounts[1];
 
         const eventLoanAccepted = instance.LoanAccepted({ fromBlock: 'latest' });
         eventLoanAccepted.watch(function (error, result) {
@@ -139,7 +139,7 @@ contract('SnarkLoan', async (accounts) => {
 
         retval = await instance_snarkbase.getOwnerOfToken(1);
         console.log(`real owner of token (before accept): ${retval}`);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 10");
+        assert.equal(retval, tokenOwner, "error on step 10");
 
         retval = await instance.getCurrentTokenOwnerForLoan(1, 1);
         console.log(`current token owner is (before accept): ${retval}`);
@@ -149,11 +149,11 @@ contract('SnarkLoan', async (accounts) => {
 
         retval = await instance_snarkbase.getOwnerOfToken(1);
         console.log(`real owner of token (before accept): ${retval}`);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 12");
+        assert.equal(retval, tokenOwner, "error on step 12");
 
         retval = await instance.getCurrentTokenOwnerForLoan(1, 1);
         console.log(`current token owner is (after accept): ${retval}`);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 13");
+        assert.equal(retval, tokenOwner, "error on step 13");
 
         retval = await instance.getTokenAcceptedStatusListForLoan(1);
         assert.equal(retval.length, 3, "error on step 14");
@@ -173,8 +173,8 @@ contract('SnarkLoan', async (accounts) => {
 
     it("4. test startLoan function", async () => {
         const loanId = 1;
-        const tokenOwner = web3.eth.accounts[0];
-        const borrower = web3.eth.accounts[1];
+        const tokenOwner = accounts[0];
+        const borrower = accounts[1];
 
         let retval = await instance.getTokenListForLoan(loanId);
         assert.equal(retval.length, 3, "error on step 1");
@@ -195,18 +195,18 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval.toNumber(), 0, "error on step 9");
 
         retval = await instance_snarkbase.getOwnerOfToken(1);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 10");
+        assert.equal(retval, tokenOwner, "error on step 10");
 
         retval = await instance.getCurrentTokenOwnerForLoan(loanId, 1);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 11");
+        assert.equal(retval, tokenOwner, "error on step 11");
 
         await instance.startLoan(loanId);
 
         retval = await instance_snarkbase.getOwnerOfToken(1);
-        assert.equal(retval.toUpperCase(), borrower.toUpperCase(), "error on step 12");
+        assert.equal(retval, borrower, "error on step 12");
 
         retval = await instance.getCurrentTokenOwnerForLoan(loanId, 1);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 13");
+        assert.equal(retval, tokenOwner, "error on step 13");
 
         retval = await instance.getTokenListForLoan(loanId);
         assert.equal(retval.length, 2, "error on step 14");
@@ -225,8 +225,8 @@ contract('SnarkLoan', async (accounts) => {
 
     it("5. test cancelLoanToken function", async () => {
         const loanId = 1;
-        const tokenOwner = web3.eth.accounts[0];
-        const borrower = web3.eth.accounts[1];
+        const tokenOwner = accounts[0];
+        const borrower = accounts[1];
 
         let retval = await instance.getTokenListForLoan(loanId);
         assert.equal(retval.length, 2, "error on step 1");
@@ -241,10 +241,10 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval.toNumber(), 3000000000, "error on step 4");
 
         retval = await instance_snarkbase.getOwnerOfToken(1);
-        assert.equal(retval.toUpperCase(), borrower.toUpperCase(), "error on step 5");
+        assert.equal(retval, borrower, "error on step 5");
 
         retval = await instance.getCurrentTokenOwnerForLoan(loanId, 1);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 6");
+        assert.equal(retval, tokenOwner, "error on step 6");
 
         await instance.cancelLoanToken(1, { from: tokenOwner, value: 3000000000 });
 
@@ -262,8 +262,8 @@ contract('SnarkLoan', async (accounts) => {
 
     it("6. test stopLoan function", async () => {
         const loanId = 1;
-        const tokenOwner = web3.eth.accounts[0];
-        const borrower = web3.eth.accounts[1];
+        const tokenOwner = accounts[0];
+        const borrower = accounts[1];
 
         let retval = await instance.getLoanSaleStatus(loanId);
         assert.equal(retval.toNumber(), 2, "error on step 1");
@@ -273,10 +273,10 @@ contract('SnarkLoan', async (accounts) => {
         const tokenId = retval[0].toNumber();
 
         retval = await instance_snarkbase.getOwnerOfToken(tokenId);
-        assert.equal(retval.toUpperCase(), borrower.toUpperCase(), "error on step 3");
+        assert.equal(retval, borrower, "error on step 3");
 
         retval = await instance.getCurrentTokenOwnerForLoan(loanId, tokenId);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 4");
+        assert.equal(retval, tokenOwner, "error on step 4");
 
         retval = await instance.getSaleTypeToToken(tokenId);
         assert.equal(retval.toNumber(), 2, "error on step 5");
@@ -290,9 +290,9 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval.toNumber(), 0, "error on step 7");
         
         retval = await instance.getCurrentTokenOwnerForLoan(loanId, tokenId);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 8");
+        assert.equal(retval, tokenOwner, "error on step 8");
 
         retval = await instance_snarkbase.getOwnerOfToken(tokenId);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 9");
+        assert.equal(retval, tokenOwner, "error on step 9");
     });
 });

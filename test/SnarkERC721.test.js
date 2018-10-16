@@ -8,7 +8,7 @@ contract('SnarkERC721', async (accounts) => {
         '0x6b92C59de02aD4F8E9650101E9d890298A2D5A54', 
         '0x7Af26b6056713AbB900f5dD6A6C45a38F1F70Bc5'
     ];
-    const tokenOwner = web3.eth.accounts[0];
+    const tokenOwner = accounts[0];
 
     before(async () => {
         instance = await SnarkERC721.deployed();
@@ -110,7 +110,7 @@ contract('SnarkERC721', async (accounts) => {
 
     it("9. test ownerOf function", async () => {
         retval = await instance.ownerOf(2);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase());
+        assert.equal(retval, tokenOwner);
     });
 
     it("10. test exists function", async () => {
@@ -142,11 +142,11 @@ contract('SnarkERC721', async (accounts) => {
     });
 
     it("13. test transferFrom function", async () => {
-        const _to = web3.eth.accounts[1];
+        const _to = accounts[1];
         const _tokenId = 1;
 
         retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
-        assert.equal(retval.toUpperCase(), tokenOwner.toUpperCase(), "error on step 1");
+        assert.equal(retval, tokenOwner, "error on step 1");
 
         retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
         assert.equal(retval.toNumber(), 0, "error on step 2");
@@ -160,7 +160,7 @@ contract('SnarkERC721', async (accounts) => {
         await instance.transferFrom(tokenOwner, _to, _tokenId, { value: 10 });
 
         retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
-        assert.equal(retval.toUpperCase(), _to.toUpperCase(), "error on step 5");
+        assert.equal(retval, _to, "error on step 5");
 
         retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
         assert.equal(retval.toNumber(), 10, "error on step 6");
