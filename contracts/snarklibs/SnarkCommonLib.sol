@@ -12,10 +12,8 @@ library SnarkCommonLib {
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
 
     function transferToken(address _storageAddress, uint256 _tokenId, address _from, address _to) internal {
-        if (_tokenId <= SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfTokens")) &&
-            _from == SnarkStorage(_storageAddress).addressStorage(
-                keccak256(abi.encodePacked("ownerOfToken", _tokenId)))
-        ) {
+        if (_tokenId <= _storageAddress.getTotalNumberOfTokens() &&
+            _from == _storageAddress.getOwnerOfToken(_tokenId)) {
             uint256 numberOfTokens = _storageAddress.getOwnedTokensCount(_from);
             for (uint256 i = 0; i < numberOfTokens; i++) {
                 if (_tokenId == _storageAddress.getTokenIdOfOwner(_from, i)) {
