@@ -24,6 +24,9 @@ contract('SnarkBase', async (accounts) => {
             '0xB94691B99EB731536E35F375ffC85249Ec717233'
         ];
         const profits = [ 20, 80 ];
+        const badProfits1 = [ 0, 90 ];
+        const badProfits2 = [ 20, 50 ];
+        const badProfits3 = [ 60, 70 ];
 
         let retval = await instance.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 0);
@@ -37,6 +40,18 @@ contract('SnarkBase', async (accounts) => {
             }
         });
 
+        try { await instance.createProfitShareScheme(participants, badProfits1); } catch(e) {
+            assert.equal(e.message, 'VM Exception while processing transaction: revert Percent value has to be greater than zero');
+        }
+
+        try { await instance.createProfitShareScheme(participants, badProfits2); } catch(e) {
+            assert.equal(e.message, 'VM Exception while processing transaction: revert Sum of all percentages has to be equal 100');
+        }
+
+        try { await instance.createProfitShareScheme(participants, badProfits3); } catch(e) {
+            assert.equal(e.message, 'VM Exception while processing transaction: revert Sum of all percentages has to be equal 100');
+        }
+        
         await instance.createProfitShareScheme(participants, profits);
 
         retval = await instance.getProfitShareSchemesTotalCount();
