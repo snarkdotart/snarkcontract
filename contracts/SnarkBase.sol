@@ -206,7 +206,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             // Enter the new owner
             _storage.setOwnerOfToken(tokenId, msg.sender);
             // Add new token to new owner's token list
-            _storage.setTokenToOwner(msg.sender, tokenId);
+            _storage.addTokenToOwner(msg.sender, tokenId);
             // Add new token to new artist's token list
             _storage.addTokenToArtistList(tokenId, msg.sender);
             // Emit token event

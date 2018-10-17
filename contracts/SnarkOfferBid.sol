@@ -5,6 +5,7 @@ import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 import "./snarklibs/SnarkCommonLib.sol";
 import "./snarklibs/SnarkOfferBidLib.sol";
+import "./openzeppelin/SafeMath.sol";
 
 
 contract SnarkOfferBid is Ownable, SnarkDefinitions {
@@ -12,6 +13,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     using SnarkBaseLib for address;
     using SnarkCommonLib for address;
     using SnarkOfferBidLib for address;
+    using SafeMath for uint256;
 
     /*** STORAGE ***/
 
@@ -206,6 +208,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
         require(saleStatus == uint256(SaleStatus.Active), "Offer status must be active");
         require(msg.value >= price, "Amount should not be less than the offer price");
+        uint256 refunds = msg.value.sub(price);
 
         address tokenOwner = _storage.getOwnerOfOffer(_offerId);
         address mediator = _storage.getOwnerOfToken(tokenId);
@@ -214,6 +217,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
         _storage.takePlatformProfitShare(price);
         _storage.buy(tokenId, price, tokenOwner, msg.sender, mediator);
+        if (refunds > 0) msg.sender.transfer(refunds);
         _storage.setSaleStatusForOffer(_offerId, uint256(SaleStatus.Finished));
 
         // Outstanding bids are returned to bidders
@@ -231,6 +235,14 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
     function getNumberBidsOfOwner(address _bidOwner) public view returns (uint256) {
         return _storage.getNumberBidsOfOwner(_bidOwner);
+    }
+
+    function getSaleStatusForOffer(uint256 _offerId) public view returns (uint256) {
+        return _storage.getSaleStatusForOffer(_offerId);
+    }
+
+    function getTotalNumberOfOffers() public view returns (uint256) {
+        return _storage.getTotalNumberOfOffers();
     }
 
     function _takeBackBidAmountsAndDeleteAllTokenBids(uint256 _tokenId) internal {
