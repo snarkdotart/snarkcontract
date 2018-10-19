@@ -93,6 +93,11 @@ library SnarkBaseLib {
         );
 
         SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("tokenIndexOfOwner", tokenOwner, tokenId)),
+            _index
+        );
+
+        SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("tokenOfOwner", "numberOfOwnerTokens", tokenOwner)),
             _index.add(1)
         );
@@ -166,6 +171,7 @@ library SnarkBaseLib {
 
     /*** DELETE ***/
     function deleteTokenFromOwner(address storageAddress, address tokenOwner, uint256 index) public {
+        uint256 oldTokenId = getTokenIdOfOwner(storageAddress, tokenOwner, index);
         uint256 maxIndex = getOwnedTokensCount(storageAddress, tokenOwner).sub(1);
         if (maxIndex != index) {
             uint256 tokenId = getTokenIdOfOwner(storageAddress, tokenOwner, maxIndex);
@@ -173,12 +179,17 @@ library SnarkBaseLib {
                 keccak256(abi.encodePacked("tokenOfOwner", tokenOwner, index)),
                 tokenId
             );
+            SnarkStorage(storageAddress).setUint(
+                keccak256(abi.encodePacked("tokenIndexOfOwner", tokenOwner, tokenId)),
+                index
+            );
         }
-
         SnarkStorage(storageAddress).deleteUint(
             keccak256(abi.encodePacked("tokenOfOwner", tokenOwner, maxIndex))
         );
-
+        SnarkStorage(storageAddress).deleteUint(
+            keccak256(abi.encodePacked("tokenIndexOfOwner", tokenOwner, oldTokenId))
+        );
         SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("tokenOfOwner", "numberOfOwnerTokens", tokenOwner)),
             maxIndex
@@ -506,6 +517,16 @@ library SnarkBaseLib {
     {
         return SnarkStorage(storageAddress).uintStorage(
             keccak256(abi.encodePacked("tokenOfOwner", tokenOwner, index)));
+    }
+
+    function getIndexOfOwnerToken(address storageAddress, address tokenOwner, uint256 tokenId)
+        public 
+        view 
+        returns (uint256) 
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("tokenIndexOfOwner", tokenOwner, tokenId))
+        );
     }
 
     function getOwnerOfToken(address storageAddress, uint256 tokenId) public view returns (address) {

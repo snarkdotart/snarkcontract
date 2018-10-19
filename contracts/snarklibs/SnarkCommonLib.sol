@@ -14,14 +14,7 @@ library SnarkCommonLib {
     function transferToken(address _storageAddress, uint256 _tokenId, address _from, address _to) internal {
         if (_tokenId <= _storageAddress.getTotalNumberOfTokens() &&
             _from == _storageAddress.getOwnerOfToken(_tokenId)) {
-            uint256 _index = 0;
-            uint256 numberOfTokens = _storageAddress.getOwnedTokensCount(_from);
-            for (uint256 i = 0; i < numberOfTokens; i++) {
-                if (_tokenId == _storageAddress.getTokenIdOfOwner(_from, i)) {
-                    _index = i;
-                    break;
-                }
-            }
+            uint256 _index = _storageAddress.getIndexOfOwnerToken(_from, _tokenId);
             _storageAddress.deleteTokenFromOwner(_from, _index);
             _storageAddress.setOwnerOfToken(_tokenId, _to);
             _storageAddress.addTokenToOwner(_to, _tokenId);
