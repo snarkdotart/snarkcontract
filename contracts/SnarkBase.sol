@@ -191,8 +191,9 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     {
         // Check for an identical hash of the digital token in existence to prevent uploading a duplicate token
         require(_storage.getTokenHashAsInUse(hashOfToken) == false);
-        // Check that the number of token editions is >= 1
-        require(limitedEdition >= 1);
+        // Check that the number of token editions is >= 1 and <= 10
+        // otherwise there is a chance to spend all the Gas
+        require(limitedEdition >= 1 && limitedEdition <= 10);
         // Create the number of editions specified by the limitEdition
         for (uint8 i = 0; i < limitedEdition; i++) {
             uint256 tokenId = _storage.addToken(
