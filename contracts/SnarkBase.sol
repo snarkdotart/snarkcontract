@@ -135,6 +135,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @return A scheme id
     function createProfitShareScheme(address[] participants, uint256[] percentAmount) public returns(uint256) {
         require(participants.length == percentAmount.length);
+        require(participants.length <= 10);
         uint256 sum = 0;
         for (uint i = 0; i < percentAmount.length; i++) {
             require(percentAmount[i] > 0, "Percent value has to be greater than zero");
