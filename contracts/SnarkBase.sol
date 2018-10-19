@@ -135,7 +135,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @return A scheme id
     function createProfitShareScheme(address[] participants, uint256[] percentAmount) public returns(uint256) {
         require(participants.length == percentAmount.length);
-        require(participants.length <= 10);
+        require(participants.length <= 5);
         uint256 sum = 0;
         for (uint i = 0; i < percentAmount.length; i++) {
             require(percentAmount[i] > 0, "Percent value has to be greater than zero");
@@ -194,7 +194,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         require(_storage.getTokenHashAsInUse(hashOfToken) == false);
         // Check that the number of token editions is >= 1 and <= 10
         // otherwise there is a chance to spend all the Gas
-        require(limitedEdition >= 1 && limitedEdition <= 10);
+        require(limitedEdition >= 1 && limitedEdition <= 25);
         // Create the number of editions specified by the limitEdition
         for (uint8 i = 0; i < limitedEdition; i++) {
             uint256 tokenId = _storage.addToken(
