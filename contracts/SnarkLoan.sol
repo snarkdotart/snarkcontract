@@ -5,6 +5,7 @@ import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 import "./snarklibs/SnarkCommonLib.sol";
 import "./snarklibs/SnarkLoanLib.sol";
+import "./openzeppelin/SafeMath.sol";
 
 
 contract SnarkLoan is Ownable, SnarkDefinitions {
@@ -12,6 +13,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     using SnarkBaseLib for address;
     using SnarkCommonLib for address;
     using SnarkLoanLib for address;
+    using SafeMath for uint256;
 
     address private _storage;
 
@@ -197,8 +199,9 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         if (_price > 0) {
             _storage.addPendingWithdrawals(_borrower, _price);
         }
-        if ((msg.value - _price) > 0) {
-            _storage.addPendingWithdrawals(msg.sender, (msg.value - _price));
+        uint256 amountToWithdraw = msg.value.sub(_price);
+        if (amountToWithdraw > 0) {
+            _storage.addPendingWithdrawals(msg.sender, amountToWithdraw);
         }
 
         // Remove token from loan entry
