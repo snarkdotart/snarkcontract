@@ -22,16 +22,13 @@ library SnarkLoanLib {
         );
 
         // save index of token in the list
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("tokenIndexInLoanList", loanId, tokenId)),
-            totalNumber
-        );
+        setTokenIndexInsideListOfLoan(storageAddress, loanId, tokenId, totalNumber);
     }
 
     function deleteTokenFromListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId) public {
         uint256 totalNumber = getTotalNumberOfLoanTokens(storageAddress, loanId);
         uint256 lastTokenId = getTokenFromLoanList(storageAddress, loanId, totalNumber - 1);
-        uint256 indexOfToken = getIndexOfLoanToken(storageAddress, loanId, tokenId);
+        uint256 indexOfToken = getTokenIndexInsideListOfLoan(storageAddress, loanId, tokenId);
 
         if (indexOfToken < totalNumber - 1) {
 
@@ -41,10 +38,7 @@ library SnarkLoanLib {
             );
 
             // save index of token in the list
-            SnarkStorage(storageAddress).setUint(
-                keccak256(abi.encodePacked("tokenIndexInLoanList", loanId, lastTokenId)),
-                indexOfToken
-            );
+            setTokenIndexInsideListOfLoan(storageAddress, loanId, lastTokenId, indexOfToken);
 
             SnarkStorage(storageAddress).deleteUint(
                 keccak256(abi.encodePacked("tokenToLoanList", loanId, totalNumber - 1))
@@ -56,8 +50,21 @@ library SnarkLoanLib {
             totalNumber - 1
         );
 
+        deleteTokenIndexInsideListOfLoan(storageAddress, loanId, tokenId);
+    }
+
+    function setTokenIndexInsideListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId, uint256 index) 
+        public 
+    {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("tokenIndexInsideListOfLoan", loanId, tokenId)),
+            index
+        );
+    }
+
+    function deleteTokenIndexInsideListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId) public {
         SnarkStorage(storageAddress).deleteUint(
-            keccak256(abi.encodePacked("tokenIndexInLoanList", loanId, tokenId))
+            keccak256(abi.encodePacked("tokenIndexInsideListOfLoan", loanId, tokenId))
         );
     }
 
@@ -172,13 +179,13 @@ library SnarkLoanLib {
         );
     }
 
-    function getIndexOfLoanToken(address storageAddress, uint256 loanId, uint256 tokenId)
+    function getTokenIndexInsideListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId)
         public
         view
         returns (uint256)
     {
         return SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("tokenIndexInLoanList", loanId, tokenId))
+            keccak256(abi.encodePacked("tokenIndexInsideListOfLoan", loanId, tokenId))
         );
     }
 
@@ -245,5 +252,6 @@ library SnarkLoanLib {
             keccak256(abi.encodePacked("currentTokenOwnerForLoan", loanId, tokenId))
         );
     }
+
 
 }
