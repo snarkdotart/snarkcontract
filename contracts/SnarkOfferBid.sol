@@ -80,14 +80,10 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @param _tokenId Token IDs included in the offer
     /// @param _price The price for all tokens included in the offer
     function addOffer(uint256 _tokenId, uint256 _price) public onlyOwnerOf(_tokenId) {
-        bool isStatusNone = true;
-        // bool isSecondSale = true;
-        isStatusNone = (isStatusNone && (_storage.getSaleTypeToToken(_tokenId) == uint256(SaleType.None)));
-        // uint256 lastPrice = _storage.getTokenLastPrice(_tokenId);
-        // isSecondSale = (isSecondSale && (lastPrice > 0));
-        // require(isStatusNone && isSecondSale);
-        require(isStatusNone, "the token should not be involved in sales");
-
+        require(
+            _storage.getSaleTypeToToken(_tokenId) == uint256(SaleType.None),
+            "Token should not be involved in sales"
+        );
         // Offer creation and return of the offer ID
         uint256 offerId = _storage.addOffer(msg.sender, _tokenId, _price);
         // move token to Snark
@@ -142,7 +138,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             currentOwner != msg.sender, 
             "The token token cannot belong to the bidder"
         );
-        
+
         uint256 maxBidPrice = _storage.getMaxBidPriceForToken(_tokenId);
         require(msg.value > maxBidPrice, "Price of new bid has to be bigger than previous one");
 

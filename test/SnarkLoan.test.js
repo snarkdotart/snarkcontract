@@ -77,13 +77,13 @@ contract('SnarkLoan', async (accounts) => {
         const duration = 3;
         const tokensIds = [1, 2, 3];
 
-        retval = await instance.getSaleTypeToToken(1);
+        retval = await instance_snarkbase.getSaleTypeToToken(1);
         assert.equal(retval.toNumber(), 0, "error on step 2");
 
-        retval = await instance.getSaleTypeToToken(2);
+        retval = await instance_snarkbase.getSaleTypeToToken(2);
         assert.equal(retval.toNumber(), 0, "error on step 3");
 
-        retval = await instance.getSaleTypeToToken(3);
+        retval = await instance_snarkbase.getSaleTypeToToken(3);
         assert.equal(retval.toNumber(), 0, "error on step 4");
 
         await instance.createLoan(tokensIds, startDateTimestamp, duration, { from: borrower, value: loanCost });
@@ -94,13 +94,13 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval[1], 2, "error on step 7");
         assert.equal(retval[2], 3, "error on step 8");
 
-        retval = await instance.getSaleTypeToToken(1);
+        retval = await instance_snarkbase.getSaleTypeToToken(1);
         assert.equal(retval.toNumber(), 0, "error on step 9");
 
-        retval = await instance.getSaleTypeToToken(2);
+        retval = await instance_snarkbase.getSaleTypeToToken(2);
         assert.equal(retval.toNumber(), 0, "error on step 10");
 
-        retval = await instance.getSaleTypeToToken(3);
+        retval = await instance_snarkbase.getSaleTypeToToken(3);
         assert.equal(retval.toNumber(), 0, "error on step 11");
     });
 
@@ -128,13 +128,13 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval[1], false, "error on step 5");
         assert.equal(retval[2], false, "error on step 6");
         
-        retval = await instance.getSaleTypeToToken(1);
+        retval = await instance_snarkbase.getSaleTypeToToken(1);
         assert.equal(retval.toNumber(), 0, "error on step 7");
 
-        retval = await instance.getSaleTypeToToken(2);
+        retval = await instance_snarkbase.getSaleTypeToToken(2);
         assert.equal(retval.toNumber(), 0, "error on step 8");
 
-        retval = await instance.getSaleTypeToToken(3);
+        retval = await instance_snarkbase.getSaleTypeToToken(3);
         assert.equal(retval.toNumber(), 0, "error on step 9");
 
         retval = await instance_snarkbase.getOwnerOfToken(1);
@@ -161,13 +161,13 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval[1], true, "error on step 16");
         assert.equal(retval[2], false, "error on step 17");
 
-        retval = await instance.getSaleTypeToToken(1);
+        retval = await instance_snarkbase.getSaleTypeToToken(1);
         assert.equal(retval.toNumber(), 2, "error on step 18");
 
-        retval = await instance.getSaleTypeToToken(2);
+        retval = await instance_snarkbase.getSaleTypeToToken(2);
         assert.equal(retval.toNumber(), 2, "error on step 19");
 
-        retval = await instance.getSaleTypeToToken(3);
+        retval = await instance_snarkbase.getSaleTypeToToken(3);
         assert.equal(retval.toNumber(), 0, "error on step 20");
     });
 
@@ -278,7 +278,7 @@ contract('SnarkLoan', async (accounts) => {
         retval = await instance.getCurrentTokenOwnerForLoan(loanId, tokenId);
         assert.equal(retval, tokenOwner, "error on step 4");
 
-        retval = await instance.getSaleTypeToToken(tokenId);
+        retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
         assert.equal(retval.toNumber(), 2, "error on step 5");
 
         await instance.stopLoan(loanId);
@@ -286,7 +286,7 @@ contract('SnarkLoan', async (accounts) => {
         retval = await instance.getLoanSaleStatus(loanId);
         assert.equal(retval.toNumber(), 3, "error on step 6");
 
-        retval = await instance.getSaleTypeToToken(tokenId);
+        retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
         assert.equal(retval.toNumber(), 0, "error on step 7");
         
         retval = await instance.getCurrentTokenOwnerForLoan(loanId, tokenId);

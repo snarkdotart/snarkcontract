@@ -70,19 +70,29 @@ contract('SnarkOfferBid', async (accounts) => {
         retval = await instance.getSaleStatusForOffer(offerId);
         assert.equal(retval.toNumber(), 0, "error on step 3");
 
+        retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
+        assert.equal(retval.toNumber(), 0, "error on step 4");
+
         await instance.addOffer(tokenId, price);
 
+        retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
+        assert.equal(retval.toNumber(), 1, "error on step 5");
+
+        try { await instance.addOffer(tokenId, price + 200); } catch(e) {
+            assert.equal(e.message, 'VM Exception while processing transaction: revert Token should not be involved in sales');
+        }
+
         retval = await instance.getTotalNumberOfOffers();
-        assert.equal(retval.toNumber(), 1, "error on step 4");
-
-        retval = await instance.getSaleStatusForOffer(offerId);
-        assert.equal(retval.toNumber(), 2, "error on step 5");
-
-        retval = await instance.getOwnerOffersCount(owner);
         assert.equal(retval.toNumber(), 1, "error on step 6");
 
+        retval = await instance.getSaleStatusForOffer(offerId);
+        assert.equal(retval.toNumber(), 2, "error on step 7");
+
+        retval = await instance.getOwnerOffersCount(owner);
+        assert.equal(retval.toNumber(), 1, "error on step 8");
+
         retval = await instance.getOwnerOfferByIndex(owner, 0);
-        assert.equal(retval.toNumber(), 1, "error on step 7");
+        assert.equal(retval.toNumber(), 1, "error on step 9");
 
         const eventOfferDeleted = instance.OfferDeleted({ fromBlock: 'latest' });
         eventOfferDeleted.watch(function (error, result) {
@@ -95,7 +105,7 @@ contract('SnarkOfferBid', async (accounts) => {
         await instance.deleteOffer(1);
 
         retval = await instance.getOwnerOffersCount(owner);
-        assert.equal(retval.toNumber(), 0, "error on step 8");
+        assert.equal(retval.toNumber(), 0, "error on step 10");
     });
 
     it("3. test buyOffer function", async () => {

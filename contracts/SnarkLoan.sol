@@ -240,10 +240,6 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         return _storage.getLoanSaleStatus(loanId);
     }
 
-    function getSaleTypeToToken(uint256 tokenId) public view returns (uint256) {
-        return _storage.getSaleTypeToToken(tokenId);
-    }
-
     function getCurrentTokenOwnerForLoan(uint256 loanId, uint256 tokenId) public view returns (address) {
         return _storage.getCurrentTokenOwnerForLoan(loanId, tokenId);
     }
