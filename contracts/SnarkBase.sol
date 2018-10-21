@@ -195,6 +195,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         // Check that the number of token editions is >= 1 and <= 10
         // otherwise there is a chance to spend all the Gas
         require(limitedEdition >= 1 && limitedEdition <= 25);
+        require(profitShareForSecondarySale <= 100);
         // Create the number of editions specified by the limitEdition
         for (uint8 i = 0; i < limitedEdition; i++) {
             uint256 tokenId = _storage.addToken(
