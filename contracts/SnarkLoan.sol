@@ -49,11 +49,12 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         payable
     {
         // check if the user requested their own tokens
-        bool isItMyToken = false;
         for (uint256 i = 0; i < tokensIds.length; i++) {
-            if (_storage.getOwnerOfToken(tokensIds[i]) == msg.sender) isItMyToken = true;
+            require(
+                _storage.getOwnerOfToken(tokensIds[i]) != msg.sender,
+                "Borrower can't request loan for their own tokens"
+            );
         }
-        require(isItMyToken == false, "Borrower can't request loan for their own tokens");
 
         // Create new entry for a Loan 
         uint256 loanId = _storage.createLoan(
