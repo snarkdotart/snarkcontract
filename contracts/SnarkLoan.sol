@@ -70,14 +70,14 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         // Enter automatic accept for those tokens,
         // that agreed to automatic Loan acceptance 
         uint256 _counter = 0;
-        uint256[] memory _unaccepterTokens = new uint256[](tokensIds.length);
+        uint256[] memory _unacceptedTokens = new uint256[](tokensIds.length);
         bool isAgree = false;
         for (i = 0; i < tokensIds.length; i++) {
             isAgree = (msg.sender == owner) ? 
                 _storage.isTokenAcceptOfLoanRequestFromSnark(tokensIds[i]) :
                 _storage.isTokenAcceptOfLoanRequestFromOthers(tokensIds[i]);
             if (!isAgree) {
-                _unaccepterTokens[_counter] = tokensIds[i];
+                _unacceptedTokens[_counter] = tokensIds[i];
                 _counter++;
             }
             // Check status of the token ... change of token status is only possible if it is not for sale,
@@ -92,7 +92,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             }
         }
 
-        emit LoanCreated(msg.sender, loanId, _unaccepterTokens, _counter);
+        emit LoanCreated(msg.sender, loanId, _unacceptedTokens, _counter);
     }
 
     function acceptLoan(uint256[] tokenIds) public {
