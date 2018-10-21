@@ -142,6 +142,10 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             currentOwner != msg.sender, 
             "The token token cannot belong to the bidder"
         );
+        
+        uint256 maxBidPrice = _storage.getMaxBidPriceForToken(_tokenId);
+        require(msg.value > maxBidPrice, "Price of new bid has to be bigger than previous one");
+
         uint256 bidId = _storage.addBid(msg.sender, _tokenId, msg.value);
         // adding an amount of this bid to a contract balance
         _storage.addPendingWithdrawals(_storage, msg.value);
@@ -155,6 +159,9 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         // Check if the function is called by the token owner
         uint256 tokenId = _storage.getTokenIdByBidId(_bidId);
         uint256 price = _storage.getBidPrice(_bidId);
+        uint256 maxBidPrice = _storage.getMaxBidPriceForToken(tokenId);
+        require(price == maxBidPrice, "User has to accept the highest bid only");
+
         SaleType saleType = SaleType(_storage.getSaleTypeToToken(tokenId));
         require(
             saleType == SaleType.Offer || 
