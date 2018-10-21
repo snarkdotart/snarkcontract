@@ -104,7 +104,10 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _storage.deleteOffer(_offerId);
         // unlock token
         _unlockOffersToken(_offerId, tokenId);
-        // emit event that the offer has been deleted
+        // deleting all bids related to the token
+        // return bid amounts to bidders
+        _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
+        // emit event that the offer has been deleted        
         emit OfferDeleted(_offerId);
     }
 
