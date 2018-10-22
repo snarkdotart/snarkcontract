@@ -45,6 +45,7 @@ contract('SnarkLoan', async (accounts) => {
         const profitShareSchemeId = 1;
 
         await instance_snarkbase.addToken(
+            tokenOwner,
             tokenHash,
             limitedEdition,
             profitShareFromSecondarySale,

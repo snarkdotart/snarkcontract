@@ -25,7 +25,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @dev Checks msg.sender can transfer a token, by being owner, approved, or operator
     /// @param _tokenId uint256 ID of the token to validate
     modifier canTransfer(uint256 _tokenId) {
-        require(_isApprovedOrOwner(msg.sender, _tokenId));
+        require(_isApprovedOrOwner(msg.sender, _tokenId) || msg.sender == owner);
         _;
     }
 
@@ -221,6 +221,21 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     {
         transferFrom(_from, _to, _tokenId);
         require(_checkAndCallSafeTransfer(_from, _to, _tokenId, _data));
+    }
+
+    /// @dev Free transfer ownership of an NFT
+    /// @param _from The current owner of the NFT
+    /// @param _to The new owner
+    /// @param _tokenId The NFT to transfer
+    function freeTransfer(address _from, address _to, uint256 _tokenId) public canTransfer(_tokenId) {
+        require(_from != address(0));
+        require(_to != address(0));
+        require(_from != _to);
+
+        _clearApproval(_from, _tokenId);
+        _storage.transferToken(_tokenId, _from, _to);
+
+        emit Transfer(_from, _to, _tokenId);
     }
 
     /// @dev Internal function to clear current approval of a given token ID

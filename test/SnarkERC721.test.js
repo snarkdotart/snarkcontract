@@ -48,7 +48,7 @@ contract('SnarkERC721', async (accounts) => {
         let retval = await instance_snarkbase.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 0, "error on step 1");
 
-        await instance_snarkbase.createProfitShareScheme(participants, profits);
+        await instance_snarkbase.createProfitShareScheme(accounts[0], participants, profits);
 
         retval = await instance_snarkbase.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 1, "error on step 2");
@@ -64,6 +64,7 @@ contract('SnarkERC721', async (accounts) => {
         assert.equal(retval.toNumber(), 0, "error on step 3");
 
         await instance_snarkbase.addToken(
+            accounts[0],
             tokenHash,
             limitedEdition,
             profitShareFromSecondarySale,
@@ -170,5 +171,19 @@ contract('SnarkERC721', async (accounts) => {
 
         retval = await instance_snarkbase.getWithdrawBalance(participants[1]);
         assert.equal(retval.toNumber(), 0, "error on step 8");
+    });
+
+    it("14. test freeTransfer function", async () => {
+        const _from = accounts[1];
+        const _to = accounts[2];
+        const _tokenId = 1;
+
+        retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
+        assert.equal(retval, _from, "error on step 1");
+
+        await instance.freeTransfer(_from, _to, _tokenId, { from: accounts[0] });
+
+        retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
+        assert.equal(retval, _to, "error on step 2");
     });
 });

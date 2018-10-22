@@ -40,19 +40,19 @@ contract('SnarkBase', async (accounts) => {
             }
         });
 
-        try { await instance.createProfitShareScheme(participants, badProfits1); } catch(e) {
+        try { await instance.createProfitShareScheme(accounts[0], participants, badProfits1); } catch(e) {
             assert.equal(e.message, 'VM Exception while processing transaction: revert Percent value has to be greater than zero');
         }
 
-        try { await instance.createProfitShareScheme(participants, badProfits2); } catch(e) {
+        try { await instance.createProfitShareScheme(accounts[0], participants, badProfits2); } catch(e) {
             assert.equal(e.message, 'VM Exception while processing transaction: revert Sum of all percentages has to be equal 100');
         }
 
-        try { await instance.createProfitShareScheme(participants, badProfits3); } catch(e) {
+        try { await instance.createProfitShareScheme(accounts[0], participants, badProfits3); } catch(e) {
             assert.equal(e.message, 'VM Exception while processing transaction: revert Sum of all percentages has to be equal 100');
         }
         
-        await instance.createProfitShareScheme(participants, profits);
+        await instance.createProfitShareScheme(accounts[0], participants, profits);
 
         retval = await instance.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 1);
@@ -68,6 +68,7 @@ contract('SnarkBase', async (accounts) => {
     });
 
     it("3. test addToken function", async () => {
+        const artist = '0x7Af26b6056713AbB900f5dD6A6C45a38F1F70Bc5';
         const tokenHash = web3.sha3("tokenHash");
         const limitedEdition = 10;
         const profitShareFromSecondarySale = 20;
@@ -80,6 +81,9 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getTokensCount();
         assert.equal(retval.toNumber(), 0, "error on step 2");
 
+        retval = await instance.getTokensCountByOwner(artist);
+        assert.equal(retval.toNumber(), 0, "error on step 3");
+
         const event = instance.TokenCreated({ fromBlock: 'latest' });
         event.watch(function (error, result) {
             if (!error) {
@@ -90,6 +94,7 @@ contract('SnarkBase', async (accounts) => {
         });
 
         await instance.addToken(
+            artist,
             tokenHash,
             limitedEdition,
             profitShareFromSecondarySale,
@@ -100,13 +105,13 @@ contract('SnarkBase', async (accounts) => {
         );
 
         retval = await instance.getTokensCount();
-        assert.equal(retval.toNumber(), 10, "error on step 3");
-
-        retval = await instance.getTokensCountByOwner(accounts[0]);
         assert.equal(retval.toNumber(), 10, "error on step 4");
 
-        retval = await instance.getTokensCountByArtist(accounts[0]);
+        retval = await instance.getTokensCountByOwner(artist);
         assert.equal(retval.toNumber(), 10, "error on step 5");
+
+        retval = await instance.getTokensCountByArtist(artist);
+        assert.equal(retval.toNumber(), 10, "error on step 6");
     });
 
     it("4. test changeProfitShareSchemeForToken function", async () => {
@@ -116,28 +121,35 @@ contract('SnarkBase', async (accounts) => {
             '0xB94691B99EB731536E35F375ffC85249Ec717999'
         ];
         const profits = [ 30, 60, 10 ];
+        const participants_2 = [
+            '0xC04691B99EB731536E35F375ffC85249Ec713228', 
+            '0xB94691B99EB731536E35F375ffC85249Ec717779'
+        ];
+        const profits_2 = [ 70, 30 ];
+        const artist = '0x7Af26b6056713AbB900f5dD6A6C45a38F1F70Bc5';
 
         retval = await instance.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 1, "error on step 1");
 
-        await instance.createProfitShareScheme(participants, profits);
+        await instance.createProfitShareScheme(artist, participants, profits);
+        await instance.createProfitShareScheme(artist, participants_2, profits_2);
 
         retval = await instance.getProfitShareSchemesTotalCount();
-        assert.equal(retval.toNumber(), 2, "error on step 2");
+        assert.equal(retval.toNumber(), 3, "error on step 2");
 
-        retval = await instance.getProfitShareSchemeCountByAddress();
+        retval = await instance.getProfitShareSchemeCountByAddress({from: artist});
         assert.equal(retval.toNumber(), 2, "error on step 3");
 
-        retval = await instance.getTokensCountByOwner(accounts[0]);
+        retval = await instance.getTokensCountByOwner(artist);
         assert.equal(retval.toNumber(), 10, "error on step 4");
 
-        await instance.changeProfitShareSchemeForToken(1, 2);
+        await instance.changeProfitShareSchemeForToken(1, 3, { from: artist });
 
-        retval = await instance.getProfitShareParticipantsCount();
+        retval = await instance.getProfitShareParticipantsCount({ from: artist });
         assert.equal(retval.toNumber(), 2, "error on step 5");
 
         retval = await instance.getTokenDetails(1);
-        assert.equal(retval[5].toNumber(), 2, "error on step 6");
+        assert.equal(retval[5].toNumber(), 3, "error on step 6");
     });
 
 });

@@ -133,7 +133,11 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @param participants List of profit sharing participants
     /// @param percentAmount List of profit share % of participants
     /// @return A scheme id
-    function createProfitShareScheme(address[] participants, uint256[] percentAmount) public returns(uint256) {
+    function createProfitShareScheme(address artistAddress, address[] participants, uint256[] percentAmount)
+        public
+        onlyOwner
+        returns(uint256)
+    {
         require(participants.length == percentAmount.length);
         require(participants.length <= 5);
         uint256 sum = 0;
@@ -142,8 +146,8 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             sum = sum.add(percentAmount[i]);
         }
         require(sum == 100, "Sum of all percentages has to be equal 100");
-        uint256 schemeId = _storage.addProfitShareScheme(msg.sender, participants, percentAmount);
-        emit ProfitShareSchemeAdded(msg.sender, schemeId);
+        uint256 schemeId = _storage.addProfitShareScheme(artistAddress, participants, percentAmount);
+        emit ProfitShareSchemeAdded(artistAddress, schemeId);
     }
 
     /// @dev Return a total number of profit share schemes
@@ -172,7 +176,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         return _storage.getOwnerOfToken(tokenId);
     }
 
-    /// @dev Function to add a new digital token to blockchain
+    /// @dev Function to add a new digital token to blockchain. Only Snark can call this function.
     /// @param hashOfToken Unique hash of the token
     /// @param limitedEdition Number of token edititons
     /// @param profitShareForSecondarySale Profit share % during secondary sale
@@ -180,6 +184,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @param tokenUrl IPFS URL to digital work
     /// @param profitShareSchemeId Profit share scheme Id
     function addToken(
+        address artistAddress,
         bytes32 hashOfToken,
         uint8 limitedEdition,
         uint8 profitShareForSecondarySale,
@@ -189,6 +194,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         bool isAcceptOfLoanRequestFromOthers
     ) 
         public
+        onlyOwner
     {
         // Check for an identical hash of the digital token in existence to prevent uploading a duplicate token
         require(_storage.getTokenHashAsInUse(hashOfToken) == false);
@@ -199,7 +205,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         // Create the number of editions specified by the limitEdition
         for (uint8 i = 0; i < limitedEdition; i++) {
             uint256 tokenId = _storage.addToken(
-                msg.sender,
+                artistAddress,
                 hashOfToken,
                 limitedEdition,
                 i + 1,
@@ -213,13 +219,13 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             // set that a digital work with this hash has already been loaded
             _storage.setTokenHashAsInUse(hashOfToken, true);
             // Enter the new owner
-            _storage.setOwnerOfToken(tokenId, msg.sender);
+            _storage.setOwnerOfToken(tokenId, artistAddress);
             // Add new token to new owner's token list
-            _storage.addTokenToOwner(msg.sender, tokenId);
+            _storage.addTokenToOwner(artistAddress, tokenId);
             // Add new token to new artist's token list
-            _storage.addTokenToArtistList(tokenId, msg.sender);
+            _storage.addTokenToArtistList(tokenId, artistAddress);
             // Emit token event
-            emit TokenCreated(msg.sender, tokenId);
+            emit TokenCreated(artistAddress, tokenId);
         }
     }
 
