@@ -111,7 +111,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @param _tokenId Token token ID
     function addBid(uint256 _tokenId) public payable {
         // token has to be exist
-        require(_tokenId <= _storage.getTotalNumberOfTokens());
+        require(_tokenId > 0 && _tokenId <= _storage.getTotalNumberOfTokens());
         // it does not matter if the token is available for sale
         // it is possible to accept a bid unless
         // the token is part of a loan

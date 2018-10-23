@@ -12,7 +12,7 @@ library SnarkCommonLib {
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
 
     function transferToken(address _storageAddress, uint256 _tokenId, address _from, address _to) internal {
-        if (_tokenId <= _storageAddress.getTotalNumberOfTokens() &&
+        if (_tokenId > 0 && _tokenId <= _storageAddress.getTotalNumberOfTokens() &&
             _from == _storageAddress.getOwnerOfToken(_tokenId)) {
             uint256 _index = _storageAddress.getIndexOfOwnerToken(_from, _tokenId);
             _storageAddress.deleteTokenFromOwner(_from, _index);
