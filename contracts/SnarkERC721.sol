@@ -63,7 +63,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// Throws if the token ID does not exist. May return an empty string.
     /// @param _tokenId uint256 ID of the token to query
     function tokenURI(uint256 _tokenId) public view returns (string) {
-        require(_tokenId < _storage.getTotalNumberOfTokens());
+        require(_tokenId <= _storage.getTotalNumberOfTokens());
         return _storage.getTokenURL(_tokenId);
     }
 
@@ -103,7 +103,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     ///      about them do throw.
     /// @return The address of the owner of the NFT
     function ownerOf(uint256 _tokenId) public view returns (address) {
-        require(_tokenId < _storage.getTotalNumberOfTokens());
+        require(_tokenId <= _storage.getTotalNumberOfTokens());
         address tokenOwner = _storage.getOwnerOfToken(_tokenId);
         require(tokenOwner != address(0));
         return tokenOwner;
