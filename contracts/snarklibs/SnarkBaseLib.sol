@@ -232,6 +232,7 @@ library SnarkBaseLib {
             profitShareFromSecondarySale);
         SnarkStorage(storageAddress).setString(
             keccak256(abi.encodePacked("token", "url", tokenId)), tokenUrl);
+
         setTokenAcceptOfLoanRequestFromSnark(storageAddress, tokenId, isAcceptLoanRequestFromSnark);
         setTokenAcceptOfLoanRequestFromOthers(storageAddress, tokenId, isAcceptLoanRequestFromOthers);
     }
@@ -327,6 +328,13 @@ library SnarkBaseLib {
         SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("saleStatusToToken", tokenId)),
             saleStatus
+        );
+    }
+
+    function setTokenDecryptionKey(address storageAddress, uint256 tokenId, string decryptionKey) public {
+        SnarkStorage(storageAddress).setString(
+            keccak256(abi.encodePacked("token", "decryptionKey", tokenId)),
+            decryptionKey
         );
     }
 
@@ -588,6 +596,12 @@ library SnarkBaseLib {
 
     function getSaleStatusToToken(address storageAddress, uint256 tokenId) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("saleStatusToToken", tokenId)));
+    }
+
+    function getTokenDecryptionKey(address storageAddress, uint256 tokenId) public view returns (string) {
+        return SnarkStorage(storageAddress).stringStorage(
+            keccak256(abi.encodePacked("token", "decryptionKey", tokenId))
+        );
     }
 
 }

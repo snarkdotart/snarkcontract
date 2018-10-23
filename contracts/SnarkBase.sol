@@ -229,6 +229,18 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         }
     }
 
+    function setTokenDecryptionKey(uint256 tokenId, string decryptionKey) public onlyOwner {
+        _storage.setTokenDecryptionKey(tokenId, decryptionKey);
+    }
+
+    function getTokenDecryptionKey(uint256 tokenId) public view returns (string) {
+        require(
+            msg.sender == _storage.getOwnerOfToken(tokenId) ||
+            msg.sender == owner
+        );
+        return _storage.getTokenDecryptionKey(tokenId);
+    }
+
     function getTokensCount() public view returns (uint256) {
         return _storage.getTotalNumberOfTokens();
     }
