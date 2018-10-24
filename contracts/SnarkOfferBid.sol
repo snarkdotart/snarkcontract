@@ -86,8 +86,6 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         );
         // Offer creation and return of the offer ID
         uint256 offerId = _storage.addOffer(msg.sender, _tokenId, _price);
-        // move token to Snark
-        _lockOffersToken(offerId, _tokenId);
         // Emit an event that returns token id and offer id as well
         emit OfferAdded(msg.sender, offerId, _tokenId);
     }
@@ -98,8 +96,6 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         // clear all data in the token
         uint256 tokenId = _storage.getTokenIdByOfferId(_offerId);
         _storage.deleteOffer(_offerId);
-        // unlock token
-        _unlockOffersToken(_offerId, tokenId);
         // deleting all bids related to the token
         // return bid amounts to bidders
         _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
@@ -166,18 +162,9 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             saleType == SaleType.None,
             "Bids are not allowed while the token is in Loan status"
         );
-        address tokenOwner;
-        address mediator;
-        uint256 offerId;
-        if (saleType == SaleType.Offer) {
-            // In this case, the token is blocked and we can find the owner address in the offer
-            offerId = _storage.getOfferIdByTokenId(tokenId);
-            tokenOwner = _storage.getOwnerOfOffer(offerId);
-            mediator = _storage.getOwnerOfToken(tokenId);
-        } else {
-            tokenOwner = _storage.getOwnerOfToken(tokenId);
-            mediator = tokenOwner;
-        }
+
+        address tokenOwner = _storage.getOwnerOfToken(tokenId);
+        // uint256 offerId = _storage.getOfferIdByTokenId(tokenId);
 
         require(msg.sender == tokenOwner, "Only owner can accept a bid for their token");
 
@@ -185,9 +172,9 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _storage.subPendingWithdrawals(_storage, price);
         uint256 profit;
         (profit, price) = _storage.calculatePlatformProfitShare(price);
-        _storage.takePlatformProfitShare(price);
+        _storage.takePlatformProfitShare(profit);
 
-        _storage.buy(tokenId, price, tokenOwner, bidOwner, mediator);
+        _storage.buy(tokenId, price, tokenOwner, bidOwner);
         _storage.deleteBid(_bidId);
 
         // deleting all bids related to the token
@@ -216,15 +203,16 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
         require(saleStatus == uint256(SaleStatus.Active), "Offer status must be active");
         require(msg.value >= price, "Amount should not be less than the offer price");
+        
         uint256 refunds = msg.value.sub(price);
-
-        address tokenOwner = _storage.getOwnerOfOffer(_offerId);
-        address mediator = _storage.getOwnerOfToken(tokenId);
+        address tokenOwner = _storage.getOwnerOfToken(tokenId);
 
         require(msg.sender != tokenOwner, "Token owner can't buy their own token");
 
-        _storage.takePlatformProfitShare(price);
-        _storage.buy(tokenId, price, tokenOwner, msg.sender, mediator);
+        uint256 profit;
+        (profit, price) = _storage.calculatePlatformProfitShare(price);
+        _storage.takePlatformProfitShare(profit);
+        _storage.buy(tokenId, price, tokenOwner, msg.sender);
         if (refunds > 0) msg.sender.transfer(refunds);
         _storage.setSaleStatusForOffer(_offerId, uint256(SaleStatus.Finished));
 
@@ -269,22 +257,6 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             _storage.deleteBid(bidId);
             // _deleteBid(bidId, _tokenId, bidder);
         }
-    }
-
-    /// @dev Lock Token
-    /// @param _offerId Offer Id
-    /// @param _tokenId Token Id
-    function _lockOffersToken(uint256 _offerId, uint256 _tokenId) private {
-        address realOwner = _storage.getOwnerOfOffer(_offerId);
-        _storage.transferToken(_tokenId, realOwner, owner);
-    }
-
-    /// @dev Unlock Token
-    /// @param _offerId Offer Id
-    /// @param _tokenId Token Id
-    function _unlockOffersToken(uint256 _offerId, uint256 _tokenId) private {
-        address realOwner = _storage.getOwnerOfOffer(_offerId);
-        _storage.transferToken(_tokenId, owner, realOwner);
     }
 
 }

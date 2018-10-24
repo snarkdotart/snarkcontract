@@ -249,8 +249,26 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         return _storage.getNumberOfArtistTokens(artist);
     }
 
+    function getTokenListForArtist(address artist) public view returns (uint256[]) {
+        uint256 _count = _storage.getNumberOfArtistTokens(artist);
+        uint256[] memory _retarray = new uint256[](_count);
+        for (uint256 i = 0; i < _count; i++) {
+            _retarray[i] = _storage.getTokenIdForArtist(artist, i);
+        }
+        return _retarray;
+    }
+
     function getTokensCountByOwner(address tokenOwner) public view returns (uint256) {
         return _storage.getOwnedTokensCount(tokenOwner);
+    }
+
+    function getTokenListForOwner(address tokenOwner) public view returns (uint256[]) {
+        uint256 _count = _storage.getOwnedTokensCount(tokenOwner);
+        uint256[] memory _retarray = new uint256[](_count);
+        for (uint256 i = 0; i < _count; i++) {
+            _retarray[i] = _storage.getTokenIdOfOwner(tokenOwner, i);
+        }
+        return _retarray;
     }
 
     function isTokenAcceptOfLoanRequestFromSnark(uint256 tokenId) public view returns (bool) {

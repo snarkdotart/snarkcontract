@@ -12,14 +12,17 @@ library SnarkCommonLib {
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
 
     function transferToken(address _storageAddress, uint256 _tokenId, address _from, address _to) internal {
-        if (_tokenId > 0 && _tokenId <= _storageAddress.getTotalNumberOfTokens() &&
-            _from == _storageAddress.getOwnerOfToken(_tokenId)) {
-            uint256 _index = _storageAddress.getIndexOfOwnerToken(_from, _tokenId);
-            _storageAddress.deleteTokenFromOwner(_from, _index);
-            _storageAddress.setOwnerOfToken(_tokenId, _to);
-            _storageAddress.addTokenToOwner(_to, _tokenId);
-            emit Transfer(_from, _to, _tokenId);
-        }
+        require(_tokenId > 0 && _tokenId <= _storageAddress.getTotalNumberOfTokens(), "Token Id is wrong");
+        require(_from == _storageAddress.getOwnerOfToken(_tokenId), "");
+        // TODO: Тут засада, ибо токен может иметь тип loan.
+        // TODO: убиваем лоан, при любом передвижении - скидываем в момент покупки
+        // require(_storageAddress.getSaleTypeToToken(_tokenId) == 0, "");
+
+        uint256 _index = _storageAddress.getIndexOfOwnerToken(_from, _tokenId);
+        _storageAddress.deleteTokenFromOwner(_from, _index);
+        _storageAddress.setOwnerOfToken(_tokenId, _to);
+        _storageAddress.addTokenToOwner(_to, _tokenId);
+        emit Transfer(_from, _to, _tokenId);
     }
 
     /// @dev Snark platform takes it's profit share
@@ -81,20 +84,18 @@ library SnarkCommonLib {
     /// @param _value Selling price of token
     /// @param _from Address of seller
     /// @param _to Address of buyer
-    /// @param _mediator Address of token's temporary keeper (Snark)
     function buy(
         address _storageAddress, 
         uint256 _tokenId, 
         uint256 _value,
         address _from, 
-        address _to, 
-        address _mediator
+        address _to
     )
         internal 
     {
         incomeDistribution(_storageAddress, _value, _tokenId, _from);
-        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("token", "lastPrice", _tokenId)), _value);
-        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("saleTypeToToken", _tokenId)), 0);
-        transferToken(_storageAddress, _tokenId, _mediator, _to);
+        _storageAddress.setTokenLastPrice(_tokenId, _value);
+        _storageAddress.setSaleTypeToToken(_tokenId, 0);
+        transferToken(_storageAddress, _tokenId, _from, _to);
     }
 }
