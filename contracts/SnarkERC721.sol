@@ -9,9 +9,10 @@ import "./openzeppelin/SafeMath.sol";
 import "./openzeppelin/AddressUtils.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 import "./snarklibs/SnarkCommonLib.sol";
+import "./SnarkDefinitions.sol";
 
 
-contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC721 {
+contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC721, SnarkDefinitions {
 
     using SafeMath for uint256;
     using AddressUtils for address;
@@ -231,6 +232,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         require(_from != address(0));
         require(_to != address(0));
         require(_from != _to);
+        require(SaleType(_storage.getSaleTypeToToken(_tokenId)) == SaleType.None);
 
         _clearApproval(_from, _tokenId);
         _storage.transferToken(_tokenId, _from, _to);
