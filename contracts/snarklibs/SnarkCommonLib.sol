@@ -3,11 +3,13 @@ pragma solidity ^0.4.24;
 import "../openzeppelin/SafeMath.sol";
 import "../SnarkStorage.sol";
 import "./SnarkBaseLib.sol";
+import "./SnarkBaseExtraLib.sol";
 
 
 library SnarkCommonLib {
     using SafeMath for uint256;
     using SnarkBaseLib for address;
+    using SnarkBaseExtraLib for address;
 
     event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
 
@@ -98,4 +100,5 @@ library SnarkCommonLib {
         _storageAddress.setSaleTypeToToken(_tokenId, 0);
         transferToken(_storageAddress, _tokenId, _from, _to);
     }
+    
 }

@@ -29,7 +29,7 @@ contract('SnarkBase', async (accounts) => {
         const badProfits3 = [ 60, 70 ];
 
         let retval = await instance.getProfitShareSchemesTotalCount();
-        assert.equal(retval.toNumber(), 0);
+        assert.equal(retval.toNumber(), 0, "error on step 1");
 
         const event = instance.ProfitShareSchemeAdded({ fromBlock: 'latest' });
         event.watch(function (error, result) {
@@ -55,16 +55,16 @@ contract('SnarkBase', async (accounts) => {
         await instance.createProfitShareScheme(accounts[0], participants, profits);
 
         retval = await instance.getProfitShareSchemesTotalCount();
-        assert.equal(retval.toNumber(), 1);
+        assert.equal(retval.toNumber(), 1, "error on step 2");
 
         retval = await instance.getProfitShareSchemeCountByAddress();
-        assert.equal(retval.toNumber(), 1);
+        assert.equal(retval.toNumber(), 1, "error on step 3");
 
         retval = await instance.getProfitShareSchemeIdByIndex(0);
-        assert.equal(retval.toNumber(), 1);
+        assert.equal(retval.toNumber(), 1, "error on step 4");
 
         retval = await instance.getProfitShareParticipantsCount();
-        assert.equal(retval.toNumber(), 1);
+        assert.equal(retval.toNumber(), 2, "error on step 5");
     });
 
     it("3. test addToken function", async () => {
@@ -146,7 +146,7 @@ contract('SnarkBase', async (accounts) => {
         await instance.changeProfitShareSchemeForToken(1, 3, { from: artist });
 
         retval = await instance.getProfitShareParticipantsCount({ from: artist });
-        assert.equal(retval.toNumber(), 2, "error on step 5");
+        assert.equal(retval.toNumber(), 5, "error on step 5");
 
         retval = await instance.getTokenDetails(1);
         assert.equal(retval[5].toNumber(), 3, "error on step 6");

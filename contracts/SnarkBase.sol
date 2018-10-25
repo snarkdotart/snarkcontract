@@ -5,6 +5,7 @@ pragma solidity ^0.4.24;
 import "./openzeppelin/Ownable.sol";
 import "./openzeppelin/SafeMath.sol";
 import "./SnarkDefinitions.sol";
+import "./snarklibs/SnarkBaseExtraLib.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 import "./snarklibs/SnarkCommonLib.sol";
 
@@ -12,6 +13,7 @@ import "./snarklibs/SnarkCommonLib.sol";
 contract SnarkBase is Ownable, SnarkDefinitions { 
     
     using SafeMath for uint256;
+    using SnarkBaseExtraLib for address;
     using SnarkBaseLib for address;
     using SnarkCommonLib for address;
 
@@ -169,7 +171,12 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Return a list of user profit share schemes
     /// @return A list of schemes belongs to owner
     function getProfitShareParticipantsCount() public view returns(uint256) {
-        return _storage.getNumberOfProfitShareSchemesForOwner(msg.sender);
+        return _storage.getNumberOfUniqueParticipantsForOwner(msg.sender);
+    }
+
+    /// @dev Return a list of unique profit share participants
+    function getProfitShareParticipantsList() public view returns (address[]) {
+        return _storage.getListOfUniqueParticipantsForOwner(msg.sender);
     }
 
     function getOwnerOfToken(uint256 tokenId) public view returns (address) {
@@ -359,4 +366,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         return _storage.getSaleTypeToToken(tokenId);
     }
 
+    function getTokenHashAsInUse(bytes32 tokenHash) public view returns (bool) {
+        return _storage.getTokenHashAsInUse(tokenHash);
+    }
 }

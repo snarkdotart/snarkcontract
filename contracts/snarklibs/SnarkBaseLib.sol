@@ -2,10 +2,12 @@ pragma solidity ^0.4.24;
 
 import "../SnarkStorage.sol";
 import "../openzeppelin/SafeMath.sol";
+import "../snarklibs/SnarkBaseExtraLib.sol";
 
 
 library SnarkBaseLib {
     using SafeMath for uint256;
+    using SnarkBaseExtraLib for address;
 
     /*** SET ***/
     function setSnarkWalletAddress(address storageAddress, address walletAddress) public {
@@ -145,20 +147,6 @@ library SnarkBaseLib {
         );
     }
 
-    function setTokenToParticipantApproving(
-        address storageAddress, 
-        uint256 tokenId, 
-        address participant, 
-        bool consent
-    ) 
-        public
-    {
-        SnarkStorage(storageAddress).setBool(
-            keccak256(abi.encodePacked("tokenToParticipantApproving", tokenId, participant)),
-            consent
-        );
-    }
-
     function setTokenAcceptOfLoanRequestFromSnark(address storageAddress, uint256 tokenId, bool isAccept) public {
         SnarkStorage(storageAddress).setBool(
             keccak256(abi.encodePacked("token", "isTokenAcceptOfLoanRequestFromSnark", tokenId)), isAccept);
@@ -237,50 +225,6 @@ library SnarkBaseLib {
         setTokenAcceptOfLoanRequestFromOthers(storageAddress, tokenId, isAcceptLoanRequestFromOthers);
     }
 
-    function addProfitShareScheme(
-        address storageAddress,
-        address schemeOwner,
-        address[] participants,
-        uint256[] profits
-    )
-        public
-        returns (uint256 schemeId) 
-    {
-        schemeId = SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfProfitShareSchemes")) + 1;
-        SnarkStorage(storageAddress).setUint(keccak256("totalNumberOfProfitShareSchemes"), schemeId);
-
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("numberOfParticipantsForProfitShareScheme", schemeId)), 
-            participants.length
-        );
-
-        for (uint256 i = 0; i < participants.length; i++) {
-
-            SnarkStorage(storageAddress).setAddress(
-                keccak256(abi.encodePacked("participantAddressForProfitShareScheme", schemeId, i)), 
-                participants[i]
-            );
-
-            SnarkStorage(storageAddress).setUint(
-                keccak256(abi.encodePacked("participantProfitForProfitShareScheme", schemeId, i)), 
-                profits[i]
-            );
-        }
-
-        uint256 numberOfSchemesForOwner = SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", schemeOwner)));
-
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", schemeOwner)), 
-            numberOfSchemesForOwner + 1
-        );
-
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("profitShareSchemeIdsForOwner", schemeOwner, numberOfSchemesForOwner)),
-            schemeId
-        );
-    }
-
     function addTokenToArtistList(address storageAddress, uint256 tokenId, address artistAddress) public {
         uint256 numberOfTokens = SnarkStorage(storageAddress).uintStorage(
             keccak256(abi.encodePacked("artist", "numberOfTokens", artistAddress))
@@ -336,7 +280,7 @@ library SnarkBaseLib {
             keccak256(abi.encodePacked("token", "decryptionKey", tokenId)),
             decryptionKey
         );
-    }
+    }    
 
     /*** GET ***/
     function getSnarkWalletAddress(address storageAddress) public view returns (address) {
@@ -399,15 +343,9 @@ library SnarkBaseLib {
         );
     }
 
-    function getTokenProfitShareSchemeId(address storageAddress, uint256 tokenId) public view
-        returns (uint256 profitShareSchemeId)
-    {
-        return SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("token", "profitShareSchemeId", tokenId))
-        );
-    }
-
-    function getTokenProfitShareFromSecondarySale(address storageAddress, uint256 tokenId) public view
+    function getTokenProfitShareFromSecondarySale(address storageAddress, uint256 tokenId)
+        public
+        view
         returns (uint256 profitShare)
     {
         return SnarkStorage(storageAddress).uintStorage(
@@ -458,59 +396,11 @@ library SnarkBaseLib {
         limitedEdition = getTokenLimitedEdition(storageAddress, tokenId);
         editionNumber = getTokenEditionNumber(storageAddress, tokenId);
         lastPrice = getTokenLastPrice(storageAddress, tokenId);
-        profitShareSchemeId = getTokenProfitShareSchemeId(storageAddress, tokenId);
+        profitShareSchemeId = storageAddress.getTokenProfitShareSchemeId(tokenId);
         profitShareFromSecondarySale = getTokenProfitShareFromSecondarySale(storageAddress, tokenId);
         tokenUrl = getTokenURL(storageAddress, tokenId);
         isAcceptOfLoanRequestFromSnark = isTokenAcceptOfLoanRequestFromSnark(storageAddress, tokenId);
         isAcceptOfLoanRequestFromOthers = isTokenAcceptOfLoanRequestFromOthers(storageAddress, tokenId);
-    }
-
-    function getTotalNumberOfProfitShareSchemes(address storageAddress) public view returns (uint256 number) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfProfitShareSchemes"));
-    }
-
-    function getNumberOfParticipantsForProfitShareScheme(address storageAddress, uint256 schemeId) 
-        public 
-        view 
-        returns (uint256)
-    {
-        return SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfParticipantsForProfitShareScheme", schemeId)));
-    }
-
-    function getParticipantOfProfitShareScheme(address storageAddress, uint256 schemeId, uint256 index) 
-        public
-        view
-        returns (
-            address participant, 
-            uint256 profit
-        )
-    {
-        participant = SnarkStorage(storageAddress).addressStorage(
-            keccak256(abi.encodePacked("participantAddressForProfitShareScheme", schemeId, index)) 
-        );
-
-        profit = SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("participantProfitForProfitShareScheme", schemeId, index))
-        );
-    }
-
-    function getNumberOfProfitShareSchemesForOwner(address storageAddress, address schemeOwner) 
-        public 
-        view 
-        returns (uint256)
-    {
-        return SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", schemeOwner)));
-    }
-
-    function getProfitShareSchemeIdForOwner(address storageAddress, address schemeOwner, uint256 index)
-        public
-        view
-        returns (uint256)
-    {
-        return SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("profitShareSchemeIdsForOwner", schemeOwner, index)));
     }
 
     function getOwnedTokensCount(address storageAddress, address tokenOwner) public view returns (uint256) {
