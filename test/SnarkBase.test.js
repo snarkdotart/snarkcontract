@@ -150,6 +150,14 @@ contract('SnarkBase', async (accounts) => {
 
         retval = await instance.getTokenDetails(1);
         assert.equal(retval[5].toNumber(), 3, "error on step 6");
+
+        retval = await instance.getProfitShareParticipantsList({ from: artist });
+        assert.equal(retval.length, 5, "error on step 7");
+        assert.equal(retval[0].toLowerCase(), participants[0].toLowerCase(), "error on step 8");
+        assert.equal(retval[1].toLowerCase(), participants[1].toLowerCase(), "error on step 9");
+        assert.equal(retval[2].toLowerCase(), participants[2].toLowerCase(), "error on step 10");
+        assert.equal(retval[3].toLowerCase(), participants_2[0].toLowerCase(), "error on step 11");
+        assert.equal(retval[4].toLowerCase(), participants_2[1].toLowerCase(), "error on step 12");
     });
 
 });
