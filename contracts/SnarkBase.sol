@@ -24,7 +24,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /*** EVENTS ***/
 
     /// @dev TokenCreatedEvent is executed when a new token is created.
-    event TokenCreated(address indexed tokenOwner, uint256 tokenId);
+    event TokenCreated(address indexed tokenOwner, bytes32 hashOfToken, uint256 tokenId);
     /// @dev Event occurs when profit share scheme is created.
     event ProfitShareSchemeAdded(address schemeOwner, uint256 profitShareSchemeId);
     /// @dev Event occurs when an artist wants to remove the profit share for secondary sale
@@ -232,7 +232,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             // Add new token to new artist's token list
             _storage.addTokenToArtistList(tokenId, artistAddress);
             // Emit token event
-            emit TokenCreated(artistAddress, tokenId);
+            emit TokenCreated(artistAddress, hashOfToken, tokenId);
         }
     }
 
@@ -292,6 +292,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         public 
         view 
         returns (
+            address currentOwner,
             address artist,
             bytes32 hashOfToken, 
             uint256 limitedEdition, 

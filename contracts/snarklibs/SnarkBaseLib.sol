@@ -379,6 +379,7 @@ library SnarkBaseLib {
         public 
         view 
         returns (
+            address currentOwner,
             address artistAddress, 
             bytes32 tokenHash,
             uint256 limitedEdition,
@@ -391,6 +392,7 @@ library SnarkBaseLib {
             bool isAcceptOfLoanRequestFromOthers
         )
     {
+        currentOwner = getOwnerOfToken(storageAddress, tokenId);
         artistAddress = getTokenArtist(storageAddress, tokenId);
         tokenHash = getTokenHash(storageAddress, tokenId);
         limitedEdition = getTokenLimitedEdition(storageAddress, tokenId);
