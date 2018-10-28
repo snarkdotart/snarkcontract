@@ -15,6 +15,8 @@ module.exports = function(deployer) {
                     storage_instance.allowAccess(snarkbase_instance.address);
                     snarkbase_instance.setTokenName("Snark Art Token");
                     snarkbase_instance.setTokenSymbol("SAT");
+                    snarkbase_instance.changeRestrictAccess(true);
+                    snarkbase_instance.setPlatformProfitShare(5);
                 }
             );
         }
