@@ -116,6 +116,14 @@ contract('SnarkOfferBid', async (accounts) => {
         const offerId = 2;
         const price = web3.toWei(1, 'ether');
 
+        const platformProfitShare = await instance_snarkbase.getPlatformProfitShare();
+        
+        const profit = price *  platformProfitShare / 100;
+        
+        console.log(`Price: ${price}`);
+        console.log(`getPlatformProfitShare = ${platformProfitShare}`);
+        console.log(`Profit 5%: ${profit}`);
+
         let retval = await instance.getOwnerOffersCount(owner);
         assert.equal(retval.toNumber(), 0, "error on step 1");
 
@@ -148,7 +156,7 @@ contract('SnarkOfferBid', async (accounts) => {
         assert.equal(retval, buyer, "error on step 9");
 
         retval = await instance_snarkbase.getWithdrawBalance(owner);
-        assert.equal(retval.toNumber(), price, "error on step 10");
+        assert.equal(retval.toNumber(), price - profit, "error on step 10");
     });
 
     it("4. test addBid and deleteBid functions", async () => {
@@ -159,6 +167,9 @@ contract('SnarkOfferBid', async (accounts) => {
         const LowestPrice = web3.toWei(0.4, 'ether');
         const highestPrice = web3.toWei(0.6, 'ether');
         const sumPrice = web3.toWei(0.5 + 0.6, 'ether');
+        const platformProfitShare = await instance_snarkbase.getPlatformProfitShare();
+        
+        const profit = highestPrice *  platformProfitShare / 100;
 
         let retval = await instance.getTotalNumberOfBids();
         assert.equal(retval.toNumber(), 0, "error on step 1");
@@ -238,7 +249,7 @@ contract('SnarkOfferBid', async (accounts) => {
 
         let balanceOfTokenOwner = await instance_snarkbase.getWithdrawBalance(tokenOwner);
         balanceOfTokenOwner = balanceOfTokenOwner.toNumber();
-        assert.equal(balanceOfTokenOwner, highestPrice, "error on step 19");
+        assert.equal(balanceOfTokenOwner, highestPrice - profit, "error on step 19");
         console.log(`tokenOwner's balance before addBid: ${ balanceOfTokenOwner }`);
 
         let balanceOfBidOwner = await instance_snarkbase.getWithdrawBalance(bidOwner);

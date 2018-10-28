@@ -374,6 +374,10 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         platformProfit = _storage.getPlatformProfitShare();
     }
 
+    function getPlatformProfitShare() public view returns (uint256) {
+        return _storage.getPlatformProfitShare();
+    }
+
     function getSaleTypeToToken(uint256 tokenId) public view returns (uint256) {
         return _storage.getSaleTypeToToken(tokenId);
     }
