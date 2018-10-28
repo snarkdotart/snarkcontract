@@ -30,6 +30,13 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     // Canceled bid event
     event BidCanceled(uint256 _tokenId, uint256 _bidId);
 
+    modifier restrictedAccess() {
+        if (_storage.isRestrictedAccess()) {
+            require(msg.sender == owner, "only Snark can perform the function");
+        }
+        _;
+    }
+
     /// @dev Modifier that checks that an owner has a specific token
     /// @param _tokenId Token ID
     modifier onlyOwnerOf(uint256 _tokenId) {
@@ -48,6 +55,16 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @param _bidId Bid ID
     modifier onlyBidOwner(uint256 _bidId) {
         require(msg.sender == _storage.getOwnerOfBid(_bidId), "it's not a bid owner");
+        _;
+    }
+
+    modifier correctOffer(uint256 _offerId) {
+        require(_offerId > 0 && _offerId <= getOwnerOffersCount(msg.sender), "Offer id is wrong");
+        _;
+    }
+
+    modifier correctBid(uint256 _bidId) {
+        require(_bidId > 0 && _bidId <= getTotalNumberOfBids(), "Bid id is wrong");
         _;
     }
 
@@ -92,7 +109,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
     /// @dev Delete offer. This is also done during the sale of the last token in the offer.  
     /// @param _offerId Offer ID
-    function deleteOffer(uint256 _offerId) public onlyOfferOwner(_offerId) {
+    function deleteOffer(uint256 _offerId) public correctOffer(_offerId) onlyOfferOwner(_offerId) {
         // clear all data in the token
         uint256 tokenId = _storage.getTokenIdByOfferId(_offerId);
         _storage.deleteOffer(_offerId);
@@ -149,7 +166,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
     /// @dev Function to accept bid
     /// @param _bidId Id of bid
-    function acceptBid(uint256 _bidId) public {
+    function acceptBid(uint256 _bidId) public correctBid(_bidId) {
         // Check if the function is called by the token owner
         uint256 tokenId = _storage.getTokenIdByBidId(_bidId);
         uint256 price = _storage.getBidPrice(_bidId);
@@ -184,7 +201,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     
     /// @dev Function to allow the bidder to cancel their own bid
     /// @param _bidId Bid ID
-    function cancelBid(uint256 _bidId) public onlyBidOwner(_bidId) {
+    function cancelBid(uint256 _bidId) public correctBid(_bidId) onlyBidOwner(_bidId) {
         address bidder = _storage.getOwnerOfBid(_bidId);
         uint256 tokenId = _storage.getTokenIdByBidId(_bidId);
         uint256 price = _storage.getBidPrice(_bidId);

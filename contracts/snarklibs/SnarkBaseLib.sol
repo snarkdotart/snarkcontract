@@ -18,6 +18,10 @@ library SnarkBaseLib {
         SnarkStorage(storageAddress).setUint(keccak256("platformProfitShare"), platformProfitShare);
     }
 
+    function setRestrictAccess(address storageAddress, bool isRestrict) public {
+        SnarkStorage(storageAddress).setBool(keccak256("restrictedAccess"), isRestrict);
+    }
+
     function setTokenName(address storageAddress, string tokenName) public {
         SnarkStorage(storageAddress).setString(keccak256("tokenName"), tokenName);
     }
@@ -289,6 +293,10 @@ library SnarkBaseLib {
 
     function getPlatformProfitShare(address storageAddress) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(keccak256("platformProfitShare"));
+    }
+
+    function isRestrictedAccess(address storageAddress) public view returns (bool) {
+        return SnarkStorage(storageAddress).boolStorage(keccak256("restrictedAccess"));
     }
 
     function getTokenName(address storageAddress) public view returns (string) {

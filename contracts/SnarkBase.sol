@@ -32,6 +32,13 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Transfer event as defined in current draft of ERC721.
     event Transfer(address indexed from, address indexed to, uint256 tokenId);
     
+    modifier restrictedAccess() {
+        if (_storage.isRestrictedAccess()) {
+            require(msg.sender == owner, "only Snark can perform the function");
+        }
+        _;
+    }
+
     /// @dev Modifier that checks that an owner has a specific token
     /// @param tokenId Token ID
     modifier onlyOwnerOf(uint256 tokenId) {
@@ -131,13 +138,17 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         _storage.setTokenSymbol(tokenSymbol);
     }
 
+    function changeRestrictAccess(bool isRestrict) public onlyOwner {
+        _storage.setRestrictAccess(isRestrict);
+    }
+
     /// @dev Create a scheme of profit share for user
     /// @param participants List of profit sharing participants
     /// @param percentAmount List of profit share % of participants
     /// @return A scheme id
     function createProfitShareScheme(address artistAddress, address[] participants, uint256[] percentAmount)
         public
-        onlyOwner
+        restrictedAccess
         returns(uint256)
     {
         require(participants.length == percentAmount.length);
@@ -201,7 +212,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         bool isAcceptOfLoanRequestFromOthers
     ) 
         public
-        onlyOwner
+        restrictedAccess
     {
         // Check for an identical hash of the digital token in existence to prevent uploading a duplicate token
         require(_storage.getTokenHashAsInUse(hashOfToken) == false);

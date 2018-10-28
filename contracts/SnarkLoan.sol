@@ -29,6 +29,18 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     event LoanFinished(uint256 loanId);
     event LoanOfTokenCanceled(uint256 loanId, uint256 tokenId);
 
+    modifier restrictedAccess() {
+        if (_storage.isRestrictedAccess()) {
+            require(msg.sender == owner, "only Snark can perform the function");
+        }
+        _;
+    }    
+
+    modifier correctLoan(uint256 loanId) {
+        require(loanId > 0 && loanId <= _storage.getTotalNumberOfLoans(), "Loan id is wrong");
+        _;
+    }
+
     constructor(address storageAddress) public {
         _storage = storageAddress;
     }
@@ -97,7 +109,11 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     }
 
     function acceptLoan(uint256[] tokenIds) public {
+        require(tokenIds.length > 0, "Array of tokens can't be empty");
+        uint256 numberOfTokens = _storage.getOwnedTokensCount(msg.sender);
         for (uint256 i = 0; i < tokenIds.length; i++) {
+            require(tokenIds[i] > 0 && tokenIds[i] <= numberOfTokens, "Token has to be exist");
+
             address _ownerOfToken = _storage.getOwnerOfToken(tokenIds[i]);
             uint256 _saleType = _storage.getSaleTypeToToken(tokenIds[i]);
             uint256 _loanId = _storage.getLoanByToken(tokenIds[i]);
@@ -110,10 +126,13 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         }
     }
 
+    // FIXME: When the loan time is occure we have to do:
+    // 1. Change token's sale type to "Loan"
+    // 2. Notify a loan owner  only a loan owner has to get
     // Only the contract can initiate loan according to schedule 
     function startLoan(uint256 loanId) public onlyOwner {
         // Get loan price of the Token
-        uint256 _price = getLoanPriceOfToken(loanId);
+        uint256 _price = _getLoanPriceOfToken(loanId);
         // Check across all tokens if the Loan has been accepted
         uint256 _totalNumberOfTokens = _storage.getTotalNumberOfLoanTokens(loanId);
         uint256 _tokenId;
@@ -195,7 +214,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
 
         // Check amount that has been transferred.  If it is less than  
         // amount for one token for loan - exit
-        uint256 _price = getLoanPriceOfToken(_loanId);
+        uint256 _price = _getLoanPriceOfToken(_loanId);
         require(msg.value >= _price, "Payment has to be equal to cost of loan token");
         if (_price > 0) {
             _storage.addPendingWithdrawals(_borrower, _price);
@@ -252,7 +271,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         _storage.acceptTokenForLoan(loanId, tokenId);
     }
 
-    function getLoanPriceOfToken(uint256 loanId) internal view returns (uint256) {
+    function _getLoanPriceOfToken(uint256 loanId) internal view returns (uint256) {
         uint256 _commonPrice = _storage.getTotalPriceOfLoan(loanId);
         uint256 _amountOfTokens = _storage.getTotalNumberOfLoanTokens(loanId);
         uint256 _price = (_commonPrice > 0) ? _commonPrice / _amountOfTokens : 0;
