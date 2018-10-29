@@ -71,6 +71,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         require(duration <= getDefaultLoanDuration(), "Duration exceeds a max value");
         // check if the user requested their own tokens
         for (uint256 i = 0; i < tokensIds.length; i++) {
+            require(tokensIds[i] <= _storage.getTotalNumberOfTokens(), "Token id has to be valid");
             require(
                 _storage.getOwnerOfToken(tokensIds[i]) != msg.sender,
                 "Borrower can't request loan for their own tokens"
