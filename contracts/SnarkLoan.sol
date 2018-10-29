@@ -50,6 +50,14 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         selfdestruct(owner);
     }
 
+    function setDefaultLoanDuration(uint256 duration) public onlyOwner {
+        _storage.setDefaultLoanDuration(duration);
+    }
+
+    function getDefaultLoanDuration() public view returns (uint256) {
+        return _storage.getDefaultLoanDuration();
+    }
+
     // Loan can be requested by user 
     // Loan can also be requested by Snark
     function createLoan(
@@ -60,6 +68,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         public 
         payable
     {
+        require(duration <= getDefaultLoanDuration(), "Duration exceeds a max value");
         // check if the user requested their own tokens
         for (uint256 i = 0; i < tokensIds.length; i++) {
             require(

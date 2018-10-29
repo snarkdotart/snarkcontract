@@ -16,6 +16,7 @@ module.exports = function(deployer) {
             SnarkStorage.deployed().then(
                 function(storage_instance) {
                     storage_instance.allowAccess(snarkLoan_instance.address);
+                    snarkLoan_instance.setDefaultLoanDuration(30);
                 }
             );
         }

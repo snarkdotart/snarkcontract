@@ -127,6 +127,14 @@ library SnarkLoanLib {
         );
     }
 
+    function setDefaultLoanDuration(address storageAddress, uint256 duration) public {
+        SnarkStorage(storageAddress).setUint(keccak256("defaultLoanDuration"), duration);
+    }
+
+    function getDefaultLoanDuration(address storageAddress) public view returns (uint256) {
+        return SnarkStorage(storageAddress).uintStorage(keccak256("defaultLoanDuration"));
+    }
+
     function createLoan(
         address storageAddress, 
         uint256[] tokensIds,
