@@ -1,0 +1,36 @@
+@startuml
+title 1. Activity Diagram: Loan Creation
+start
+
+:Create Loan Record;
+note right
+  Loan can be in 4 states:
+  Preparing | NotActive | Active | Finished
+  ----
+  Each loan contain 3 list of tokens:
+  not appoved | approved | declined
+end note 
+:set LoanStatus = Preparing;
+:put all tokens to NotApproved list;
+
+repeat
+  :get token from the list;
+  :read token's calendar;
+  if (is token free on selected period?) then (yes)
+    if (can we get token in auto mode?) then (yes)
+      :save days in token's calendar;
+      :move token into Approved list of loan;
+    else (no)
+      :move token to owner's request list;
+      :send request to token's owner;
+    endif
+  else (no)
+    :move token to declined list of loan;
+  endif
+  
+repeat while (is there next token in the list?)
+
+:emit event LoanCreated;
+
+end
+@enduml

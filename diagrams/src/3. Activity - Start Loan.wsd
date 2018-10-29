@@ -1,0 +1,14 @@
+@startuml
+title 3. Activity Diagram: Start Loan
+start
+
+if (are there any tokens in NotApproved list?) then (yes)
+  :move tokens to declined list of loan;
+  :delete request from the owner's list;
+else (no)
+endif
+
+:allow borrower to get approved tokens;
+
+end
+@enduml

@@ -1,0 +1,26 @@
+@startuml
+
+title 1. Sequence Diagram: Loan Creation
+
+actor Borrower
+control BContract
+database BStorage
+control API
+actor Owner
+
+== Loan Creation ==
+
+Borrower -> BContract: create loan
+BContract -> BStorage: save loan
+BContract -> BStorage: loan status = prepairing
+BContract -> BStorage: save tokens to NotApproved list
+
+loop number tokens
+  BContract -> BStorage: check if auto loan is On
+  
+end
+
+BContract -> API: event: loan created
+API -> Owner: send an email
+
+@enduml
