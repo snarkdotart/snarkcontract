@@ -72,9 +72,13 @@ contract('SnarkBase', async (accounts) => {
         const tokenHash = web3.sha3("tokenHash");
         const limitedEdition = 10;
         const profitShareFromSecondarySale = 20;
-        // const tokenUrl = "http://snark.art";
         const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
-        const profitShareSchemeId = 1;
+        const participants = [
+            '0xC04691B99EB731536E35F375ffC85249Ec713597', 
+            '0xB94691B99EB731536E35F375ffC85249Ec717233'
+        ];
+        const profits = [ 20, 80 ];
+        let profitShareSchemeId = 1;
 
         let retval = await instance.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 1, "error on step 1");
@@ -85,6 +89,9 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getTokensCountByOwner(artist);
         assert.equal(retval.toNumber(), 0, "error on step 3");
 
+        retval = await instance.getNumberOfProfitShareSchemesForOwner(artist);
+        assert.equal(retval.toNumber(), 0, "error on step 4");
+
         const event = instance.TokenCreated({ fromBlock: 'latest' });
         event.watch(function (error, result) {
             if (!error) {
@@ -93,6 +100,28 @@ contract('SnarkBase', async (accounts) => {
                 // assert.equal(tokenId, 1, "SchemeId is not equal 1");
             }
         });
+
+        try {
+            await instance.addToken(
+                artist,
+                tokenHash,
+                limitedEdition,
+                profitShareFromSecondarySale,
+                tokenUrl,
+                profitShareSchemeId,
+                true,
+                true
+            );
+        } catch(e) {
+            assert.equal(e.message, 'VM Exception while processing transaction: revert Artist has to have the profit share schemeId');
+        }
+
+        await instance.createProfitShareScheme(artist, participants, profits);
+
+        retval = await instance.getNumberOfProfitShareSchemesForOwner(artist);
+        assert.equal(retval.toNumber(), 1, "error on step 5");
+
+        profitShareSchemeId = await instance.getProfitShareSchemeIdForOwner(artist, 0);
 
         await instance.addToken(
             artist,
@@ -106,16 +135,20 @@ contract('SnarkBase', async (accounts) => {
         );
 
         retval = await instance.getTokensCount();
-        assert.equal(retval.toNumber(), 10, "error on step 4");
+        assert.equal(retval.toNumber(), 10, "error on step 6");
 
         retval = await instance.getTokensCountByOwner(artist);
-        assert.equal(retval.toNumber(), 10, "error on step 5");
+        assert.equal(retval.toNumber(), 10, "error on step 7");
 
         retval = await instance.getTokensCountByArtist(artist);
-        assert.equal(retval.toNumber(), 10, "error on step 6");
+        assert.equal(retval.toNumber(), 10, "error on step 8");
     });
 
     it("4. test changeProfitShareSchemeForToken function", async () => {
+        const participants_prev = [
+            '0xC04691B99EB731536E35F375ffC85249Ec713597', 
+            '0xB94691B99EB731536E35F375ffC85249Ec717233'
+        ];
         const participants = [
             '0xC04691B99EB731536E35F375ffC85249Ec713222', 
             '0xB94691B99EB731536E35F375ffC85249Ec717777',
@@ -130,16 +163,16 @@ contract('SnarkBase', async (accounts) => {
         const artist = '0x7Af26b6056713AbB900f5dD6A6C45a38F1F70Bc5';
 
         retval = await instance.getProfitShareSchemesTotalCount();
-        assert.equal(retval.toNumber(), 1, "error on step 1");
+        assert.equal(retval.toNumber(), 2, "error on step 1");
 
         await instance.createProfitShareScheme(artist, participants, profits);
         await instance.createProfitShareScheme(artist, participants_2, profits_2);
 
         retval = await instance.getProfitShareSchemesTotalCount();
-        assert.equal(retval.toNumber(), 3, "error on step 2");
+        assert.equal(retval.toNumber(), 4, "error on step 2");
 
         retval = await instance.getProfitShareSchemeCountByAddress({from: artist});
-        assert.equal(retval.toNumber(), 2, "error on step 3");
+        assert.equal(retval.toNumber(), 3, "error on step 3");
 
         retval = await instance.getTokensCountByOwner(artist);
         assert.equal(retval.toNumber(), 10, "error on step 4");
@@ -147,19 +180,20 @@ contract('SnarkBase', async (accounts) => {
         await instance.changeProfitShareSchemeForToken(1, 3, { from: artist });
 
         retval = await instance.getProfitShareParticipantsCount({ from: artist });
-        assert.equal(retval.toNumber(), 5, "error on step 5");
+        assert.equal(retval.toNumber(), 7, "error on step 5");
 
         retval = await instance.getTokenDetails(1);
         assert.equal(retval[6].toNumber(), 3, "error on step 6");
-        console.log('Token Details:', retval);
 
         retval = await instance.getProfitShareParticipantsList({ from: artist });
-        assert.equal(retval.length, 5, "error on step 7");
-        assert.equal(retval[0].toLowerCase(), participants[0].toLowerCase(), "error on step 8");
-        assert.equal(retval[1].toLowerCase(), participants[1].toLowerCase(), "error on step 9");
-        assert.equal(retval[2].toLowerCase(), participants[2].toLowerCase(), "error on step 10");
-        assert.equal(retval[3].toLowerCase(), participants_2[0].toLowerCase(), "error on step 11");
-        assert.equal(retval[4].toLowerCase(), participants_2[1].toLowerCase(), "error on step 12");
+        assert.equal(retval.length, 7, "error on step 7");
+        assert.equal(retval[0].toLowerCase(), participants_prev[0].toLowerCase(), "error on step 8");
+        assert.equal(retval[1].toLowerCase(), participants_prev[1].toLowerCase(), "error on step 9");
+        assert.equal(retval[2].toLowerCase(), participants[0].toLowerCase(), "error on step 10");
+        assert.equal(retval[3].toLowerCase(), participants[1].toLowerCase(), "error on step 11");
+        assert.equal(retval[4].toLowerCase(), participants[2].toLowerCase(), "error on step 12");
+        assert.equal(retval[5].toLowerCase(), participants_2[0].toLowerCase(), "error on step 13");
+        assert.equal(retval[6].toLowerCase(), participants_2[1].toLowerCase(), "error on step 14");
     });
 
 });

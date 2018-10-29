@@ -36,7 +36,18 @@ contract('SnarkOfferBid', async (accounts) => {
         const profitShareFromSecondarySale = 20;
         // const tokenUrl = "http://snark.art";
         const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
-        const profitShareSchemeId = 1;
+        const participants = [
+            '0xC04691B99EB731536E35F375ffC85249Ec713597', 
+            '0xB94691B99EB731536E35F375ffC85249Ec717233'
+        ];
+        const profits = [ 20, 80 ];
+
+        await instance_snarkbase.createProfitShareScheme(owner, participants, profits);
+
+        retval = await instance_snarkbase.getNumberOfProfitShareSchemesForOwner(owner);
+        assert.equal(retval.toNumber(), 1, "error on step 5");
+
+        const profitShareSchemeId = await instance_snarkbase.getProfitShareSchemeIdForOwner(owner, 0);
 
         await instance_snarkbase.addToken(
             owner,

@@ -43,7 +43,18 @@ contract('SnarkLoan', async (accounts) => {
         const profitShareFromSecondarySale = 20;
         // const tokenUrl = "http://snark.art";
         const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
-        const profitShareSchemeId = 1;
+        const participants = [
+            '0xC04691B99EB731536E35F375ffC85249Ec713597', 
+            '0xB94691B99EB731536E35F375ffC85249Ec717233'
+        ];
+        const profits = [ 20, 80 ];
+
+        await instance_snarkbase.createProfitShareScheme(tokenOwner, participants, profits);
+
+        let retval = await instance_snarkbase.getNumberOfProfitShareSchemesForOwner(tokenOwner);
+        assert.equal(retval.toNumber(), 1, "error on step 5");
+
+        const profitShareSchemeId = await instance_snarkbase.getProfitShareSchemeIdForOwner(tokenOwner, 0);
 
         await instance_snarkbase.addToken(
             tokenOwner,
@@ -57,7 +68,7 @@ contract('SnarkLoan', async (accounts) => {
             { from: tokenOwner }
         );
 
-        let retval = await instance_snarkbase.getOwnerOfToken(1);
+        retval = await instance_snarkbase.getOwnerOfToken(1);
         assert.equal(retval, tokenOwner, "error: there isn't any owner for the first token");
         console.log(`owner of 1 token after run addToken: ${retval}`)
 

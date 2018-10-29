@@ -214,6 +214,9 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         public
         restrictedAccess
     {
+        // check if profitShareSchemeId belongs to artistAddress
+        require(_storage.doesProfitShareSchemeIdBelongsToOwner(artistAddress, profitShareSchemeId) == true,
+            "Artist has to have the profit share schemeId");
         // Check for an identical hash of the digital token in existence to prevent uploading a duplicate token
         require(_storage.getTokenHashAsInUse(hashOfToken) == false);
         // Check that the number of token editions is >= 1 and <= 10
@@ -384,5 +387,17 @@ contract SnarkBase is Ownable, SnarkDefinitions {
 
     function getTokenHashAsInUse(string tokenHash) public view returns (bool) {
         return _storage.getTokenHashAsInUse(tokenHash);
+    }
+
+    function getNumberOfProfitShareSchemesForOwner(address schemeOwner) public view returns (uint256) {
+        return _storage.getNumberOfProfitShareSchemesForOwner(schemeOwner);
+    }
+
+    function getProfitShareSchemeIdForOwner(address schemeOwner, uint256 index)
+        public
+        view
+        returns (uint256)
+    {
+        return _storage.getProfitShareSchemeIdForOwner(schemeOwner, index);
     }
 }

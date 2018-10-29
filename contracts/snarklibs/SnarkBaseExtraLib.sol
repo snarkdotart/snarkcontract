@@ -148,6 +148,24 @@ library SnarkBaseExtraLib {
             keccak256(abi.encodePacked("profitShareSchemeIdsForOwner", schemeOwner, index)));
     }
 
+    function doesProfitShareSchemeIdBelongsToOwner(address storageAddress, address schemeOwner, uint256 schemeId)
+        public
+        view
+        returns (bool)
+    {
+        bool doesBelongs = false;
+        uint256 currentSchemeId;
+        uint256 numberOfSchemes = getNumberOfProfitShareSchemesForOwner(storageAddress, schemeOwner);
+        for (uint256 i = 0; i < numberOfSchemes; i++) {
+            currentSchemeId = getProfitShareSchemeIdForOwner(storageAddress, schemeOwner, i);
+            if (currentSchemeId == schemeId) {
+                doesBelongs = true;
+                break;
+            }
+        }
+        return doesBelongs;
+    }
+
     function getNumberOfUniqueParticipantsForOwner(address storageAddress, address schemeOwner)
         public 
         view 
