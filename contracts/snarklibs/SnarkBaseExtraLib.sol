@@ -180,5 +180,12 @@ library SnarkBaseExtraLib {
         }
         return participants;
     }
-
+    ///////// TOKEN CALENDAR FUNCTIONS /////////
+    // one day datetime = 86400000
+    // function reservePeriodInTokenCalendar(startDay, countDay)
+    // function checkIfPeriodIsReservedInTokenCalendar(startDay, countDay) - check every day
+    // function deletePeriodFromTokenCalendar(startDay, countDay) or (type {loan} + type id {loan id})
+    // function getTypeOf
+    // function getCountTokensReservedOnTheDay
+    ///////// REQUEST LIST FUNCTIONS /////////
 }

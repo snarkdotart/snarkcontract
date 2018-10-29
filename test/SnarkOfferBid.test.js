@@ -34,7 +34,8 @@ contract('SnarkOfferBid', async (accounts) => {
         const tokenHash = web3.sha3("tokenHash");
         const limitedEdition = 1;
         const profitShareFromSecondarySale = 20;
-        const tokenUrl = "http://snark.art";
+        // const tokenUrl = "http://snark.art";
+        const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
         const profitShareSchemeId = 1;
 
         await instance_snarkbase.addToken(

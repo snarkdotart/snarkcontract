@@ -72,7 +72,8 @@ contract('SnarkBase', async (accounts) => {
         const tokenHash = web3.sha3("tokenHash");
         const limitedEdition = 10;
         const profitShareFromSecondarySale = 20;
-        const tokenUrl = "http://snark.art";
+        // const tokenUrl = "http://snark.art";
+        const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
         const profitShareSchemeId = 1;
 
         let retval = await instance.getProfitShareSchemesTotalCount();
@@ -150,6 +151,7 @@ contract('SnarkBase', async (accounts) => {
 
         retval = await instance.getTokenDetails(1);
         assert.equal(retval[6].toNumber(), 3, "error on step 6");
+        console.log('Token Details:', retval);
 
         retval = await instance.getProfitShareParticipantsList({ from: artist });
         assert.equal(retval.length, 5, "error on step 7");

@@ -58,8 +58,8 @@ library SnarkBaseLib {
         );
     }
 
-    function setTokenHash(address storageAddress, uint256 tokenId, bytes32 tokenHash) public {
-        SnarkStorage(storageAddress).setBytes(
+    function setTokenHash(address storageAddress, uint256 tokenId, string tokenHash) public {
+        SnarkStorage(storageAddress).setString(
             keccak256(abi.encodePacked("token", "hashOfToken", tokenId)),
             tokenHash
         );
@@ -116,7 +116,7 @@ library SnarkBaseLib {
         );
     }
 
-    function setTokenHashAsInUse(address storageAddress, bytes32 tokenHash, bool isUsed) public {
+    function setTokenHashAsInUse(address storageAddress, string tokenHash, bool isUsed) public {
         SnarkStorage(storageAddress).setBool(
             keccak256(abi.encodePacked("hashIsUsed", tokenHash)),
             isUsed
@@ -192,7 +192,7 @@ library SnarkBaseLib {
     function addToken(
         address storageAddress, 
         address artistAddress, 
-        bytes32 tokenHash,
+        string tokenHash,
         uint256 limitedEdition,
         uint256 editionNumber,
         uint256 lastPrice,
@@ -209,7 +209,7 @@ library SnarkBaseLib {
         SnarkStorage(storageAddress).setUint(keccak256("totalNumberOfTokens"), tokenId);
         SnarkStorage(storageAddress).setAddress(
             keccak256(abi.encodePacked("token", "artist", tokenId)), artistAddress);
-        SnarkStorage(storageAddress).setBytes(
+        SnarkStorage(storageAddress).setString(
             keccak256(abi.encodePacked("token", "hashOfToken", tokenId)), tokenHash);
         SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("token", "limitedEdition", tokenId)), limitedEdition);
@@ -344,9 +344,9 @@ library SnarkBaseLib {
     }
 
     function getTokenHash(address storageAddress, uint256 tokenId) public view 
-        returns (bytes32 tokenHash)
+        returns (string tokenHash)
     {
-        return SnarkStorage(storageAddress).bytesStorage(
+        return SnarkStorage(storageAddress).stringStorage(
             keccak256(abi.encodePacked("token", "hashOfToken", tokenId))
         );
     }
@@ -389,7 +389,7 @@ library SnarkBaseLib {
         returns (
             address currentOwner,
             address artistAddress, 
-            bytes32 tokenHash,
+            string tokenHash,
             uint256 limitedEdition,
             uint256 editionNumber,
             uint256 lastPrice,
@@ -455,7 +455,7 @@ library SnarkBaseLib {
             keccak256(abi.encodePacked("artist", "tokenList", artistAddress, index)));
     }
 
-    function getTokenHashAsInUse(address storageAddress, bytes32 tokenHash) public view returns (bool) {
+    function getTokenHashAsInUse(address storageAddress, string tokenHash) public view returns (bool) {
         return SnarkStorage(storageAddress).boolStorage(keccak256(abi.encodePacked("hashIsUsed", tokenHash)));
     }
 
