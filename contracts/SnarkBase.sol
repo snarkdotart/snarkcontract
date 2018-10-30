@@ -169,25 +169,25 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     }
 
     /// @dev Return a total number of user's profit share schemes
-    function getProfitShareSchemeCountByAddress() public view returns (uint256) {
-        return _storage.getNumberOfProfitShareSchemesForOwner(msg.sender);
+    function getProfitShareSchemeCountByAddress(address schemeOwner) public view onlyOwner returns (uint256) {
+        return _storage.getNumberOfProfitShareSchemesForOwner(schemeOwner);
     }
 
     /// @dev Return a scheme Id for user by index
     /// @param index Index of scheme for current user's address
-    function getProfitShareSchemeIdByIndex(uint256 index) public view returns (uint256) {
-        return _storage.getProfitShareSchemeIdForOwner(msg.sender, index);
+    function getProfitShareSchemeIdByIndex(address schemeOwner, uint256 index) public view onlyOwner returns (uint256) {
+        return _storage.getProfitShareSchemeIdForOwner(schemeOwner, index);
     }
 
     /// @dev Return a list of user profit share schemes
     /// @return A list of schemes belongs to owner
-    function getProfitShareParticipantsCount() public view returns(uint256) {
-        return _storage.getNumberOfUniqueParticipantsForOwner(msg.sender);
+    function getProfitShareParticipantsCount(address schemeOwner) public view onlyOwner returns(uint256) {
+        return _storage.getNumberOfUniqueParticipantsForOwner(schemeOwner);
     }
 
     /// @dev Return a list of unique profit share participants
-    function getProfitShareParticipantsList() public view returns (address[]) {
-        return _storage.getListOfUniqueParticipantsForOwner(msg.sender);
+    function getProfitShareParticipantsList(address schemeOwner) public view onlyOwner returns (address[]) {
+        return _storage.getListOfUniqueParticipantsForOwner(schemeOwner);
     }
 
     function getOwnerOfToken(uint256 tokenId) public view returns (address) {
@@ -330,7 +330,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         uint256 newProfitShareSchemeId
     ) 
         public
-        onlyOwnerOf(tokenId) 
+        onlyArtistOf(tokenId) 
     {
         _storage.setTokenProfitShareSchemeId(tokenId, newProfitShareSchemeId);
     }

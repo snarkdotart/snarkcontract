@@ -57,13 +57,13 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 1, "error on step 2");
 
-        retval = await instance.getProfitShareSchemeCountByAddress();
+        retval = await instance.getProfitShareSchemeCountByAddress(accounts[0]);
         assert.equal(retval.toNumber(), 1, "error on step 3");
 
-        retval = await instance.getProfitShareSchemeIdByIndex(0);
+        retval = await instance.getProfitShareSchemeIdByIndex(accounts[0], 0);
         assert.equal(retval.toNumber(), 1, "error on step 4");
 
-        retval = await instance.getProfitShareParticipantsCount();
+        retval = await instance.getProfitShareParticipantsCount(accounts[0]);
         assert.equal(retval.toNumber(), 2, "error on step 5");
     });
 
@@ -171,7 +171,7 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 4, "error on step 2");
 
-        retval = await instance.getProfitShareSchemeCountByAddress({from: artist});
+        retval = await instance.getProfitShareSchemeCountByAddress(artist);
         assert.equal(retval.toNumber(), 3, "error on step 3");
 
         retval = await instance.getTokensCountByOwner(artist);
@@ -179,13 +179,13 @@ contract('SnarkBase', async (accounts) => {
 
         await instance.changeProfitShareSchemeForToken(1, 3, { from: artist });
 
-        retval = await instance.getProfitShareParticipantsCount({ from: artist });
+        retval = await instance.getProfitShareParticipantsCount(artist);
         assert.equal(retval.toNumber(), 7, "error on step 5");
 
         retval = await instance.getTokenDetails(1);
         assert.equal(retval[6].toNumber(), 3, "error on step 6");
 
-        retval = await instance.getProfitShareParticipantsList({ from: artist });
+        retval = await instance.getProfitShareParticipantsList(artist);
         assert.equal(retval.length, 7, "error on step 7");
         assert.equal(retval[0].toLowerCase(), participants_prev[0].toLowerCase(), "error on step 8");
         assert.equal(retval[1].toLowerCase(), participants_prev[1].toLowerCase(), "error on step 9");
