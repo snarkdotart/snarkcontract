@@ -1,6 +1,6 @@
 @startuml
 
-title 1. Sequence Diagram: Loan Creation
+title 1. Loan Sequence Diagram
 
 actor Borrower
 control BContract
@@ -8,19 +8,60 @@ database BStorage
 control API
 actor Owner
 
-== Loan Creation ==
+== Create Loan ==
 
 Borrower -> BContract: create loan
-BContract -> BStorage: save loan
+BContract -> BStorage: create new record of loan
 BContract -> BStorage: loan status = prepairing
-BContract -> BStorage: save tokens to NotApproved list
+BContract -> BStorage: put all tokens to NotApproved list
 
 loop number tokens
-  BContract -> BStorage: check if auto loan is On
-  
+  BContract -> BStorage: arrange tokens among three\nlists of the loan
 end
 
-BContract -> API: event: loan created
-API -> Owner: send an email
+BContract -> API: emit event LoanCreated
+API -> Owner: send an email to each token's owner\nif there are some tokens\ninto NotApproved list
+
+== Approve Loan ==
+
+Owner -> BContract: Approve Loan
+BContract -> BStorage: check token's calendar
+BContract -> BStorage: arrange token to one of\nthe three lists of the loan
+BContract -> BStorage: delete loan requests from owner's list
+BContract -> BStorage: if NotApproved list is empty then\nloan status = NotActive
+
+== Start Loan ==
+
+API -> BContract: start loan
+loop number of tokens in NotApproved list of loan
+  BContract -> BStorage: move token to declined list of loan
+  BContract -> BStorage: delete loan requests from owner's list
+end
+BContract -> BStorage: loan status = active
+note right
+  Borrower can call "BorrowTokens" only
+  when loan status = active
+end note 
+
+
+== Borrow Tokens of Loan ==
+
+Borrower -> BContract: Borrow Tokens
+loop number of tokens in Approved list of loan
+  BContract -> BStorage: transferToken: payable\nfrom owner to borrower 
+end
+note right
+  There borrower has to pay for 2 operations:
+  1. borrow tokens
+  2. return tokens to real owner
+end note
+
+== Stop Loan ==
+
+API -> BContract: stop loan
+loop number of tokens in Approved list of loan
+  BContract -> BStorage: freeTrasfer: \nfrom borrower to owner
+end
+BContract -> BStorage: loan status = finish
 
 @enduml
