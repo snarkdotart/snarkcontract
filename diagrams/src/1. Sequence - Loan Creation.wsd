@@ -62,7 +62,7 @@ BContract -> BContract: transfer half of ethereum sum to Snark's wallet\nto cove
 
 API -> BContract: stop loan
 loop through tokens in Approved list of loan states
-  BContract -> BStorage: freeTrasfer: \nfrom borrower to owner
+  BContract -> BStorage: freeTrasfer: from borrower to owner
   BContract -> BStorage: set token's SaleType = None
 end
 BContract -> BStorage: loan status = Finished
