@@ -36,6 +36,7 @@ API -> BContract: start loan
 loop number of tokens in NotApproved list of loan
   BContract -> BStorage: move token to declined list of loan
   BContract -> BStorage: delete loan requests from owner's list
+  BContract -> BStorage: set token's SaleType = Loan
 end
 BContract -> BStorage: loan status = active
 note right
@@ -61,6 +62,7 @@ end note
 API -> BContract: stop loan
 loop number of tokens in Approved list of loan
   BContract -> BStorage: freeTrasfer: \nfrom borrower to owner
+  BContract -> BStorage: set token's SaleType = None
 end
 BContract -> BStorage: loan status = finish
 
