@@ -42,14 +42,14 @@ end note
 
 == Borrow Tokens of Loan ==
 
-Borrower -> BContract: Borrow Tokens
+Borrower -> BContract: Borrow Tokens: payable
 loop through tokens in NotApproved list of loan states
   BContract -> BStorage: move the tokens to Declined list of loan states
   BContract -> BStorage: delete loan requests from owner's list
   BContract -> BStorage: set token's SaleType = Loan
 end
 loop through tokens in Approved list of loan states
-  BContract -> BStorage: transferToken: payable\nfrom owner to borrower 
+  BContract -> BStorage: freeTransfer from owner to borrower 
 end
 note right
   There borrower has to pay for 2 operations:
