@@ -67,8 +67,4 @@ loop through tokens in Approved list of loan states
 end
 BContract -> BStorage: loan status = Finished
 
-== Decline Loan ==
-
-
-
 @enduml
