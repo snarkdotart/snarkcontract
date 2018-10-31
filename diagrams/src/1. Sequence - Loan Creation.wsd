@@ -33,11 +33,6 @@ BContract -> BStorage: if NotApproved list is empty then\nloan status = NotActiv
 == Start Loan ==
 
 API -> BContract: Start loan
-loop through tokens in NotApproved list of loan states
-  BContract -> BStorage: move the tokens to Declined list of loan states
-  BContract -> BStorage: delete loan requests from owner's list
-  BContract -> BStorage: set token's SaleType = Loan
-end
 BContract -> BStorage: loan status = Active
 note right
   Borrower can call "BorrowTokens" only
@@ -48,6 +43,11 @@ end note
 == Borrow Tokens of Loan ==
 
 Borrower -> BContract: Borrow Tokens
+loop through tokens in NotApproved list of loan states
+  BContract -> BStorage: move the tokens to Declined list of loan states
+  BContract -> BStorage: delete loan requests from owner's list
+  BContract -> BStorage: set token's SaleType = Loan
+end
 loop through tokens in Approved list of loan states
   BContract -> BStorage: transferToken: payable\nfrom owner to borrower 
 end
@@ -66,5 +66,9 @@ loop through tokens in Approved list of loan states
   BContract -> BStorage: set token's SaleType = None
 end
 BContract -> BStorage: loan status = Finished
+
+== Decline Loan ==
+
+
 
 @enduml
