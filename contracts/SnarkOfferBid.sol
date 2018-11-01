@@ -59,7 +59,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     }
 
     modifier correctOffer(uint256 _offerId) {
-        require(_offerId > 0 && _offerId <= getOwnerOffersCount(msg.sender), "Offer id is wrong");
+        require(_offerId > 0 && _offerId <= getTotalNumberOfOffers(), "Offer id is wrong");
         _;
     }
 
@@ -258,6 +258,17 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         return _storage.getTotalNumberOfOffers();
     }
 
+    // offerid, token owner , tokenId, price, offer status, 
+    // function getOfferDetails(uint256 _offerId) public view returns (
+    //     uint256 offerId,
+    //     uint256 offerPrice,
+    //     uint256 offerStatus,
+    //     uint256 tokenId,
+    //     address tokenOwner)
+    // {
+    //     offerId = 
+    //     return ();
+    // }
     function _takeBackBidAmountsAndDeleteAllTokenBids(uint256 _tokenId) internal {
         uint256 bidsCount = _storage.getNumberOfTokenBids(_tokenId);
         uint256 bidId;
