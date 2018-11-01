@@ -8,7 +8,7 @@ database BStorage
 control API
 actor Owner
 
-== Create Loan ==
+== CreateLoan ==
 
 Borrower -> BContract: create loan
 BContract -> BStorage: create new record of loan
@@ -22,15 +22,16 @@ end
 BContract -> API: emit event LoanCreated
 API -> Owner: send an email to the token owner\nif the tokens are\nin the NotApproved list
 
-== Approve Loan ==
+== ApproveTokenOfLoan ==
 
 Owner -> BContract: Approve Loan
 BContract -> BStorage: check token's calendar
 BContract -> BStorage: assign token to one of\nthe three lists of loan states
 BContract -> BStorage: delete loan requests from the owner's list
 BContract -> BStorage: if NotApproved list is empty then\nloan status = NotActive
+BContract -> BContract: emit event LoanApproved
 
-== Start Loan ==
+== StartLoan ==
 
 API -> BContract: Start loan
 BContract -> BStorage: loan status = Active
@@ -38,9 +39,9 @@ note right
   Borrower can call "BorrowTokens" only
   when loan status = active
 end note 
+BContract -> BContract: emit event LoanStarted
 
-
-== Borrow Tokens of Loan ==
+== BorrowTokensOfLoan ==
 
 Borrower -> BContract: Borrow Tokens: payable
 loop through tokens in NotApproved list of loan states
@@ -58,7 +59,7 @@ note right
 end note
 BContract -> BContract: transfer half of ethereum sum to Snark's wallet\nto cover the cost of returning the tokens to owners
 
-== Stop Loan ==
+== StopLoan ==
 
 API -> BContract: stop loan
 loop through tokens in Approved list of loan states
@@ -66,5 +67,39 @@ loop through tokens in Approved list of loan states
   BContract -> BStorage: set token's SaleType = None
 end
 BContract -> BStorage: loan status = Finished
+BContract -> BContract: emit event LoanStoped
 
+== DeclineTokenOfLoan ==
+
+Owner -> BContract: call DeclineLoanToken
+note right
+  * может быть выполнена только, если loan status < Active
+  * она бесплатная, т.к. деньги borrower на этом этапе не оставлял
+  * вызываться так же будет, если владелец захочет сделать Offer 
+    или принять Bid, пока лоан не равен Active
+end note
+BContract -> BStorage: delete from Approved list of loan
+BContract -> BStorage: delete from token's calendar
+BContract -> BStorage: delete token from a reques list
+BContract -> BStorage: set token's SaleType = None
+BContract -> BContract: emit event TokenDeclined
+
+== DeleteLoan ==
+
+Borrower -> BContract: deleteLoan
+note right
+  * может быть выполнена только самим Borrower-ом
+  * проверять по принадлежности к владению Loan-а
+end note
+loop through tokens in Approved and Declined list of loan states
+  BContract -> BStorage: delete from Approved list of loan
+  BContract -> BStorage: delete from Declined list of loan
+  BContract -> BStorage: delete token from a request list
+  BContract -> BStorage: delete from token's calendar
+  BContract -> BStorage: set token's SaleType = None
+end
+BContract -> BStorage: loan status = Finished
+BContract -> BContract: emit event LoanDeleted
+
+|||
 @enduml
