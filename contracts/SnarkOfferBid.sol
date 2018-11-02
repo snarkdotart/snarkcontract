@@ -268,6 +268,14 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         return _storage.getTotalNumberOfOffers();
     }
 
+    function getTokenIdByOfferId(uint256 _offerId) public view returns (uint256) {
+        return _storage.getTokenIdByOfferId(_offerId);
+    }
+
+    function getOfferIdByTokenId(uint256 _tokenId) public view returns (uint256) {
+        return _storage.getOfferIdByTokenId(_tokenId);
+    }
+
     // offerid, token owner , tokenId, price, offer status, 
     function getOfferDetails(uint256 _offerId) public view returns (
         uint256 offerId,
