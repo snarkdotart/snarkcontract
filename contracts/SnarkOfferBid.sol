@@ -101,20 +101,28 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             _storage.getSaleTypeToToken(_tokenId) == uint256(SaleType.None),
             "Token should not be involved in sales"
         );
+
+        // TODO: ПРОВЕРИТЬ: УДАЛЯЮТСЯ ЛИ БИДЫ у токена, когда произошла продажа?
+        uint256 bidsCount = _storage.getNumberOfTokenBids(_tokenId);
+        if (bidsCount > 0) {
+            require(_storage.getMaxBidPriceForToken(_tokenId) < _price, 
+                "Offer amount must be higher than the bid price");
+        }
+
         // Offer creation and return of the offer ID
         uint256 offerId = _storage.addOffer(msg.sender, _tokenId, _price);
         // Emit an event that returns token id and offer id as well
         emit OfferAdded(msg.sender, offerId, _tokenId);
     }
 
-    /// @dev Delete offer. This is also done during the sale of the last token in the offer.  
+    /// @dev cancel offer. This is also done during the sale of the last token in the offer.  
     /// @param _offerId Offer ID
-    function deleteOffer(uint256 _offerId) public correctOffer(_offerId) onlyOfferOwner(_offerId) {
+    function cancelOffer(uint256 _offerId) public correctOffer(_offerId) onlyOfferOwner(_offerId) {
         require(_storage.getSaleStatusForOffer(_offerId) != uint256(SaleStatus.Finished), 
             "It's not impossible delete when the offer status is 'finished'");
         // clear all data in the token
         uint256 tokenId = _storage.getTokenIdByOfferId(_offerId);
-        _storage.deleteOffer(_offerId);
+        _storage.cancelOffer(_offerId);
         // deleting all bids related to the token
         // return bid amounts to bidders
         _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);

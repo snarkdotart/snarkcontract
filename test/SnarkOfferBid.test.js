@@ -21,7 +21,7 @@ contract('SnarkOfferBid', async (accounts) => {
         console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
     });
 
-    it("2. test addOffer and deleteOffer functions", async () => {
+    it("2. test addOffer and cancelOffer functions", async () => {
         const owner = accounts[0];
         const tokenId = 1;
         const price = 50;
@@ -115,7 +115,7 @@ contract('SnarkOfferBid', async (accounts) => {
             }
         });
 
-        await instance.deleteOffer(1);
+        await instance.cancelOffer(1);
 
         retval = await instance.getOwnerOffersCount(owner);
         assert.equal(retval.toNumber(), 0, "error on step 10");
