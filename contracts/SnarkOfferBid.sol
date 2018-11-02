@@ -110,6 +110,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @dev Delete offer. This is also done during the sale of the last token in the offer.  
     /// @param _offerId Offer ID
     function deleteOffer(uint256 _offerId) public correctOffer(_offerId) onlyOfferOwner(_offerId) {
+        require(_storage.getSaleStatusForOffer(_offerId) != uint256(SaleStatus.Finished), 
+            "It's not impossible delete when the offer status is 'finished'");
         // clear all data in the token
         uint256 tokenId = _storage.getTokenIdByOfferId(_offerId);
         _storage.deleteOffer(_offerId);
