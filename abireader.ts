@@ -14,11 +14,11 @@ if (fs.existsSync(path_contractservice)) {
 		let tmp_line = line;
 		for (let i = 0; i < dictionary.length; i++) {
 			let key_line = dictionary[i][0];
-			if (line.indexOf(key_line) > 0) {
+			if (tmp_line.indexOf(key_line) != -1) {
 				let path_to_file = dictionary[i][1];
 				let contract = JSON.parse(fs.readFileSync(path_to_file));
 				let abi = JSON.stringify(contract.abi);
-				tmp_line = key_line + " " + abi + ";";
+				tmp_line = '  ' + key_line + ' ' + abi + ';';
 			}
 		}
 		new_buf += tmp_line + '\n';
