@@ -73,10 +73,10 @@ BContract -> BContract: emit event LoanStoped
 
 Owner -> BContract: call DeclineLoanToken
 note right
-  * может быть выполнена только, если loan status < Active
-  * она бесплатная, т.к. деньги borrower на этом этапе не оставлял
-  * вызываться так же будет, если владелец захочет сделать Offer 
-    или принять Bid, пока лоан не равен Active
+  * can be performed only if loan status < Active
+  * it is free, because the borrower did not leave money at this moment
+  * it will also be called if the owner wants to create an Offer
+    or accept a Bid until Loan is not in Active state
 end note
 BContract -> BStorage: delete from Approved list of loan
 BContract -> BStorage: delete from token's calendar
@@ -88,8 +88,7 @@ BContract -> BContract: emit event TokenDeclined
 
 Borrower -> BContract: deleteLoan
 note right
-  * может быть выполнена только самим Borrower-ом
-  * проверять по принадлежности к владению Loan-а
+  Can be performed by a Borrower only
 end note
 loop through tokens in Approved and Declined list of loan states
   BContract -> BStorage: delete from Approved list of loan
