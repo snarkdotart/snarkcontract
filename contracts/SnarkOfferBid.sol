@@ -174,6 +174,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         emit BidAdded(msg.sender, bidId, msg.value);
     }
 
+    // TODO: что будет возвращать функция getOfferIdByTokenId после выполнения этой функции
     /// @dev Function to accept bid
     /// @param _bidId Id of bid
     function acceptBid(uint256 _bidId) public correctBid(_bidId) {
@@ -209,6 +210,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
     }
     
+    // TODO: что будет возвращать функция getOfferIdByTokenId после выполнения этой функции
     /// @dev Function to allow the bidder to cancel their own bid
     /// @param _bidId Bid ID
     function cancelBid(uint256 _bidId) public correctBid(_bidId) onlyBidOwner(_bidId) {
@@ -221,6 +223,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         emit BidCanceled(tokenId, _bidId);
     }
 
+    // TODO: что будет возвращать функция getOfferIdByTokenId после выполнения этой функции
     /// @dev Accept the artist's offer
     /// @param _offerId Offer ID
     function buyOffer(uint256 _offerId) public payable {
@@ -276,7 +279,6 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         return _storage.getOfferIdByTokenId(_tokenId);
     }
 
-    // offerid, token owner , tokenId, price, offer status, 
     function getOfferDetails(uint256 _offerId) public view returns (
         uint256 offerId,
         uint256 offerPrice,
@@ -289,6 +291,17 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         offerStatus = _storage.getSaleStatusForOffer(_offerId);
         tokenId = _storage.getTokenIdByOfferId(_offerId);
         tokenOwner = _storage.getOwnerOfToken(tokenId);
+    }
+
+    function getBidDetails(uint256 _bidId) public view returns (uint256 bidId, address bidOwner, uint256 bidPrice) {
+        bidId = _bidId;
+        bidOwner = _storage.getOwnerOfBid(_bidId);
+        bidPrice = _storage.getBidPrice(_bidId);
+    }
+
+    function getBidIdMaxPrice(uint256 _tokenId) public view returns (uint256 bidId, uint256 bidPrice) {
+        bidId = _storage.getMaxBidIdForToken(_tokenId);
+        bidPrice = _storage.getMaxBidPriceForToken(_tokenId);
     }
 
     function _takeBackBidAmountsAndDeleteAllTokenBids(uint256 _tokenId) internal {

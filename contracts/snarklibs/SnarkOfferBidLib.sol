@@ -204,13 +204,16 @@ library SnarkOfferBidLib {
         uint256 maxBidPrice = SnarkStorage(_storageAddress).uintStorage(
             keccak256(abi.encodePacked("maxBidPriceForToken", _tokenId)));
         assert(_price > maxBidPrice);
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("maxBidPriceForToken", _tokenId)), _price);
 
         // get new bid id and increase a value of total number of bids
         bidId = SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfBids")).add(1);
         SnarkStorage(_storageAddress).setUint(keccak256("totalNumberOfBids"), bidId);
-        
+
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("maxBidPriceForToken", _tokenId)), _price);
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("maxBidIdForToken", _tokenId)), bidId);
+
         // mapping owner to the Bid
         SnarkStorage(_storageAddress).setAddress(
             keccak256(abi.encodePacked("ownerToBid", bidId)),
@@ -481,7 +484,10 @@ library SnarkOfferBidLib {
     }
 
     function getMaxBidPriceForToken(address _storageAddress, uint256 _tokenId) external view returns (uint256) {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("maxBidPriceForToken", _tokenId)));
+        return SnarkStorage(_storageAddress).uintStorage(keccak256(abi.encodePacked("maxBidPriceForToken", _tokenId)));
+    }
+
+    function getMaxBidIdForToken(address _storageAddress, uint256 _tokenId) external view returns (uint256) {
+        return SnarkStorage(_storageAddress).uintStorage(keccak256(abi.encodePacked("maxBidIdForToken", _tokenId)));
     }
 }
