@@ -1,5 +1,5 @@
 @startuml
-title 3. Activity Diagram: Start Loan
+title Activity Diagram: Start Loan
 start
 
 if (are there any tokens in NotApproved list?) then (yes)

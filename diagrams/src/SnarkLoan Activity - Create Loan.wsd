@@ -1,5 +1,5 @@
 @startuml
-title 1. Activity Diagram: Loan Creation
+title Activity Diagram: Loan Creation
 start
 
 :Create Loan Record;

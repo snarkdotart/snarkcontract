@@ -1,5 +1,5 @@
 @startuml
-title 2. Activity Diagram: Approving Loan by Token's Owner
+title Activity Diagram: Approving Loan by Token's Owner
 start
 
 if (token's owner approved?) then (yes)

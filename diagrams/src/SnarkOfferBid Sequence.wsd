@@ -1,6 +1,6 @@
 @startuml
 
-title 1. Loan Sequence Diagram
+title Sequence Diagram: OfferBid
 
 actor Borrower
 control BContract
