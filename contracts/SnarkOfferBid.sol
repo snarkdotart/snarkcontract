@@ -21,13 +21,10 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
     /*** EVENTS ***/
 
-    // New offer event
     event OfferAdded(address _offerOwner, uint256 _offerId, uint _tokenId);
-    // Offer deleted event
     event OfferDeleted(uint256 _offerId);
-    // New bid event
     event BidAdded(address indexed _bidder, uint256 _bidId, uint256 _value);
-    // Canceled bid event
+    event BidAccepted(uint256 _bidId, uint256 _bidPrice);
     event BidCanceled(uint256 _tokenId, uint256 _bidId);
 
     modifier restrictedAccess() {
@@ -161,7 +158,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         }
         require(
             currentOwner != msg.sender, 
-            "The token token cannot belong to the bidder"
+            "The token cannot belongs to the bidder"
         );
 
         uint256 maxBidPrice = _storage.getMaxBidPriceForToken(_tokenId);
@@ -175,6 +172,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     }
 
     // TODO: что будет возвращать функция getOfferIdByTokenId после выполнения этой функции
+    // FIXME: 1. можно принять несколько раз
+    // FIXME: 2. может принять не владелец токена 
     /// @dev Function to accept bid
     /// @param _bidId Id of bid
     function acceptBid(uint256 _bidId) public correctBid(_bidId) {
@@ -211,6 +210,10 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     }
     
     // TODO: что будет возвращать функция getOfferIdByTokenId после выполнения этой функции
+    // FIXME: необходимо при удалении или cancelBid просто переводить статус бида в Finished 
+    // FIXME: при любой операции проверять этот статус и не позволять выполнять, если он уже Finished
+    // TODO: таким образом можно будет высти список бидов по статусу и по пользователю. 
+    // У пользователя будет 2 списка - активных и пассивыных
     /// @dev Function to allow the bidder to cancel their own bid
     /// @param _bidId Bid ID
     function cancelBid(uint256 _bidId) public correctBid(_bidId) onlyBidOwner(_bidId) {
