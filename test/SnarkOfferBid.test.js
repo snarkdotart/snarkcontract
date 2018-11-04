@@ -124,9 +124,11 @@ contract('SnarkOfferBid', async (accounts) => {
     it("3. test buyOffer function", async () => {
         const owner = accounts[0];
         const buyer = accounts[1];
+        const bidOwner = accounts[2];
         const tokenId = 1;
         const offerId = 2;
         const price = web3.toWei(1, 'ether');
+        const bidPrice = web3.toWei(0.5, 'ether');
 
         const platformProfitShare = await instance_snarkbase.getPlatformProfitShare();
         
@@ -145,30 +147,59 @@ contract('SnarkOfferBid', async (accounts) => {
         retval = await instance.getSaleStatusForOffer(offerId);
         assert.equal(retval.toNumber(), 0, "error on step 3");
 
+        retval = await instance.getTotalNumberOfBids();
+        assert.equal(retval.toNumber(), 0, "error on step 4");
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 0, "error on step 5");
+
+        retval = await instance.getNumberBidsOfOwner(bidOwner);
+        assert.equal(retval.toNumber(), 0, "error on step 6");
+
         await instance.addOffer(tokenId, price);
 
-        retval = await instance.getTotalNumberOfOffers();
-        assert.equal(retval.toNumber(), 2, "error on step 4");
+        await instance.addBid(tokenId, {from: bidOwner, value: bidPrice});
 
-        retval = await instance.getSaleStatusForOffer(offerId);
-        assert.equal(retval.toNumber(), 2, "error on step 5");
-        
-        retval = await instance.getOwnerOffersCount(owner);
+        retval = await instance.getTotalNumberOfBids();
+        assert.equal(retval.toNumber(), 1, "error on step 5");
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
         assert.equal(retval.toNumber(), 1, "error on step 6");
 
+        retval = await instance.getNumberBidsOfOwner(bidOwner);
+        assert.equal(retval.toNumber(), 1, "error on step 7");
+
+        retval = await instance.getTotalNumberOfOffers();
+        assert.equal(retval.toNumber(), 2, "error on step 8");
+
+        retval = await instance.getSaleStatusForOffer(offerId);
+        assert.equal(retval.toNumber(), 2, "error on step 9");
+        
+        retval = await instance.getOwnerOffersCount(owner);
+        assert.equal(retval.toNumber(), 1, "error on step 10");
+
         retval = await instance_snarkbase.getWithdrawBalance(owner);
-        assert.equal(retval.toNumber(), 0, "error on step 7");
+        assert.equal(retval.toNumber(), 0, "error on step 11");
 
         retval = await instance_snarkbase.getOwnerOfToken(tokenId);
-        assert.equal(retval, owner, "error on step 8");
+        assert.equal(retval, owner, "error on step 12");
 
         await instance.buyOffer(offerId, { from: buyer, value: web3.toWei(2, 'ether') });
 
+        retval = await instance.getTotalNumberOfBids();
+        assert.equal(retval.toNumber(), 1, "error on step 13");
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 0, "error on step 14");
+
+        retval = await instance.getNumberBidsOfOwner(bidOwner);
+        assert.equal(retval.toNumber(), 0, "error on step 15");
+
         retval = await instance_snarkbase.getOwnerOfToken(tokenId);
-        assert.equal(retval, buyer, "error on step 9");
+        assert.equal(retval, buyer, "error on step 16");
 
         retval = await instance_snarkbase.getWithdrawBalance(owner);
-        assert.equal(retval.toNumber(), price - profit, "error on step 10");
+        assert.equal(retval.toNumber(), price - profit, "error on step 17");
     });
 
     it("4. test addBid and deleteBid functions", async () => {
@@ -184,9 +215,9 @@ contract('SnarkOfferBid', async (accounts) => {
         const profit = highestPrice *  platformProfitShare / 100;
 
         let retval = await instance.getTotalNumberOfBids();
-        assert.equal(retval.toNumber(), 0, "error on step 1");
+        assert.equal(retval.toNumber(), 1, "error on step 1");
         
-        retval = await instance.getNumberOfTokenBids(tokenId);
+        retval = await instance.getNumberBidsOfToken(tokenId);
         assert.equal(retval.toNumber(), 0, "error on step 2");
 
         retval = await instance.getNumberBidsOfOwner(bidOwner);
@@ -205,13 +236,10 @@ contract('SnarkOfferBid', async (accounts) => {
         });
 
         retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
-        assert.equal(retval.toNumber(), web3.toWei(0, 'ether'), "error on step 5");
-
-        retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
-        assert.equal(retval.toNumber(), web3.toWei(0, 'ether'), "error on step 5");
+        assert.equal(retval.toNumber(), 0, "error on step 5");
 
         retval = await instance_snarkbase.getWithdrawBalance(bidOwner);
-        assert.equal(retval.toNumber(), 0, "error on step 6");
+        assert.equal(retval.toNumber(), bidPrice, "error on step 6");
 
         retval = await instance_snarkbase.getWithdrawBalance(SnarkStorage.address);
         assert.equal(retval.toNumber(), 0, "error on step 7");
@@ -231,9 +259,9 @@ contract('SnarkOfferBid', async (accounts) => {
         await instance.addBid(tokenId, {from: bidOwner, value: highestPrice});
 
         retval = await instance.getTotalNumberOfBids();
-        assert.equal(retval.toNumber(), 2, "error on step 10");
+        assert.equal(retval.toNumber(), 3, "error on step 10");
         
-        retval = await instance.getNumberOfTokenBids(tokenId);
+        retval = await instance.getNumberBidsOfToken(tokenId);
         assert.equal(retval.toNumber(), 2, "error on step 12");
 
         retval = await instance.getNumberBidsOfOwner(bidOwner);
@@ -243,20 +271,20 @@ contract('SnarkOfferBid', async (accounts) => {
         assert.equal(retval.toNumber(), web3.toWei(0, 'ether'), "error on step 13");
 
         retval = await instance_snarkbase.getWithdrawBalance(bidOwner);
-        assert.equal(retval.toNumber(), 0, "error on step 14");
+        assert.equal(retval.toNumber(), bidPrice, "error on step 14");
 
         retval = await instance_snarkbase.getWithdrawBalance(SnarkStorage.address);
         assert.equal(retval.toNumber(), sumPrice, "error on step 15");
 
-        await instance.acceptBid(2, { from: tokenOwner });
+        await instance.acceptBid(3, { from: tokenOwner });
 
         retval = await instance_snarkbase.getOwnerOfToken(tokenId);
         assert.equal(retval, bidOwner, "error on step 16");
 
         retval = await instance.getTotalNumberOfBids();
-        assert.equal(retval.toNumber(), 2, "error on step 17");
+        assert.equal(retval.toNumber(), 3, "error on step 17");
         
-        retval = await instance.getNumberOfTokenBids(tokenId);
+        retval = await instance.getNumberBidsOfToken(tokenId);
         assert.equal(retval.toNumber(), 0, "error on step 18");
 
         let balanceOfTokenOwner = await instance_snarkbase.getWithdrawBalance(tokenOwner);
@@ -266,7 +294,7 @@ contract('SnarkOfferBid', async (accounts) => {
 
         let balanceOfBidOwner = await instance_snarkbase.getWithdrawBalance(bidOwner);
         balanceOfBidOwner = balanceOfBidOwner.toNumber();
-        assert.equal(balanceOfBidOwner, bidPrice, "error on step 20");
+        assert.equal(balanceOfBidOwner, bidPrice * 2, "error on step 20");
         console.log(`bidOwner's balance before addBid: ${ balanceOfBidOwner }`);
         
         balanceOfContract = await instance_snarkbase.getWithdrawBalance(SnarkStorage.address);
@@ -286,22 +314,22 @@ contract('SnarkOfferBid', async (accounts) => {
         console.log(`contract's balance after addBid: ${ retval.toNumber() }`);
 
         retval = await instance.getTotalNumberOfBids();
-        assert.equal(retval.toNumber(), 3, "error on step 22");
+        assert.equal(retval.toNumber(), 4, "error on step 22");
         
-        retval = await instance.getNumberOfTokenBids(tokenId);
+        retval = await instance.getNumberBidsOfToken(tokenId);
         assert.equal(retval.toNumber(), 1, "error on step 23");
 
         retval = await instance.getNumberBidsOfOwner(tokenOwner);
         assert.equal(retval.toNumber(), 1, "error on step 24");
 
         retval = await instance.getNumberBidsOfOwner(bidOwner);
-        assert.equal(retval.toNumber(), 2, "error on step 25");
+        assert.equal(retval.toNumber(), 0, "error on step 25");
 
         try { await instance.cancelBid(1, { from: tokenOwner }); } catch(e) {
             assert.equal(e.message, 'VM Exception while processing transaction: revert it\'s not a bid owner');
         }
 
-        await instance.cancelBid(3, { from: tokenOwner });
+        await instance.cancelBid(4, { from: tokenOwner });
 
         retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
         console.log(`tokenOwner's balance after cancelBid: ${ retval.toNumber() }`);
@@ -313,16 +341,16 @@ contract('SnarkOfferBid', async (accounts) => {
         console.log(`contract's balance after cancelBid: ${ retval.toNumber() }`);
 
         retval = await instance.getTotalNumberOfBids();
-        assert.equal(retval.toNumber(), 3, "error on step 26");
+        assert.equal(retval.toNumber(), 4, "error on step 26");
         
-        retval = await instance.getNumberOfTokenBids(tokenId);
+        retval = await instance.getNumberBidsOfToken(tokenId);
         assert.equal(retval.toNumber(), 0, "error on step 27");
 
         retval = await instance.getNumberBidsOfOwner(tokenOwner);
-        assert.equal(retval.toNumber(), 1, "error on step 28");
+        assert.equal(retval.toNumber(), 0, "error on step 28");
 
         retval = await instance.getNumberBidsOfOwner(bidOwner);
-        assert.equal(retval.toNumber(), 2, "error on step 29");
+        assert.equal(retval.toNumber(), 0, "error on step 29");
 
     });
 

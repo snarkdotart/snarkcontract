@@ -99,8 +99,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             "Token should not be involved in sales"
         );
 
-        // TODO: ПРОВЕРИТЬ: УДАЛЯЮТСЯ ЛИ БИДЫ у токена, когда произошла продажа?
-        uint256 bidsCount = _storage.getNumberOfTokenBids(_tokenId);
+        uint256 bidsCount = _storage.getNumberBidsOfToken(_tokenId);
         if (bidsCount > 0) {
             require(_storage.getMaxBidPriceForToken(_tokenId) < _price, 
                 "Offer amount must be higher than the bid price");
@@ -172,13 +171,12 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     }
 
     // TODO: что будет возвращать функция getOfferIdByTokenId после выполнения этой функции
-    // FIXME: 1. можно принять несколько раз
-    // FIXME: 2. может принять не владелец токена 
     /// @dev Function to accept bid
     /// @param _bidId Id of bid
     function acceptBid(uint256 _bidId) public correctBid(_bidId) {
+        require(_storage.getBidSaleStatus(_bidId) == uint256(SaleStatus.Active), "Bid is already finished");
         // Check if the function is called by the token owner
-        uint256 tokenId = _storage.getTokenIdByBidId(_bidId);
+        uint256 tokenId = _storage.getTokenByBid(_bidId);
         uint256 price = _storage.getBidPrice(_bidId);
         uint256 maxBidPrice = _storage.getMaxBidPriceForToken(tokenId);
         require(price == maxBidPrice, "User has to accept the highest bid only");
@@ -191,6 +189,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         );
 
         address tokenOwner = _storage.getOwnerOfToken(tokenId);
+        // TODO: что будет, если уже сущетсвовал offer? Будет удаляться?
         // uint256 offerId = _storage.getOfferIdByTokenId(tokenId);
 
         require(msg.sender == tokenOwner, "Only owner can accept a bid for their token");
@@ -218,7 +217,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @param _bidId Bid ID
     function cancelBid(uint256 _bidId) public correctBid(_bidId) onlyBidOwner(_bidId) {
         address bidder = _storage.getOwnerOfBid(_bidId);
-        uint256 tokenId = _storage.getTokenIdByBidId(_bidId);
+        uint256 tokenId = _storage.getTokenByBid(_bidId);
         uint256 price = _storage.getBidPrice(_bidId);
         _storage.subPendingWithdrawals(_storage, price);
         _storage.deleteBid(_bidId);
@@ -254,18 +253,6 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
     }
 
-    function getTotalNumberOfBids() public view returns (uint256) {
-        return _storage.getTotalNumberOfBids();
-    }
-
-    function getNumberOfTokenBids(uint256 _tokenId) public view returns (uint256) {
-        return _storage.getNumberOfTokenBids(_tokenId);
-    }
-
-    function getNumberBidsOfOwner(address _bidOwner) public view returns (uint256) {
-        return _storage.getNumberBidsOfOwner(_bidOwner);
-    }
-
     function getSaleStatusForOffer(uint256 _offerId) public view returns (uint256) {
         return _storage.getSaleStatusForOffer(_offerId);
     }
@@ -296,6 +283,18 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         tokenOwner = _storage.getOwnerOfToken(tokenId);
     }
 
+    function getTotalNumberOfBids() public view returns (uint256) {
+        return _storage.getTotalNumberOfBids();
+    }
+
+    function getNumberBidsOfToken(uint256 _tokenId) public view returns (uint256) {
+        return _storage.getNumberBidsOfToken(_tokenId);
+    }
+
+    function getNumberBidsOfOwner(address _bidOwner) public view returns (uint256) {
+        return _storage.getNumberBidsOfOwner(_bidOwner);
+    }
+
     function getBidDetails(uint256 _bidId) public view returns (uint256 bidId, address bidOwner, uint256 bidPrice) {
         bidId = _bidId;
         bidOwner = _storage.getOwnerOfBid(_bidId);
@@ -303,17 +302,17 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     }
 
     function getBidIdMaxPrice(uint256 _tokenId) public view returns (uint256 bidId, uint256 bidPrice) {
-        bidId = _storage.getMaxBidIdForToken(_tokenId);
+        bidId = _storage.getMaxBidForToken(_tokenId);
         bidPrice = _storage.getMaxBidPriceForToken(_tokenId);
     }
 
     function _takeBackBidAmountsAndDeleteAllTokenBids(uint256 _tokenId) internal {
-        uint256 bidsCount = _storage.getNumberOfTokenBids(_tokenId);
+        uint256 bidsCount = _storage.getNumberBidsOfToken(_tokenId);
         uint256 bidId;
         address bidder;
         uint256 bidPrice;
         for (uint256 i = 0; i < bidsCount; i++) {
-            bidId = _storage.getBidIdForToken(_tokenId, 0);
+            bidId = _storage.getBidOfTokenByIndex(_tokenId, 0);
             bidder = _storage.getOwnerOfBid(bidId);
             bidPrice = _storage.getBidPrice(bidId);
             // Move bid amount from contract to the bidder
