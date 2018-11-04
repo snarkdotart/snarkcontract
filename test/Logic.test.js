@@ -25,8 +25,8 @@ contract('Snark Logic', async (accounts) => {
 
         // DeleteOffer
         try {
-            await instanceSnarkOfferBid.deleteOffer(offerId);
-            throw('Error: a deleteOffer function is called');
+            await instanceSnarkOfferBid.cancelOffer(offerId);
+            throw('Error: a cancelOffer function is called');
         } catch(e) {
             assert.equal(e.message, 'VM Exception while processing transaction: revert Offer id is wrong');
         }
