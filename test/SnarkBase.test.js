@@ -196,4 +196,131 @@ contract('SnarkBase', async (accounts) => {
         assert.equal(retval[6].toLowerCase(), participants_2[1].toLowerCase(), "error on step 14");
     });
 
+    it("5. test of getListOfAllArtists function", async () => {
+        const artist1 = accounts[0];
+        const artist2 = accounts[1];
+        const artist3 = accounts[2];
+
+        const tokenHash1 = web3.sha3("tokenHash1");
+        const tokenHash2 = web3.sha3("tokenHash2");
+        const tokenHash3 = web3.sha3("tokenHash3");
+
+        const tokenUrl1 = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7En1";
+        const tokenUrl2 = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7En2";
+        const tokenUrl3 = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7En3";
+        
+        const participants1 = [
+            '0xC04691B99EB731536E35F375ffC85249Ec713597', 
+            '0xB94691B99EB731536E35F375ffC85249Ec717233'
+        ];
+        const participants2 = [
+            '0xC04691B99EB731536E35F375ffC85249Ec713222', 
+            '0xB94691B99EB731536E35F375ffC85249Ec717777',
+            '0xB94691B99EB731536E35F375ffC85249Ec717999'
+        ];
+        const participants3 = [
+            '0xC04691B99EB731536E35F375ffC85249Ec713222', 
+            '0xB94691B99EB731536E35F375ffC85249Ec717744',
+            '0xB94691B99EB731536E35F375ffC85249Ec717911'
+        ];
+        const profits2 = [ 70, 30 ];
+        const profits3 = [ 30, 60, 10 ];
+
+        const limitedEdition = 1;
+        const profitShareFromSecondarySale = 20;
+
+        let retval = await instance.getProfitShareSchemesTotalCount();
+        assert.equal(retval.toNumber(), 4, "error on step 1");
+
+        retval = await instance.getProfitShareSchemeCountByAddress(artist1);
+        assert.equal(retval.toNumber(), 1, "error on step 2");
+
+        retval = await instance.getProfitShareSchemeCountByAddress(artist2);
+        assert.equal(retval.toNumber(), 0, "error on step 3");
+
+        retval = await instance.getProfitShareSchemeCountByAddress(artist3);
+        assert.equal(retval.toNumber(), 0, "error on step 4");
+
+        await instance.createProfitShareScheme(artist1, participants1, profits2);
+        await instance.createProfitShareScheme(artist2, participants2, profits3);
+        await instance.createProfitShareScheme(artist3, participants3, profits3);
+
+        retval = await instance.getProfitShareSchemesTotalCount();
+        assert.equal(retval.toNumber(), 7, "error on step 5");
+
+        retval = await instance.getProfitShareSchemeCountByAddress(artist1);
+        assert.equal(retval.toNumber(), 2, "error on step 6"); // 5
+
+        retval = await instance.getProfitShareSchemeCountByAddress(artist2);
+        assert.equal(retval.toNumber(), 1, "error on step 7"); // 6
+
+        retval = await instance.getProfitShareSchemeCountByAddress(artist3);
+        assert.equal(retval.toNumber(), 1, "error on step 8"); // 7
+
+        retval = await instance.getListOfAllArtists();
+        const numberOfArtists = retval.length;
+
+        retval = await instance.getTokensCount();
+        assert.equal(retval.toNumber(), 10, "error on step 9");
+
+        retval = await instance.getTokensCountByArtist(artist1);
+        assert.equal(retval.toNumber(), 0, "error on step 10");
+
+        retval = await instance.getTokensCountByArtist(artist2);
+        assert.equal(retval.toNumber(), 0, "error on step 11");
+
+        retval = await instance.getTokensCountByArtist(artist3);
+        assert.equal(retval.toNumber(), 0, "error on step 12");
+
+        await instance.addToken(
+            artist1,
+            tokenHash1,
+            limitedEdition,
+            profitShareFromSecondarySale,
+            tokenUrl1,
+            5,
+            true,
+            true
+        );
+
+        await instance.addToken(
+            artist2,
+            tokenHash2,
+            limitedEdition,
+            profitShareFromSecondarySale,
+            tokenUrl2,
+            6,
+            true,
+            true
+        );
+
+        await instance.addToken(
+            artist3,
+            tokenHash3,
+            limitedEdition,
+            profitShareFromSecondarySale,
+            tokenUrl3,
+            7,
+            true,
+            true
+        );
+
+        retval = await instance.getTokensCount();
+        assert.equal(retval.toNumber(), 13, "error on step 5");
+
+        retval = await instance.getTokensCountByArtist(artist1);
+        assert.equal(retval.toNumber(), 1, "error on step 6");
+
+        retval = await instance.getTokensCountByArtist(artist2);
+        assert.equal(retval.toNumber(), 1, "error on step 7");
+
+        retval = await instance.getTokensCountByArtist(artist3);
+        assert.equal(retval.toNumber(), 1, "error on step 8");
+
+        retval = await instance.getListOfAllArtists();
+        assert.equal(retval.length, numberOfArtists + 3, "error on step 9");
+        console.log(retval);
+
+    });
+
 });

@@ -224,7 +224,7 @@ library SnarkBaseLib {
             profitShareFromSecondarySale);
         SnarkStorage(storageAddress).setString(
             keccak256(abi.encodePacked("token", "url", tokenId)), tokenUrl);
-
+        addArtistToList(storageAddress, artistAddress);
         setTokenAcceptOfLoanRequestFromSnark(storageAddress, tokenId, isAcceptLoanRequestFromSnark);
         setTokenAcceptOfLoanRequestFromOthers(storageAddress, tokenId, isAcceptLoanRequestFromOthers);
     }
@@ -284,7 +284,29 @@ library SnarkBaseLib {
             keccak256(abi.encodePacked("token", "decryptionKey", tokenId)),
             decryptionKey
         );
-    }    
+    }
+
+    function addArtistToList(address storageAddress, address artist) public {
+        if (!isArtistInList(storageAddress, artist)) {
+            uint256 index = getNumberOfArtistsInList(storageAddress);
+            setArtistToListByIndex(storageAddress, index, artist);
+            increaseNumberOfArtistsInList(storageAddress);
+            markArtistAsInList(storageAddress, artist);
+        }
+    }
+
+    function markArtistAsInList(address storageAddress, address artist) public {
+        SnarkStorage(storageAddress).setBool(keccak256(abi.encodePacked("isArtistInList", artist)), true);
+    }
+
+    function increaseNumberOfArtistsInList(address storageAddress) public {
+        uint256 count = getNumberOfArtistsInList(storageAddress);
+        SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("numberOfArtistsInList")), count.add(1));
+    }
+
+    function setArtistToListByIndex(address storageAddress, uint256 index, address artist) public {
+        SnarkStorage(storageAddress).setAddress(keccak256(abi.encodePacked("listOfArtists", index)), artist);
+    }
 
     /*** GET ***/
     function getSnarkWalletAddress(address storageAddress) public view returns (address) {
@@ -504,4 +526,26 @@ library SnarkBaseLib {
         );
     }
 
+    function isArtistInList(address storageAddress, address artist) public view returns (bool) {
+        return SnarkStorage(storageAddress).boolStorage(
+            keccak256(abi.encodePacked("isArtistInList", artist))
+        );
+    }
+
+    function getNumberOfArtistsInList(address storageAddress) public view returns (uint256) {
+        return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("numberOfArtistsInList")));
+    }
+
+    function getArtistToListByIndex(address storageAddress, uint256 index) public view returns (address) {
+        return SnarkStorage(storageAddress).addressStorage(keccak256(abi.encodePacked("listOfArtists", index)));
+    }
+
+    function getListOfAllArtists(address storageAddress) public view returns (address[]) {
+        uint256 countOfArtists = getNumberOfArtistsInList(storageAddress);
+        address[] memory listOfArtists = new address[](countOfArtists);
+        for (uint256 i = 0; i < countOfArtists; i++) {
+            listOfArtists[i] = getArtistToListByIndex(storageAddress, i);
+        }
+        return listOfArtists;
+    }
 }

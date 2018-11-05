@@ -400,4 +400,8 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     {
         return _storage.getProfitShareSchemeIdForOwner(schemeOwner, index);
     }
+
+    function getListOfAllArtists() public view returns (address[]) {
+        return _storage.getListOfAllArtists();
+    }
 }
