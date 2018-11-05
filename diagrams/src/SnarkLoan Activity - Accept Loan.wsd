@@ -1,8 +1,8 @@
 @startuml
-title Activity Diagram: Approving Loan by Token's Owner
+title Activity Diagram: Accept Loan by Token's Owner
 start
 
-if (token's owner approved?) then (yes)
+if (token's owner accepted?) then (yes)
   :read token's calendar;
   if (is token free on selected period?) then (yes)
     :save days in token's calendar;

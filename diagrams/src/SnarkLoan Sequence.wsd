@@ -22,9 +22,9 @@ end
 BContract -> API: emit event LoanCreated
 API -> Owner: send an email to the token owner\nif the tokens are\nin the NotApproved list
 
-== ApproveTokenOfLoan ==
+== AcceptLoan ==
 
-Owner -> BContract: Approve Loan
+Owner -> BContract: Accept Loan
 BContract -> BStorage: check token's calendar
 BContract -> BStorage: assign token to one of\nthe three lists of loan states
 BContract -> BStorage: delete loan requests from the owner's list
