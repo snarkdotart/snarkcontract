@@ -74,12 +74,6 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         selfdestruct(owner);
     }
 
-    // /// @dev Function returns the offer count with a specific status 
-    // /// @param _status Sale status
-    // function getOffersCount(uint256 _status) public view returns (uint256) {        
-    //     require(_status <= uint256(SaleStatus.Finished));
-    //     return _storage.get_saleStatusToOffersMap_length(_status);
-    // }
     /// @dev Function returns a count of offers which belong to a specific owner
     /// @param _owner Owner address
     function getOwnerOffersCount(address _owner) public view returns (uint256 offersCount) {
