@@ -10,30 +10,6 @@ library SnarkOfferBidLib {
     /*************************************************************/
     /********************** OFFER FUNCTIONS **********************/
     /*************************************************************/
-    function setPriceForOffer(address _storageAddress, uint256 _offerId, uint256 _price) public {
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("priceForOfferId", _offerId)), _price);
-    }
-
-    function setTokenIdForOffer(address _storageAddress, uint256 _offerId, uint256 _tokenId) public {
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("tokenIdForOfferId", _offerId)), _tokenId);
-    }
-
-    function setOfferIdForTokenId(address _storageAddress, uint256 _tokenId, uint256 _offerId) public {
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("offerIdIdForTokenId", _tokenId)), _offerId);
-    }
-
-    function setSaleStatusForOffer(address _storageAddress, uint256 _offerId, uint256 _saleStatus) public {
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("saleStatusToOffer", _offerId)), _saleStatus);
-    }
-
-    function setOwnerForOffer(address _storageAddress, uint256 _offerId, address _offerOwner) public {
-        SnarkStorage(_storageAddress).setAddress(keccak256(abi.encodePacked("ownerToOffer", _offerId)), _offerOwner);
-    }
-
     function addOffer(
         address _storageAddress, 
         address _offerOwner, 
@@ -43,97 +19,149 @@ library SnarkOfferBidLib {
         public 
         returns (uint256 offerId) 
     {
-        // get an Id for this new offer
-        offerId = SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfOffers")).add(1);
-        // save a new value of total number of offers
-        SnarkStorage(_storageAddress).setUint(keccak256("totalNumberOfOffers"), offerId);
-        // binding a price to the offer id
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("priceForOfferId", offerId)), _price);
-        // bind an token id to the offer id to get the token id by means the offer id
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("tokenIdForOfferId", offerId)), _tokenId);
-        // and vice versa: binding the offer id to the token id to get the offer id by means the token id
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("offerIdIdForTokenId", _tokenId)), offerId);
-        // увеличиваем общее количество офферов, принадлежащих владельцу
-        uint256 amountOfOwnerOffers = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("totalNumberOfOwnerOffers", _offerOwner)));
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("totalNumberOfOwnerOffers", _offerOwner)),
-            amountOfOwnerOffers.add(1));
-        // добавляем offer id в список offers владельцу _offerOwner
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("ownerOffersList", _offerOwner, amountOfOwnerOffers)),
-            offerId);
-        // mapping owner to the offer
-        SnarkStorage(_storageAddress).setAddress(
-            keccak256(abi.encodePacked("ownerToOffer", offerId)),
-            _offerOwner);
-        // изменяем статус saleType = 'Offer' для token id: 
-        // 0 - None, 1 - Offer, 2 - Loan
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("saleTypeToToken", _tokenId)), 1);
-        // изменяем статус офера saleStatus = Active:
-        // 0 - Preparing, 1 - NotActive, 2 - Active, 3 - Finished
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("saleStatusToOffer", offerId)), 2);
-
-        // uint256 numberOfOffersBySaleStatus = SnarkStorage(_storageAddress).uintStorage(
-        //     keccak256(abi.encodePacked("numberOfOffersBySaleStatus", uint256(2))));
-        // uint256 newNumberOfOffersBySaleStatus = numberOfOffersBySaleStatus.add(1);
-        // assert(newNumberOfOffersBySaleStatus >= numberOfOffersBySaleStatus);
-        // SnarkStorage(_storageAddress).setUint(
-        //     keccak256(abi.encodePacked("numberOfOffersBySaleStatus", uint256(2))), newNumberOfOffersBySaleStatus);
-        // SnarkStorage(_storageAddress).setUint(
-        //     keccak256(abi.encodePacked("OffersListBySaleStatus", uint256(2), numberOfOffersBySaleStatus)), offerId);
+        offerId = increaseTotalNumberOfOffers(_storageAddress);
+        setOfferPrice(_storageAddress, offerId, _price);
+        setTokenForOffer(_storageAddress, offerId, _tokenId);
+        setOfferForToken(_storageAddress, _tokenId, offerId);
+        addOfferToOwnerOffersList(_storageAddress, _offerOwner, offerId);
+        setOwnerOfOffer(_storageAddress, offerId, _offerOwner);
+        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("saleTypeToToken", _tokenId)), 1); // Offer
+        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("saleStatusToOffer", offerId)), 2); // Active
     }
 
     function cancelOffer(address _storageAddress, uint256 _offerId) public {
+        uint256 tokenId = getTokenByOffer(_storageAddress, _offerId);
+        setOfferForToken(_storageAddress, tokenId, 0); // delete
+        deleteOfferFromOwnerOffersList(_storageAddress, _offerId);
+        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("saleTypeToToken", tokenId)), 0); // None
+        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("saleStatusToOffer", _offerId)), 3); // Finish
+    }
 
-        uint256 tokenId = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("tokenIdForOfferId", _offerId)));
+    function getOfferPrice(address _storageAddress, uint256 _offerId) public view returns (uint256 price) {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("priceForOfferId", _offerId)));
+    }
 
-        SnarkStorage(_storageAddress).deleteUint(
-            keccak256(abi.encodePacked("offerIdIdForTokenId", tokenId)));
-
-        address offerOwner = SnarkStorage(_storageAddress).addressStorage(
-            keccak256(abi.encodePacked("ownerToOffer", _offerId)));
-
-        uint256 amountOfOwnerOffers = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("totalNumberOfOwnerOffers", offerOwner)));
-
+    function setOfferPrice(address _storageAddress, uint256 _offerId, uint256 _price) public {
         SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("totalNumberOfOwnerOffers", offerOwner)),
-            amountOfOwnerOffers.sub(1));
+            keccak256(abi.encodePacked("priceForOfferId", _offerId)), _price);
+    }
 
-        for (uint256 i = 0; i < amountOfOwnerOffers; i++) {
-            uint256 currentOfferId = SnarkStorage(_storageAddress).uintStorage(
-                keccak256(abi.encodePacked("ownerOffersList", offerOwner, i)));
-            if (currentOfferId == _offerId) {
-                if (i < amountOfOwnerOffers.sub(1)) {
-                    uint256 lastOfferId = SnarkStorage(_storageAddress).uintStorage(
-                        keccak256(abi.encodePacked("ownerOffersList", offerOwner, amountOfOwnerOffers.sub(1))));
-                    SnarkStorage(_storageAddress).setUint(
-                        keccak256(abi.encodePacked("ownerOffersList", offerOwner, i)), lastOfferId);
-                }
-                SnarkStorage(_storageAddress).deleteUint(
-                    keccak256(abi.encodePacked("ownerOffersList", offerOwner, amountOfOwnerOffers.sub(1))));
-                break;
-            }
+    function getOwnerOfOffer(address _storageAddress, uint256 _offerId) public view returns (address) {
+        return SnarkStorage(_storageAddress).addressStorage(
+            keccak256(abi.encodePacked("ownerToOffer", _offerId))
+        );
+    }
+
+    function setOwnerOfOffer(address _storageAddress, uint256 _offerId, address _offerOwner) public {
+        SnarkStorage(_storageAddress).setAddress(keccak256(abi.encodePacked("ownerToOffer", _offerId)), _offerOwner);
+    }
+
+    function getSaleStatusForOffer(address _storageAddress, uint256 _offerId) public view returns (uint256) {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("saleStatusToOffer", _offerId)));
+    }
+
+    function setSaleStatusForOffer(address _storageAddress, uint256 _offerId, uint256 _saleStatus) public {
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("saleStatusToOffer", _offerId)), _saleStatus);
+    }
+
+    function getOfferByToken(address _storageAddress, uint256 _tokenId) public view returns (uint256) {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("offerIdIdForTokenId", _tokenId))
+        );
+    }
+
+    function setOfferForToken(address _storageAddress, uint256 _tokenId, uint256 _offerId) public {
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("offerIdIdForTokenId", _tokenId)), _offerId);
+    }
+
+    function getTokenByOffer(address _storageAddress, uint256 _offerId) public view returns (uint256) {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("tokenIdForOfferId", _offerId))
+        );
+    }
+
+    function setTokenForOffer(address _storageAddress, uint256 _offerId, uint256 _tokenId) public {
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("tokenIdForOfferId", _offerId)), _tokenId);
+    }
+
+    function addOfferToOwnerOffersList(address _storageAddress, address _offerOwner, uint256 _offerId) public {
+        require(getSaleStatusForOffer(_storageAddress, _offerId) != 3, "offer is already included in the list");
+        setSaleStatusForOffer(_storageAddress, _offerId, 2); // Active
+        uint256 index = increaseTotalNumberOfOwnerOffers(_storageAddress, _offerOwner).sub(1);
+        setOfferOfOwnerByIndex(_storageAddress, _offerOwner, index, _offerId);
+        setOfferIndexInListForOwner(_storageAddress, _offerOwner, _offerId, index);
+    }
+
+    function deleteOfferFromOwnerOffersList(address _storageAddress, uint256 _offerId) public {
+        address offerOwner = getOwnerOfOffer(_storageAddress, _offerId);
+        require(getSaleStatusForOffer(_storageAddress, _offerId) != 3, "offer is already deleted");
+        setSaleStatusForOffer(_storageAddress, _offerId, 3);
+        uint256 index = getOfferIndexInListForOwner(_storageAddress, offerOwner, _offerId);
+        uint256 maxIndex = getTotalNumberOfOwnerOffers(_storageAddress, offerOwner).sub(1);
+        if (index < maxIndex) {
+            uint256 tmpOffer = getOfferOfOwnerByIndex(_storageAddress, offerOwner, maxIndex);
+            setOfferOfOwnerByIndex(_storageAddress, offerOwner, index, tmpOffer);
         }
+        decreaseTotalNumberOfOwnerOffers(_storageAddress, offerOwner);
+    }
 
-        // change status saleType = 'None' for token id:
-        // 0 - None, 1 - Offer, 2 - Loan
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("saleTypeToToken", tokenId)), 0);
-        // change status saleStatus = Finished:
-        // 0 - Preparing, 1 - NotActive, 2 - Active, 3 - Finished
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("saleStatusToOffer", _offerId)), 3);
+    function getOfferOfOwnerByIndex(address _storageAddress, address _offerOwner, uint256 _index)
+        public view returns (uint256)
+    {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("ownerOffersList", _offerOwner, _index))
+        );
+    }
 
-        // delete offer with a previous status from list and reduce their count
-        // add to list with a new status
+    function setOfferOfOwnerByIndex(address _storageAddress, address _offerOwner, uint256 _index, uint256 _offerId)
+        public 
+    {
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("ownerOffersList", _offerOwner, _index)),
+            _offerId
+        );
+    }
+
+    function getListOfOffersForOwner(address _storageAddress, address _offerOwner) public view returns (uint256[]) {
+        uint256 countOfOffers = getTotalNumberOfOwnerOffers(_storageAddress, _offerOwner);
+        uint256[] memory offersList = new uint256[](countOfOffers);
+        for (uint256 i = 0; i < countOfOffers; i++) {
+            offersList[i] = getOfferOfOwnerByIndex(_storageAddress, _offerOwner, i);
+        }
+        return offersList;
+    }
+
+    function getOfferIndexInListForOwner(address _storageAddress, address _offerOwner, uint256 _offerId)
+        public 
+        view 
+        returns (uint256)
+    {
+        SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("offerIndexInListForOwner", _offerOwner, _offerId))
+        );
+    }
+
+    function setOfferIndexInListForOwner(
+        address _storageAddress, 
+        address _offerOwner, 
+        uint256 _offerId, 
+        uint256 _index
+    ) 
+        public 
+    {
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("offerIndexInListForOwner", _offerOwner, _offerId)),
+            _index
+        );
+    }
+
+    function getTotalNumberOfOffers(address _storageAddress) public view returns (uint256 numberOfOffers) {
+        return SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfOffers"));
     }
 
     function increaseTotalNumberOfOffers(address _storageAddress) public returns (uint256 newAmount) {
@@ -146,6 +174,12 @@ library SnarkOfferBidLib {
         uint256 amount = SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfOffers"));
         newAmount = amount.sub(1);
         SnarkStorage(_storageAddress).setUint(keccak256("totalNumberOfOffers"), newAmount);
+    }
+
+    function getTotalNumberOfOwnerOffers(address _storageAddress, address _offerOwner) public view returns (uint256) {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("totalNumberOfOwnerOffers", _offerOwner))
+        );
     }
 
     function increaseTotalNumberOfOwnerOffers(address _storageAddress, address _offerOwner) 
@@ -170,77 +204,6 @@ library SnarkOfferBidLib {
             keccak256(abi.encodePacked("totalNumberOfOwnerOffers", _offerOwner)), newAmount);
     }
 
-    function addOfferToOwnerOffersList(address _storageAddress, address _offerOwner, uint256 _offerId)
-        public
-        returns (uint256 newAmount)
-    {
-        uint256 amount = SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("totalNumberOfOwnerOffers", _offerOwner)));
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("ownerOffersList", _offerOwner, amount)), _offerId);
-        newAmount = amount.add(1);
-        SnarkStorage(_storageAddress).setUint(
-            keccak256(abi.encodePacked("totalNumberOfOwnerOffers", _offerOwner)), newAmount);
-    }
-
-    function getTotalNumberOfOffers(address _storageAddress) public view returns (uint256 numberOfOffers) {
-        return SnarkStorage(_storageAddress).uintStorage(keccak256("totalNumberOfOffers"));
-    }
-
-    function getOfferPrice(address _storageAddress, uint256 _offerId) public view returns (uint256 price) {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("priceForOfferId", _offerId)));
-    }
-
-    function getTokenIdByOfferId(address _storageAddress, uint256 _offerId) public view returns (uint256) {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("tokenIdForOfferId", _offerId))
-        );
-    }
-
-    function getOfferIdByTokenId(address _storageAddress, uint256 _tokenId) public view returns (uint256) {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("offerIdIdForTokenId", _tokenId))
-        );
-    }
-
-    function getSaleStatusForOffer(address _storageAddress, uint256 _offerId) public view returns (uint256) {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("saleStatusToOffer", _offerId)));
-    }
-
-    function getTotalNumberOfOwnerOffers(address _storageAddress, address _offerOwner) public view returns (uint256) {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("totalNumberOfOwnerOffers", _offerOwner))
-        );
-    }
-
-    function getOfferIdOfOwner(address _storageAddress, address _offerOwner, uint256 _index)
-        public view returns (uint256)
-    {
-        return SnarkStorage(_storageAddress).uintStorage(
-            keccak256(abi.encodePacked("ownerOffersList", _offerOwner, _index))
-        );
-    }
-
-    function getOwnerOfOffer(address _storageAddress, uint256 _offerId) public view returns (address) {
-        return SnarkStorage(_storageAddress).addressStorage(
-            keccak256(abi.encodePacked("ownerToOffer", _offerId))
-        );
-    }
-
-    // function getNumberOfOffersBySaleStatus(address _storageAddress, uint256 _saleStatus) 
-    //     public view returns (uint256) 
-    // {
-    //     return SnarkStorage(_storageAddress).uintStorage(
-    //         keccak256(abi.encodePacked("numberOfOffersBySaleStatus", _saleStatus)));
-    // }
-    // function getOfferBySaleStatus(address _storageAddress, uint256 _saleStatus, uint256 _index)
-    //     public view returns (uint256)
-    // {
-    //     return SnarkStorage(_storageAddress).uintStorage(
-    //         keccak256(abi.encodePacked("OffersListBySaleStatus", _saleStatus, _index)));
-    // }
     /*************************************************************/
     /*********************** BID FUNCTIONS ***********************/
     /*************************************************************/
