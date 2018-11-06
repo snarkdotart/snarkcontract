@@ -34,17 +34,20 @@ module.exports = {
         main: {
             host: "127.0.0.1",
             port: 8545,
-            network_id: 1
+            network_id: 1,
+            from: '0xc5a3d99e05c39a18d6342b5f27c08c64a486df00'
         },
         ropsten: {
             host: "127.0.0.1",
             port: 8545,
-            network_id: 3
+            network_id: 3,
+            from: '0xc5a3d99e05c39a18d6342b5f27c08c64a486df00'
         },
         rinkeby: {
             host: "127.0.0.1",
             port: 8545,
-            network_id: 4
+            network_id: 4,
+            from: '0xc5a3d99e05c39a18d6342b5f27c08c64a486df00'
         }        
     },
     solc: {
