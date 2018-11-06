@@ -9,7 +9,7 @@ module.exports = {
    * Network id: 3
    * Block time: sub-30 seconds
    * Commands: geth --testnet or geth --network 3
-   * Explorer: https://repsten.etherscan.io
+   * Explorer: https://ropsten.etherscan.io
    * Github: https://github.com/ethereum/ropsten
    * 
    * Rinkeby
