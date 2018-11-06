@@ -299,11 +299,13 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         uint256 bidId, 
         address bidOwner, 
         uint256 bidPrice,
+        uint256 bidStatus,
         uint256 tokenId) 
     {
         bidId = _bidId;
         bidOwner = _storage.getOwnerOfBid(_bidId);
         bidPrice = _storage.getBidPrice(_bidId);
+        bidStatus = _storage.getBidSaleStatus(_bidId);
         tokenId = _storage.getTokenByBid(_bidId);
     }
 
