@@ -112,10 +112,11 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             "It's not impossible delete when the offer status is 'finished'");
         // clear all data in the token
         uint256 tokenId = _storage.getTokenByOffer(_offerId);
-        _storage.cancelOffer(_offerId);
         // deleting all bids related to the token
         // return bid amounts to bidders
         _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
+
+        _storage.cancelOffer(_offerId);
         // emit event that the offer has been deleted        
         emit OfferDeleted(_offerId);
     }
@@ -241,12 +242,12 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _storage.buy(tokenId, price, tokenOwner, msg.sender);
         if (refunds > 0) msg.sender.transfer(refunds);
         
-        // check if there is an offer for the token and delete it
-        _storage.cancelOffer(_offerId);
-
         // Outstanding bids are returned to bidders
         // And then bids are deleted
         _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
+
+        // check if there is an offer for the token and delete it
+        _storage.cancelOffer(_offerId);
     }
 
     function getSaleStatusForOffer(uint256 _offerId) public view returns (uint256) {
@@ -336,7 +337,6 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             _storage.addPendingWithdrawals(bidder, bidPrice);
             // Delete the bid
             _storage.deleteBid(bidId);
-            // _deleteBid(bidId, _tokenId, bidder);
         }
     }
 
