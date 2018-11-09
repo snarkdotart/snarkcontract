@@ -4,21 +4,28 @@ import "../openzeppelin/SafeMath.sol";
 import "../SnarkStorage.sol";
 
 
+/// @author Vitali Hurski
 library SnarkLoanLib {
 
     using SafeMath for uint256;
 
     function createLoan(
         address storageAddress, 
+        address loanOwner,
+        uint256 loanPrice,
         uint256[] tokensIds,
         uint256 startDate,
-        uint256 duration,
-        address destinationWallet
+        uint256 duration
     )
         public
         returns (uint256)
     {
         uint256 loanId = increaseNumberOfLoans(storageAddress);
+        setOwnerOfLoan(storageAddress, loanOwner, loanId);
+        setPriceOfLoan(storageAddress, loanId, loanPrice);
+        // TODO: добавить этот новый лоан в список лоанов для этого владельца
+        //       при этом список должен быть 2-х типов: активные лоаны и уже завершенные
+        addLoanToLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
         for (uint256 index = 0; index < tokensIds.length; index++) {
             // Type of List: 0 - NotApproved, 1 - Approved, 2 - Declined
             addTokenToListOfLoan(storageAddress, loanId, tokensIds[index], 0); // 0 - NotApproved
@@ -33,7 +40,6 @@ library SnarkLoanLib {
         // setTotalPriceOfLoan(storageAddress, loanId, commonPrice);
         setStartDateOfLoan(storageAddress, loanId, startDate);
         setDurationOfLoan(storageAddress, loanId, duration);
-        setDestinationWalletOfLoan(storageAddress, loanId, destinationWallet);
         setLoanSaleStatus(storageAddress, loanId, 0); // 0 - Prepairing
 
         return loanId;
@@ -49,6 +55,19 @@ library SnarkLoanLib {
     /// @notice возвращает общее количество лоанов в системе
     function getTotalNumberOfLoans(address storageAddress) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfLoans"));
+    }
+
+    /// @notice возвращает владельца loan-а
+    function getOwnerOfLoan(address storageAddress, uint256 loanId) public view returns (address) {
+        return SnarkStorage(storageAddress).addressStorage(keccak256(abi.encodePacked("loanOwner", loanId)));
+    }
+
+    /// @notice устанавливает владельца loan-а
+    function setOwnerOfLoan(address storageAddress, address loanOwner, uint256 loanId) public {
+        SnarkStorage(storageAddress).setAddress(
+            keccak256(abi.encodePacked("loanOwner", loanId)),
+            loanOwner
+        );
     }
 
     /// @notice Добавляет токен в список определенного типа
@@ -261,21 +280,6 @@ library SnarkLoanLib {
         SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("loanToDuration", loanId)), duration);
     }
 
-    /// @notice возвращает кошелек арендатора, куда будут переведены токены
-    function getDestinationWalletOfLoan(address storageAddress, uint256 loanId) public view returns (address) {
-        return SnarkStorage(storageAddress).addressStorage(
-            keccak256(abi.encodePacked("loanToDestinationWallet", loanId))
-        );
-    }
-
-    /// @notice утанавливает кошелек арендатора, на который будут переведены токены
-    function setDestinationWalletOfLoan(address storageAddress, uint256 loanId, address destinationWallet) public {
-        SnarkStorage(storageAddress).setAddress(
-            keccak256(abi.encodePacked("loanToDestinationWallet", loanId)), 
-            destinationWallet
-        );
-    }
-
     /// @notice возвращает статус аренды
     function getLoanSaleStatus(address storageAddress, uint256 loanId) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToSaleStatus", loanId)));
@@ -299,7 +303,8 @@ library SnarkLoanLib {
         uint256 startDate,
         uint256 duration,
         uint256 saleStatus,
-        address destinationWallet)
+        uint256 loanPrice,
+        address loanOwner)
     {
         amountOfNonApprovedTokens = getNumberOfTokensInListByType(storageAddress, loanId, 0);
         amountOfApprovedTokens = getNumberOfTokensInListByType(storageAddress, loanId, 1);
@@ -308,7 +313,8 @@ library SnarkLoanLib {
         startDate = getStartDateOfLoan(storageAddress, loanId);
         duration = getDurationOfLoan(storageAddress, loanId);
         saleStatus = getLoanSaleStatus(storageAddress, loanId);
-        destinationWallet = getDestinationWalletOfLoan(storageAddress, loanId);
+        loanPrice = getPriceOfLoan(storageAddress, loanId);
+        loanOwner = getOwnerOfLoan(storageAddress, loanId);
     }
 
     /// @notice проверяет в календаре токена не занят ли он на определенную дату
@@ -363,7 +369,196 @@ library SnarkLoanLib {
         SnarkStorage(storageAddress).setUint(keccak256("defaultLoanDuration"), duration);
     }
 
-    /// @notice токен может принадлежать нескольким лоанам одновременно!!!!
+    /// @notice добавляет новый запрос на аренду токена для владельца токена
+    function addLoanRequestToTokenOwner(address storageAddress, address tokenOwner, uint256 tokenId, uint256 loanId)
+        public 
+    {
+        uint256 index = increaseCountLoanRequestsForTokenOwner(storageAddress, tokenOwner).sub(1);
+        setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, tokenId);
+        setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, loanId);
+        saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId, index);
+    }
+
+    /// @notice производит запись токена в список запросов по владельцу токена и индексу
+    function setTokenForLoanRequestByTokenOwnerAndIndex(
+        address storageAddress, 
+        address tokenOwner, 
+        uint256 index, 
+        uint256 tokenId
+    )
+        public
+    {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("LoanRequestsForToken", tokenOwner, index)),
+            tokenId
+        );
+    }
+
+    /// @notice производит запись лоана в список запросов по владельцу токена и индексу
+    function setLoanForLoanRequestByTokenOwnerAndIndex(
+        address storageAddress, 
+        address tokenOwner, 
+        uint256 index, 
+        uint256 loanId
+    )
+        public
+    {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("LoanRequestsForLoan", tokenOwner, index)),
+            loanId
+        );
+    }
+
+    /// @notice сохраяет индекс запроса для владельца токена
+    function saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(
+        address storageAddress,
+        address tokenOwner,
+        uint256 tokenId,
+        uint256 loanId,
+        uint256 index
+    ) 
+        public 
+    {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("IndexOfLoanRequestForTokenOwner", tokenOwner, tokenId, loanId)),
+            index
+        );
+    }
+
+    /// @notice возвращает индекс запроса для владельца токена по token id и loan id
+    function getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(
+        address storageAddress,
+        address tokenOwner,
+        uint256 tokenId,
+        uint256 loanId
+    )
+        public
+        view
+        returns (uint256)
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("IndexOfLoanRequestForTokenOwner", tokenOwner, tokenId, loanId))
+        );
+    }
+
+    /// @notice удаляет запрос из списка владельца токена
+    function deleteLoanRequestFromTokenOwner(address storageAddress, uint256 loanId, uint256 tokenId) public {
+        address tokenOwner = getOwnerOfLoan(storageAddress, loanId);
+        uint256 index = getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId);
+        uint256 maxIndex = getCountLoanRequestsForTokenOwner(storageAddress, tokenOwner).sub(1);
+        require(index < maxIndex, "Index of request exceed of aIndex of request is wrong");
+        if (index < maxIndex) {
+            setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, tokenId);
+            setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, loanId);
+        }
+        setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
+        setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
+        decreaseCountLoanRequestsForTokenOwner(storageAddress, tokenOwner);
+    }
+
+    /// @notice Возвращает информацию запроса по индексу
+    function getLoanRequestForTokenOwnerByIndex(address storageAddress, address tokenOwner, uint256 index)
+        public
+        view
+        returns 
+    (
+        uint256 tokenId, 
+        uint256 loanId
+    )
+    {
+        tokenId = SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("LoanRequestsForToken", tokenOwner, index))
+        );
+        loanId = SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("LoanRequestsForLoan", tokenOwner, index))
+        );
+    }
+
+    /// @notice возвращает общее количество запросов на аренду для владельца токенов
+    function getCountLoanRequestsForTokenOwner(address storageAddress, address tokenOwner)
+        public
+        view
+        returns (uint256)
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("LoanRequestsCount", tokenOwner))
+        );
+    }
+
+    /// @notice увеличивает счетчик числа запросов для владельца токена
+    function increaseCountLoanRequestsForTokenOwner(address storageAddress, address tokenOwner)
+        public
+        returns (uint256)
+    {
+        uint256 count = getCountLoanRequestsForTokenOwner(storageAddress, tokenOwner).add(1);
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("LoanRequestsCount", tokenOwner)),
+            count
+        );
+        return count;
+    }
+
+    /// @notice уменьшает счетчик числа запросов для владельца токена
+    function decreaseCountLoanRequestsForTokenOwner(address storageAddress, address tokenOwner)
+        public
+        returns (uint256)
+    {
+        uint256 count = getCountLoanRequestsForTokenOwner(storageAddress, tokenOwner).sub(1);
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("LoanRequestsCount", tokenOwner)),
+            count
+        );
+        return count;
+    }
+    
+    /// @notice возвращает адрес текущего владельца токена для loan-а
+    function getCurrentTokenOwnerForLoan(
+        address storageAddress, 
+        uint256 loanId, 
+        uint256 tokenId
+    ) 
+        public 
+        view
+        returns (address)
+    {
+        return SnarkStorage(storageAddress).addressStorage(
+            keccak256(abi.encodePacked("currentTokenOwnerForLoan", loanId, tokenId))
+        );
+    }
+
+    /// @notice сохраняем адрес текущего владельца токена для loan-а
+    function setCurrentTokenOwnerForLoan(
+        address storageAddress, 
+        uint256 loanId, 
+        uint256 tokenId, 
+        address tokenOwner
+    ) 
+        public 
+    {
+        SnarkStorage(storageAddress).setAddress(
+            keccak256(abi.encodePacked("currentTokenOwnerForLoan", loanId, tokenId)),
+            tokenOwner
+        );
+    }
+
+    /// @notice возвращает предложенную сумму за кредит всех токенов, входящих в лоан
+    function getPriceOfLoan(address storageAddress, uint256 loanId) public view returns (uint256) {
+        return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("priceOfLoan", loanId)));
+    }
+
+    /// @notice сохраняет предложенную сумму за кредит всех токенов, входящих в лоан
+    function setPriceOfLoan(address storageAddress, uint256 loanId, uint256 price) public {
+        SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("priceOfLoan", loanId)), price);
+    }
+
+    function addLoanToLoanListOfLoanOwner(address storageAddress, address loanOwner, uint256 loanId);
+    function deleteLoanToLoanListOfLoanOwner(address storageAddress, address loanOwner, uint256 loanId);
+    function getCountOfLoansForLoanOwner();
+    function increaseCountOfLoansForLoanOwner();
+    function decreaseCountOfLoansForLoanOwner();
+    function getListOfLoansForLoanOwner();
+
+    // /// @notice токен может принадлежать нескольким лоанам одновременно!!!!
     // function getLoanToToken(address storageAddress, uint256 tokenId) public view returns (uint256) {
     //     return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToToken", tokenId)));
     // }
@@ -410,12 +605,6 @@ library SnarkLoanLib {
     //     );
     // }
 
-    
-    // function setTotalPriceOfLoan(address storageAddress, uint256 loanId, uint256 price) public {
-    //     SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("priceOfLoan", loanId)), price);
-    // }
-
-
     // function acceptTokenForLoan(address storageAddress, uint256 loanId, uint256 tokenId) public {
     //     SnarkStorage(storageAddress).setBool(
     //         keccak256(abi.encodePacked("tokenAcceptedForLoan", loanId, tokenId)), 
@@ -427,20 +616,6 @@ library SnarkLoanLib {
     //     SnarkStorage(storageAddress).setBool(
     //         keccak256(abi.encodePacked("tokenAcceptedForLoan", loanId, tokenId)), 
     //         false
-    //     );
-    // }
-
-    // function setCurrentTokenOwnerForLoan(
-    //     address storageAddress, 
-    //     uint256 loanId, 
-    //     uint256 tokenId, 
-    //     address tokenOwner
-    // ) 
-    //     public 
-    // {
-    //     SnarkStorage(storageAddress).setAddress(
-    //         keccak256(abi.encodePacked("currentTokenOwnerForLoan", loanId, tokenId)),
-    //         tokenOwner
     //     );
     // }
 
@@ -469,10 +644,6 @@ library SnarkLoanLib {
     //     return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToToken", tokenId)));
     // }
 
-    // function getTotalPriceOfLoan(address storageAddress, uint256 loanId) public view returns (uint256) {
-    //     return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("priceOfLoan", loanId)));
-    // }
-
     // function isTokenAcceptedForLoan(address storageAddress, uint256 loanId, uint256 tokenId) 
     //     public 
     //     view 
@@ -483,19 +654,6 @@ library SnarkLoanLib {
     //     );
     // }
 
-    // function getCurrentTokenOwnerForLoan(
-    //     address storageAddress, 
-    //     uint256 loanId, 
-    //     uint256 tokenId
-    // ) 
-    //     public 
-    //     view
-    //     returns (address)
-    // {
-    //     return SnarkStorage(storageAddress).addressStorage(
-    //         keccak256(abi.encodePacked("currentTokenOwnerForLoan", loanId, tokenId))
-    //     );
-    // }
 
 
 }
