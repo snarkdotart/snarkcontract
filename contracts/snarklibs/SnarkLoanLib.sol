@@ -551,10 +551,27 @@ library SnarkLoanLib {
         SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("priceOfLoan", loanId)), price);
     }
 
-    function addLoanToLoanListOfLoanOwner(address storageAddress, address loanOwner, uint256 loanId);
+    /****************************************/
+
+    /// @notice добавляет loan в список laon-ов пользователя
+    function addLoanToLoanListOfLoanOwner(address storageAddress, address loanOwner, uint256 loanId) public {
+
+    }
+
+    /// @notice увеличивает количество loan-ов в списке пользователя
+    function increaseCountOfLoansForLoanOwner(address storageAddress, address loanOwner) public returns (uint256) {
+        uint256 count = SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("LoansNumberOfLoanOwner", loanOwner))
+        ).add(1);
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("LoansNumberOfLoanOwner", loanOwner)),
+            count
+        );
+        return count;
+    }
+
     function deleteLoanToLoanListOfLoanOwner(address storageAddress, address loanOwner, uint256 loanId);
     function getCountOfLoansForLoanOwner();
-    function increaseCountOfLoansForLoanOwner();
     function decreaseCountOfLoansForLoanOwner();
     function getListOfLoansForLoanOwner();
 
