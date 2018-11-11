@@ -31,9 +31,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     event TokensBorrowed(address indexed loanOwner, uint256[] tokens);
     event LoanFinished(uint256 loanId);
     event LoanDeleted(uint256 loanId);
-    event LoanOfTokenCanceled(uint256 loanId, uint256 tokenId);
-
-    uint256 private ONEDAY_DATETIME = 86400000;
+    event TokenCanceledInLoans(uint256 tokenId, uint256[] loanList);
 
     modifier restrictedAccess() {
         if (_storage.isRestrictedAccess()) {
@@ -96,7 +94,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             address tokenOwner = _storage.getOwnerOfToken(tokensIds[i]);
             // запоминаем владельца токена, чтобы потом знать кому возвращать токен
             _storage.setActualTokenOwnerForLoan(loanId, tokensIds[i], tokenOwner);
-            if (_isTokenBusyForPeriod(tokensIds[i], startDate, duration)) {
+            if (_storage.isTokenBusyForPeriod(tokensIds[i], startDate, duration)) {
                 // токен уже занят. перекидываем его в Declined List - 2
                 _storage.addTokenToListOfLoan(loanId, tokensIds[i], 2);
             } else {
@@ -105,7 +103,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                     _storage.isTokenAcceptOfLoanRequestFromOthers(tokensIds[i]);
                 if (isAgree) {
                     // занимаем период в календаре и какой лоан застолбил его день
-                    _makeTokenBusyForPeriod(loanId, tokensIds[i], startDate, duration);
+                    _storage.makeTokenBusyForPeriod(loanId, tokensIds[i], startDate, duration);
                     // перекидываем токен в Approved List - 1
                     _storage.addTokenToListOfLoan(loanId, tokensIds[i], 1);
                 } else {
@@ -145,7 +143,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             require(_saleType != uint256(SaleType.Offer), "Token's sale type cannot be 'Offer'");
 
             // проверяем, занят ли этот токен на запрашиваемые даты или нет
-            if (_isTokenBusyForPeriod(tokenIds[i], startDate, duration)) {
+            if (_storage.isTokenBusyForPeriod(tokenIds[i], startDate, duration)) {
                 // занятый токен перемещаем в Declined list
                 _storage.addTokenToListOfLoan(loanId, tokenIds[i], 2);
                 // Оповещаем, что токен отвергнут
@@ -154,7 +152,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 // свободный токен перемещаем в Approved list
                 _storage.addTokenToListOfLoan(loanId, tokenIds[i], 1);
                 // занимаем в календаре токена запрашиваемые даты
-                _makeTokenBusyForPeriod(loanId, tokenIds[i], startDate, duration);
+                _storage.makeTokenBusyForPeriod(loanId, tokenIds[i], startDate, duration);
                 // Оповещаем, что токен аппрувнут
                 emit LoanAccepted(msg.sender, loanId, tokenIds[i]);
             }
@@ -280,7 +278,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         uint256[] memory approvedTokens = _storage.getTokensListOfLoanByType(loanId, 1);
         for (uint256 i = 0; i < approvedTokens.length; i++) {
             // удаляем из календаря токенов запланированные дни
-            _makeTokenFreeForPeriod(approvedTokens[i], startDate, duration);
+            _storage.makeTokenFreeForPeriod(approvedTokens[i], startDate, duration);
             // удаляем все запросы к владельцам токенов
             _storage.deleteLoanRequestFromTokenOwner(loanId, approvedTokens[i]);
             // удаляем лоан из списка владельца лоана
@@ -298,50 +296,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         emit LoanDeleted(loanId);
     }
 
-    // TODO: как выкинуть токен из лоана при создании Offer или при accept Bid, если 
-    // модуль OfferBid ничего не знает о модуле SnarkLoan.
-
-    // // Ability to terminate Loan can be called only by the token owner
-    // function cancelLoanToken(uint256 tokenId) public payable {
-    //     uint256 _loanId = _storage.getLoanByToken(tokenId);
-    //     uint256 _loanSaleStatus = getLoanSaleStatus(_loanId);
-    //     address _ownerOfToken = (_loanSaleStatus == uint256(SaleStatus.NotActive)) ? 
-    //         _storage.getOwnerOfToken(tokenId) :
-    //         _storage.getActualTokenOwnerForLoan(_loanId, tokenId);
-    //     address _borrower = _storage.getDestinationWalletOfLoan(_loanId);
-    //     require(msg.sender == _ownerOfToken, "Only an token owner can accept a loan request.");
-
-    //     // Check if the loan is active, otherwise end function
-    //     // uint256 _status = _storage.getLoanSaleStatus(_loanId);
-    //     // require(_status == uint256(SaleStatus.Active), "Loan has to be in 'active' status");
-
-    //     // Check amount that has been transferred.  If it is less than  
-    //     // amount for one token for loan - exit
-    //     uint256 _price = _getLoanPriceOfToken(_loanId);
-    //     require(msg.value >= _price, "Payment has to be equal to cost of loan token");
-    //     if (_price > 0) {
-    //         _storage.addPendingWithdrawals(_borrower, _price);
-    //     }
-    //     uint256 amountToWithdraw = msg.value.sub(_price);
-    //     if (amountToWithdraw > 0) {
-    //         _storage.addPendingWithdrawals(msg.sender, amountToWithdraw);
-    //     }
-
-    //     // Remove token from loan entry
-    //     _storage.deleteTokenFromListOfLoan(_loanId, tokenId);
-    //     _storage.deleteLoanToToken(tokenId);
-
-    //     _storage.setSaleTypeToToken(tokenId, uint256(SaleType.None));
-    //     _storage.declineTokenForLoan(_loanId, tokenId);
-    //     _storage.transferToken(tokenId, _borrower, _ownerOfToken);
-
-    //     emit LoanOfTokenCanceled(_loanId, tokenId);
-    // } 
-
-    // function getActualTokenOwnerForLoan(uint256 loanId, uint256 tokenId) public view returns (address) {
-    //     return _storage.getActualTokenOwnerForLoan(loanId, tokenId);
-    // }
-
+    /// @notice возвращает токены во всех 3-х списках лоана
     function getTokenListsOfLoanByTypes(uint256 loanId) public view returns (
         uint256[] notApprovedTokensList,
         uint256[] approvedTokensList,
@@ -362,12 +317,6 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         return _storage.getLoansListOfLoanOwner(loanOwner);
     }
 
-    /// @notice возвращает стоимость вызова функции StopLoan, 
-    /// чтобы можно было выставить ее для borrowLoanedTokens
-    function getCostOfStopLoanOperationForLoan(uint256 loanId) public view returns (uint256) {
-        return _storage.getCostOfStopLoanOperationForLoan(loanId);
-    }
-
     /// @notice Return loan detail
     function getLoanDetail(uint256 loanId) public view returns (
         uint256 amountOfNonApprovedTokens,
@@ -382,35 +331,15 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         return _storage.getLoanDetail(loanId);
     }
 
+    /// @notice возвращает стоимость вызова функции StopLoan, 
+    /// чтобы можно было выставить ее для borrowLoanedTokens
+    function getCostOfStopLoanOperationForLoan(uint256 loanId) public view returns (uint256) {
+        return _storage.getCostOfStopLoanOperationForLoan(loanId);
+    }
+
     /// @notice записываем стоимость вызова функции StopLoan
     function setCostOfStopLoanOperationForLoan(uint256 loanId, uint256 costOfStopOperation) public onlyOwner {
         _storage.setCostOfStopLoanOperationForLoan(loanId, costOfStopOperation);
-    }
-
-    function _isTokenBusyForPeriod(uint256 tokenId, uint256 startDate, uint256 duration) internal view returns (bool) {
-        bool isBusy = false;
-        uint256 checkDay = startDate;
-        for (uint256 i = 0; i < duration; i++) {
-            checkDay = startDate + ONEDAY_DATETIME * i;
-            isBusy = isBusy || _storage.isTokenBusyOnDay(tokenId, checkDay);
-        }
-        return isBusy;
-    }
-
-    function _makeTokenBusyForPeriod(uint256 loanId, uint256 tokenId, uint256 startDate, uint256 duration) internal {
-        uint256 busyDay;
-        for (uint256 i = 0; i < duration; i++) {
-            busyDay = startDate + ONEDAY_DATETIME * i;
-            _storage.makeTokenBusyOnDay(loanId, tokenId, busyDay);
-        }
-    }
-
-    function _makeTokenFreeForPeriod(uint256 tokenId, uint256 startDate, uint256 duration) internal {
-        uint256 busyDay;
-        for (uint256 i = 0; i < duration; i++) {
-            busyDay = startDate + ONEDAY_DATETIME * i;
-            _storage.makeTokenFreeOnDay(tokenId, busyDay);
-        }
     }
 
 }

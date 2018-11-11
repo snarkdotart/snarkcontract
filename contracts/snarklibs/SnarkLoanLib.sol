@@ -8,6 +8,8 @@ import "../SnarkStorage.sol";
 library SnarkLoanLib {
 
     using SafeMath for uint256;
+    
+    event TokenCanceledInLoans(uint256 tokenId, uint256[] loanList);
 
     function createLoan(
         address storageAddress, 
@@ -305,6 +307,26 @@ library SnarkLoanLib {
         loanOwner = getOwnerOfLoan(storageAddress, loanId);
     }
 
+    /// @notice проверяет занят ли токен на выбранный период
+    function isTokenBusyForPeriod(
+        address storageAddress, 
+        uint256 tokenId, 
+        uint256 startDate, 
+        uint256 duration
+    ) 
+        public 
+        view 
+        returns (bool) 
+    {
+        bool isBusy = false;
+        uint256 checkDay = startDate;
+        for (uint256 i = 0; i < duration; i++) {
+            checkDay = startDate + 86400000 * i;
+            isBusy = isBusy || isTokenBusyOnDay(storageAddress, tokenId, checkDay);
+        }
+        return isBusy;
+    }
+
     /// @notice проверяет в календаре токена не занят ли он на определенную дату
     function isTokenBusyOnDay(address storageAddress, uint256 tokenId, uint256 date) public view returns (bool) {
         return SnarkStorage(storageAddress).boolStorage(
@@ -323,6 +345,23 @@ library SnarkLoanLib {
         );
     }
 
+    /// @notice помечает занятый период для токена
+    function makeTokenBusyForPeriod(
+        address storageAddress, 
+        uint256 loanId, 
+        uint256 tokenId, 
+        uint256 startDate, 
+        uint256 duration
+    ) 
+        public 
+    {
+        uint256 busyDay;
+        for (uint256 i = 0; i < duration; i++) {
+            busyDay = startDate + 86400000 * i;
+            makeTokenBusyOnDay(storageAddress, loanId, tokenId, busyDay);
+        }
+    }
+
     /// @notice помечает, что токен день занят в установленный день, а также каким кредитом именно
     function makeTokenBusyOnDay(address storageAddress, uint256 loanId, uint256 tokenId, uint256 date) public {
         SnarkStorage(storageAddress).setBool(
@@ -333,6 +372,22 @@ library SnarkLoanLib {
             keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, date)),
             loanId
         );
+    }
+
+    /// @notice освобождает занятый период для токена
+    function makeTokenFreeForPeriod(
+        address storageAddress,
+        uint256 tokenId,
+        uint256 startDate,
+        uint256 duration
+    ) 
+        public
+    {
+        uint256 busyDay;
+        for (uint256 i = 0; i < duration; i++) {
+            busyDay = startDate + 86400000 * i;
+            makeTokenFreeOnDay(storageAddress, tokenId, busyDay);
+        }
     }
 
     /// @notice освобождает в календаре выбранный день для токена на определенную дату
@@ -668,17 +723,175 @@ library SnarkLoanLib {
         return list;
     }
 
+    /// @notice возвращает стоимость операции вызова StopLoan
     function getCostOfStopLoanOperationForLoan(address storageAddress, uint256 loanId) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(
             keccak256(abi.encodePacked("costOfDeleteLoanOperation", loanId))
         );
     }
 
+    /// @notice записываем стоимость вызова функции StopLoan
     function setCostOfStopLoanOperationForLoan(address storageAddress, uint256 loanId, uint256 cost) public {
         SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("costOfDeleteLoanOperation", loanId)),
             cost
         );
+    }
+
+    /*************************************************************************************/
+    /// @notice добавляет лоан в список лоанов для токена
+    function addLoanToTokensLoanList(address storageAddress, uint256 tokenId, uint256 loanId) public {
+        if (!isLoanInTokensLoanList(storageAddress, tokenId, loanId)) {
+            uint256 index = increaseNumberOfLoansInTokensLoanList(storageAddress, tokenId).sub(1);
+            setLoanFromLoansInTokensLoanListByIndex(storageAddress, tokenId, index, loanId);
+            setIndexOfLoanInTokensLoanList(storageAddress, tokenId, loanId, index);
+            markLoanInTokensLoanListAsInUse(storageAddress, tokenId, loanId, true);
+        }
+    }
+
+    /// @notice удаляет лоан из списка лоанов для токена
+    function removeLoanFromTokensLoanList(address storageAddress, uint256 tokenId, uint256 loanId) public {
+        if (isLoanInTokensLoanList(storageAddress, tokenId, loanId)) {
+            uint256 index = getIndexOfLoanInTokensLoanList(storageAddress, tokenId, loanId);
+            uint256 maxIndex = getNumberOfLoansInTokensLoanList(storageAddress, tokenId).sub(1);
+            if (index < maxIndex) {
+                uint256 loanIdInMaxIndex = getLoanFromLoansInTokensLoanListByIndex(storageAddress, tokenId, maxIndex);
+                setLoanFromLoansInTokensLoanListByIndex(storageAddress, tokenId, index, loanIdInMaxIndex);
+            }
+            setLoanFromLoansInTokensLoanListByIndex(storageAddress, tokenId, index, 0);
+            setIndexOfLoanInTokensLoanList(storageAddress, tokenId, loanId, 0);
+            markLoanInTokensLoanListAsInUse(storageAddress, tokenId, loanId, false);
+            decreaseNumberOfLoansInTokensLoanList(storageAddress, tokenId);
+        }
+    }
+    
+    /// @notice возвращает количество лоанов для токена
+    function getNumberOfLoansInTokensLoanList(address storageAddress, uint256 tokenId) public view returns (uint256) {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("numberOfLoansForToken", tokenId))
+        );
+    }
+
+    /// @notice увеличивает счетчик количества лоанов в списке
+    function increaseNumberOfLoansInTokensLoanList(address storageAddress, uint256 tokenId) public returns (uint256) {
+        uint256 number = getNumberOfLoansInTokensLoanList(storageAddress, tokenId).add(1);
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("numberOfLoansForToken", tokenId)),
+            number
+        );
+        return number;
+    }
+
+    /// @notice уменьшает счетчик количества лоанов в списке
+    function decreaseNumberOfLoansInTokensLoanList(address storageAddress, uint256 tokenId) public returns (uint256) {
+        uint256 number = getNumberOfLoansInTokensLoanList(storageAddress, tokenId).sub(1);
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("numberOfLoansForToken", tokenId)),
+            number
+        );
+        return number;
+    }
+
+    /// @notice возвращает лоан из списка по индексу
+    function getLoanFromLoansInTokensLoanListByIndex(address storageAddress, uint256 tokenId, uint256 index) 
+        public 
+        view 
+        returns (uint256) 
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("loanListForToken", tokenId, index))
+        );
+    }
+
+    /// @notice записывает лоан в список по индексу
+    function setLoanFromLoansInTokensLoanListByIndex(
+        address storageAddress, 
+        uint256 tokenId, 
+        uint256 index, 
+        uint256 loanId
+    )
+        public 
+    {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("loanListForToken", tokenId, index)),
+            loanId
+        );
+    }
+
+    /// @notice возвращает список лоанов из списка для токена
+    function getListOfLoansFromTokensLoanList(address storageAddress, uint256 tokenId) public view returns (uint256[]) {
+        uint256 numberOfLoans = getNumberOfLoansInTokensLoanList(storageAddress, tokenId);
+        uint256[] memory loanList = new uint256[](numberOfLoans);
+        for (uint256 i = 0; i < numberOfLoans; i++) {
+            loanList[i] = getLoanFromLoansInTokensLoanListByIndex(storageAddress, tokenId, i);
+        }
+        return loanList;
+    }
+
+    /// @notice возвращает true или false в зависимости от того, есть ли loan в списке у токена
+    function isLoanInTokensLoanList(address storageAddress, uint256 tokenId, uint256 loanId)
+        public
+        view
+        returns (bool)
+    {
+        return SnarkStorage(storageAddress).boolStorage(
+            keccak256(abi.encodePacked("isLoanInTokensLoanList", tokenId, loanId))
+        );
+    }
+
+    /// @notice помечает, что лоан уже есть в списке у токена
+    function markLoanInTokensLoanListAsInUse(address storageAddress, uint256 tokenId, uint256 loanId, bool isUsed) 
+        public 
+    {
+        SnarkStorage(storageAddress).setBool(
+            keccak256(abi.encodePacked("isLoanInTokensLoanList", tokenId, loanId)),
+            isUsed
+        );
+    }
+
+    /// @notice возвращает индекс лоана в списке у токена
+    function getIndexOfLoanInTokensLoanList(address storageAddress, uint256 tokenId, uint256 loanId)
+        public
+        view
+        returns (uint256) 
+    {
+        return SnarkStorage(storageAddress).uintStorage(
+            keccak256(abi.encodePacked("indexOfLoanInTokensLoanList", tokenId, loanId))
+        );
+    }
+
+    /// @notice записывает индекс под которым хранится лоан в списке у токена
+    function setIndexOfLoanInTokensLoanList(address storageAddress, uint256 tokenId, uint256 loanId, uint256 index)
+        public 
+    {
+        SnarkStorage(storageAddress).setUint(
+            keccak256(abi.encodePacked("indexOfLoanInTokensLoanList", tokenId, loanId)),
+            index
+        );
+    }
+
+    /// @notice удаление токена из лоана. возможно выполнение только до момента старта лоана
+    function cancelTokenInLoan(address storageAddress, uint256 tokenId) public {
+        uint256[] memory loanList = getListOfLoansFromTokensLoanList(storageAddress, tokenId);
+        for (uint256 i = 0; i < loanList.length; i++) {
+            // убеждаемся, что удалять будем только в будущих лоанах
+            require(
+                getLoanSaleStatus(storageAddress, loanList[i]) != 2 &&
+                getLoanSaleStatus(storageAddress, loanList[i]) != 3,
+                "Loan can't be in 'Active' of 'Finished' status"
+            );
+            // перемещаем токен из Approved list в Declined list
+            addTokenToListOfLoan(storageAddress, loanList[i], tokenId, 2);
+            // удаляем из календаря токенов запланированные дни
+            uint256 startDate = getStartDateOfLoan(storageAddress, loanList[i]);
+            uint256 duration = getDurationOfLoan(storageAddress, loanList[i]);
+            makeTokenFreeForPeriod(storageAddress, tokenId, startDate, duration);
+            // удаляем из запросов к владельцам токенов
+            deleteLoanRequestFromTokenOwner(storageAddress, loanList[i], tokenId);
+        }
+        if (loanList.length > 0) {
+            emit TokenCanceledInLoans(tokenId, loanList);
+        }
     }
 
 }
