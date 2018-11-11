@@ -5,6 +5,7 @@ import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 import "./snarklibs/SnarkCommonLib.sol";
 import "./snarklibs/SnarkOfferBidLib.sol";
+import "./snarklibs/SnarkLoanLib.sol";
 import "./openzeppelin/SafeMath.sol";
 
 
@@ -13,6 +14,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     using SnarkBaseLib for address;
     using SnarkCommonLib for address;
     using SnarkOfferBidLib for address;
+    using SnarkLoanLib for address;
     using SafeMath for uint256;
 
     /*** STORAGE ***/
@@ -98,7 +100,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             require(_storage.getMaxBidPriceForToken(_tokenId) < _price, 
                 "Offer amount must be higher than the bid price");
         }
-
+        // delete all loans if they exist
+        _storage.cancelTokenInLoan(_tokenId);
         // Offer creation and return of the offer ID
         uint256 offerId = _storage.addOffer(msg.sender, _tokenId, _price);
         // Emit an event that returns token id and offer id as well
@@ -181,10 +184,10 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             saleType == SaleType.None,
             "Bids are not allowed while the token is in Loan status"
         );
-
         address tokenOwner = _storage.getOwnerOfToken(tokenId);
-
         require(msg.sender == tokenOwner, "Only owner can accept a bid for their token");
+
+        _storage.cancelTokenInLoan(tokenId);
 
         address bidOwner = _storage.getOwnerOfBid(_bidId);
         _storage.subPendingWithdrawals(_storage, price);
