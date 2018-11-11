@@ -296,6 +296,15 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         emit LoanDeleted(loanId);
     }
 
+    /// @notice позволяет владельцу токена явно отозвать свой токен от участия в лоане
+    function cancelTokenInLoan(uint256 tokenId) public {
+        require(
+            msg.sender == _storage.getOwnerOfToken(tokenId), 
+            "Only owner of token can withdraw its token from participation in a loan"
+        );
+        _storage.cancelTokenInLoan(tokenId);
+    }
+
     /// @notice возвращает токены во всех 3-х списках лоана
     function getTokenListsOfLoanByTypes(uint256 loanId) public view returns (
         uint256[] notApprovedTokensList,
