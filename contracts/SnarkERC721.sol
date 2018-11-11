@@ -173,6 +173,10 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @param _to The new owner
     /// @param _tokenId The NFT to transfer
     function transferFrom(address _from, address _to, uint256 _tokenId) public canTransfer(_tokenId) payable {
+        require(
+            _storage.getSaleTypeToToken(_tokenId) == uint256(SaleType.None), 
+            "Token has to be free from different obligations on Snark platform"
+        );
         require(_from != address(0));
         require(_to != address(0));
         require(_from != _to);

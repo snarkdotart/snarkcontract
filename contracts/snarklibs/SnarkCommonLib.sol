@@ -16,10 +16,6 @@ library SnarkCommonLib {
     function transferToken(address _storageAddress, uint256 _tokenId, address _from, address _to) internal {
         require(_tokenId > 0 && _tokenId <= _storageAddress.getTotalNumberOfTokens(), "Token Id is wrong");
         require(_from == _storageAddress.getOwnerOfToken(_tokenId), "");
-        // TODO: Тут засада, ибо токен может иметь тип loan.
-        // TODO: убиваем лоан, при любом передвижении - скидываем в момент покупки
-        // require(_storageAddress.getSaleTypeToToken(_tokenId) == 0, "");
-
         uint256 _index = _storageAddress.getIndexOfOwnerToken(_from, _tokenId);
         _storageAddress.deleteTokenFromOwner(_from, _index);
         _storageAddress.setOwnerOfToken(_tokenId, _to);
