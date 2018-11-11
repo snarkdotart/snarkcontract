@@ -874,11 +874,10 @@ library SnarkLoanLib {
     function cancelTokenInLoan(address storageAddress, uint256 tokenId) public {
         uint256[] memory loanList = getListOfLoansFromTokensLoanList(storageAddress, tokenId);
         for (uint256 i = 0; i < loanList.length; i++) {
-            // убеждаемся, что удалять будем только в будущих лоанах
+            // убеждаемся, что удалять будем не в завершенных лоанах
             require(
-                getLoanSaleStatus(storageAddress, loanList[i]) != 2 &&
                 getLoanSaleStatus(storageAddress, loanList[i]) != 3,
-                "Loan can't be in 'Active' of 'Finished' status"
+                "Loan can't be in 'Finished' status"
             );
             // перемещаем токен из Approved list в Declined list
             addTokenToListOfLoan(storageAddress, loanList[i], tokenId, 2);

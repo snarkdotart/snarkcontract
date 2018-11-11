@@ -302,6 +302,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             msg.sender == _storage.getOwnerOfToken(tokenId), 
             "Only owner of token can withdraw its token from participation in a loan"
         );
+        _storage.setSaleTypeToToken(tokenId, uint256(SaleType.None));
         _storage.cancelTokenInLoan(tokenId);
     }
 
