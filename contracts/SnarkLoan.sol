@@ -95,7 +95,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         for (i = 0; i < tokensIds.length; i++) {
             address tokenOwner = _storage.getOwnerOfToken(tokensIds[i]);
             // запоминаем владельца токена, чтобы потом знать кому возвращать токен
-            _storage.setCurrentTokenOwnerForLoan(loanId, tokensIds[i], tokenOwner);
+            _storage.setActualTokenOwnerForLoan(loanId, tokensIds[i], tokenOwner);
             if (_isTokenBusyForPeriod(tokensIds[i], startDate, duration)) {
                 // токен уже занят. перекидываем его в Declined List - 2
                 _storage.addTokenToListOfLoan(loanId, tokensIds[i], 2);
@@ -191,7 +191,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             // вычисляем сумму, которая будет перечислена каждому владельцу токена
             uint256 income = loanPrice.div(tokenList.length);
             for (uint256 i = 0; i < tokenList.length; i++) {
-                address tokenOwner = _storage.getCurrentTokenOwnerForLoan(loanId, tokenList[i]);
+                address tokenOwner = _storage.getActualTokenOwnerForLoan(loanId, tokenList[i]);
                 // списываем сумму с баланса контракта
                 _storage.subPendingWithdrawals(_storage, income);
                 // и зачисляем ее на баланс владельца токена
@@ -255,7 +255,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             _storage.transferToken(
                 approvedTokens[i],
                 loanOwner,
-                _storage.getCurrentTokenOwnerForLoan(loanId, approvedTokens[i])
+                _storage.getActualTokenOwnerForLoan(loanId, approvedTokens[i])
             );
         }
         // удаляем лоан из списка лоан овнера
@@ -307,7 +307,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     //     uint256 _loanSaleStatus = getLoanSaleStatus(_loanId);
     //     address _ownerOfToken = (_loanSaleStatus == uint256(SaleStatus.NotActive)) ? 
     //         _storage.getOwnerOfToken(tokenId) :
-    //         _storage.getCurrentTokenOwnerForLoan(_loanId, tokenId);
+    //         _storage.getActualTokenOwnerForLoan(_loanId, tokenId);
     //     address _borrower = _storage.getDestinationWalletOfLoan(_loanId);
     //     require(msg.sender == _ownerOfToken, "Only an token owner can accept a loan request.");
 
@@ -338,8 +338,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     //     emit LoanOfTokenCanceled(_loanId, tokenId);
     // } 
 
-    // function getCurrentTokenOwnerForLoan(uint256 loanId, uint256 tokenId) public view returns (address) {
-    //     return _storage.getCurrentTokenOwnerForLoan(loanId, tokenId);
+    // function getActualTokenOwnerForLoan(uint256 loanId, uint256 tokenId) public view returns (address) {
+    //     return _storage.getActualTokenOwnerForLoan(loanId, tokenId);
     // }
 
     function getTokenListsOfLoanByTypes(uint256 loanId) public view returns (

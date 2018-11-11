@@ -513,7 +513,7 @@ library SnarkLoanLib {
     }
     
     /// @notice возвращает адрес текущего владельца токена для loan-а
-    function getCurrentTokenOwnerForLoan(
+    function getActualTokenOwnerForLoan(
         address storageAddress, 
         uint256 loanId, 
         uint256 tokenId
@@ -523,12 +523,12 @@ library SnarkLoanLib {
         returns (address)
     {
         return SnarkStorage(storageAddress).addressStorage(
-            keccak256(abi.encodePacked("currentTokenOwnerForLoan", loanId, tokenId))
+            keccak256(abi.encodePacked("actualTokenOwnerForLoan", loanId, tokenId))
         );
     }
 
     /// @notice сохраняем адрес текущего владельца токена для loan-а
-    function setCurrentTokenOwnerForLoan(
+    function setActualTokenOwnerForLoan(
         address storageAddress, 
         uint256 loanId, 
         uint256 tokenId, 
@@ -537,7 +537,7 @@ library SnarkLoanLib {
         public 
     {
         SnarkStorage(storageAddress).setAddress(
-            keccak256(abi.encodePacked("currentTokenOwnerForLoan", loanId, tokenId)),
+            keccak256(abi.encodePacked("actualTokenOwnerForLoan", loanId, tokenId)),
             tokenOwner
         );
     }
@@ -680,103 +680,5 @@ library SnarkLoanLib {
             cost
         );
     }
-
-    // /// @notice токен может принадлежать нескольким лоанам одновременно!!!!
-    // function getLoanToToken(address storageAddress, uint256 tokenId) public view returns (uint256) {
-    //     return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToToken", tokenId)));
-    // }
-
-    // function setLoanToToken(address storageAddress, uint256 tokenId, uint256 loanId) public {
-    //     SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("loanToToken", tokenId)), loanId);
-    // }
-
-    // function deleteLoanToToken(address storageAddress, uint256 tokenId) public {
-    //     SnarkStorage(storageAddress).deleteUint(keccak256(abi.encodePacked("loanToToken", tokenId)));
-    // }
-
-    // function deleteTokenFromListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId) public {
-    //     uint256 totalNumber = getTotalNumberOfLoanTokens(storageAddress, loanId);
-    //     uint256 lastTokenId = getTokenFromLoanList(storageAddress, loanId, totalNumber - 1);
-    //     uint256 indexOfToken = getTokenIndexInsideListOfLoan(storageAddress, loanId, tokenId);
-
-    //     if (indexOfToken < totalNumber - 1) {
-
-    //         SnarkStorage(storageAddress).setUint(
-    //             keccak256(abi.encodePacked("tokenToLoanList", loanId, indexOfToken)),
-    //             lastTokenId
-    //         );
-
-    //         // save index of token in the list
-    //         setTokenIndexInsideListOfLoan(storageAddress, loanId, lastTokenId, indexOfToken);
-
-    //         SnarkStorage(storageAddress).deleteUint(
-    //             keccak256(abi.encodePacked("tokenToLoanList", loanId, totalNumber - 1))
-    //         );
-    //     }
-        
-    //     SnarkStorage(storageAddress).setUint(
-    //         keccak256(abi.encodePacked("totalNumberOfLoanTokens", loanId)), 
-    //         totalNumber - 1
-    //     );
-
-    //     deleteTokenIndexInsideListOfLoan(storageAddress, loanId, tokenId);
-    // }
-
-    // function deleteTokenIndexInsideListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId) public {
-    //     SnarkStorage(storageAddress).deleteUint(
-    //         keccak256(abi.encodePacked("tokenIndexInsideListOfLoan", loanId, tokenId))
-    //     );
-    // }
-
-    // function acceptTokenForLoan(address storageAddress, uint256 loanId, uint256 tokenId) public {
-    //     SnarkStorage(storageAddress).setBool(
-    //         keccak256(abi.encodePacked("tokenAcceptedForLoan", loanId, tokenId)), 
-    //         true
-    //     );
-    // }
-
-    // function declineTokenForLoan(address storageAddress, uint256 loanId, uint256 tokenId) public {
-    //     SnarkStorage(storageAddress).setBool(
-    //         keccak256(abi.encodePacked("tokenAcceptedForLoan", loanId, tokenId)), 
-    //         false
-    //     );
-    // }
-
-
-    // function getTokenIndexInsideListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId)
-    //     public
-    //     view
-    //     returns (uint256)
-    // {
-    //     return SnarkStorage(storageAddress).uintStorage(
-    //         keccak256(abi.encodePacked("tokenIndexInsideListOfLoan", loanId, tokenId))
-    //     );
-    // }
-
-    // function getTokenFromLoanList(address storageAddress, uint256 loanId, uint256 index) 
-    //     public 
-    //     view 
-    //     returns (uint256) 
-    // {
-    //     return SnarkStorage(storageAddress).uintStorage(
-    //         keccak256(abi.encodePacked("tokenToLoanList", loanId, index))
-    //     );
-    // }
-
-    // function getLoanByToken(address storageAddress, uint256 tokenId) public view returns (uint256) {
-    //     return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToToken", tokenId)));
-    // }
-
-    // function isTokenAcceptedForLoan(address storageAddress, uint256 loanId, uint256 tokenId) 
-    //     public 
-    //     view 
-    //     returns (bool) 
-    // {
-    //     return SnarkStorage(storageAddress).boolStorage(
-    //         keccak256(abi.encodePacked("tokenAcceptedForLoan", loanId, tokenId))
-    //     );
-    // }
-
-
 
 }

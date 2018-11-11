@@ -154,7 +154,7 @@ contract('SnarkLoan', async (accounts) => {
         console.log(`real owner of token (before accept): ${retval}`);
         assert.equal(retval, tokenOwner, "error on step 10");
 
-        retval = await instance.getCurrentTokenOwnerForLoan(1, 1);
+        retval = await instance.getActualTokenOwnerForLoan(1, 1);
         console.log(`current token owner is (before accept): ${retval}`);
         assert.equal(retval, 0, "error on step 11");
 
@@ -164,7 +164,7 @@ contract('SnarkLoan', async (accounts) => {
         console.log(`real owner of token (before accept): ${retval}`);
         assert.equal(retval, tokenOwner, "error on step 12");
 
-        retval = await instance.getCurrentTokenOwnerForLoan(1, 1);
+        retval = await instance.getActualTokenOwnerForLoan(1, 1);
         console.log(`current token owner is (after accept): ${retval}`);
         assert.equal(retval, tokenOwner, "error on step 13");
 
@@ -210,7 +210,7 @@ contract('SnarkLoan', async (accounts) => {
         retval = await instance_snarkbase.getOwnerOfToken(1);
         assert.equal(retval, tokenOwner, "error on step 10");
 
-        retval = await instance.getCurrentTokenOwnerForLoan(loanId, 1);
+        retval = await instance.getActualTokenOwnerForLoan(loanId, 1);
         assert.equal(retval, tokenOwner, "error on step 11");
 
         await instance.startLoan(loanId);
@@ -218,7 +218,7 @@ contract('SnarkLoan', async (accounts) => {
         retval = await instance_snarkbase.getOwnerOfToken(1);
         assert.equal(retval, borrower, "error on step 12");
 
-        retval = await instance.getCurrentTokenOwnerForLoan(loanId, 1);
+        retval = await instance.getActualTokenOwnerForLoan(loanId, 1);
         assert.equal(retval, tokenOwner, "error on step 13");
 
         retval = await instance.getTokenListForLoan(loanId);
@@ -256,7 +256,7 @@ contract('SnarkLoan', async (accounts) => {
         retval = await instance_snarkbase.getOwnerOfToken(1);
         assert.equal(retval, borrower, "error on step 5");
 
-        retval = await instance.getCurrentTokenOwnerForLoan(loanId, 1);
+        retval = await instance.getActualTokenOwnerForLoan(loanId, 1);
         assert.equal(retval, tokenOwner, "error on step 6");
 
         await instance.cancelLoanToken(1, { from: tokenOwner, value: 3000000000 });
@@ -288,7 +288,7 @@ contract('SnarkLoan', async (accounts) => {
         retval = await instance_snarkbase.getOwnerOfToken(tokenId);
         assert.equal(retval, borrower, "error on step 3");
 
-        retval = await instance.getCurrentTokenOwnerForLoan(loanId, tokenId);
+        retval = await instance.getActualTokenOwnerForLoan(loanId, tokenId);
         assert.equal(retval, tokenOwner, "error on step 4");
 
         retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
@@ -302,7 +302,7 @@ contract('SnarkLoan', async (accounts) => {
         retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
         assert.equal(retval.toNumber(), 0, "error on step 7");
         
-        retval = await instance.getCurrentTokenOwnerForLoan(loanId, tokenId);
+        retval = await instance.getActualTokenOwnerForLoan(loanId, tokenId);
         assert.equal(retval, tokenOwner, "error on step 8");
 
         retval = await instance_snarkbase.getOwnerOfToken(tokenId);
