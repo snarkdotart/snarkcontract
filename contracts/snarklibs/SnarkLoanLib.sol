@@ -281,7 +281,7 @@ library SnarkLoanLib {
     }
 
     /// @notice возвращает установки по кредиту
-    function getLoanDetails(address storageAddress, uint256 loanId)
+    function getLoanDetail(address storageAddress, uint256 loanId)
         public 
         view 
         returns 

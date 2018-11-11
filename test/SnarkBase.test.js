@@ -182,7 +182,7 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getProfitShareParticipantsCount(artist);
         assert.equal(retval.toNumber(), 7, "error on step 5");
 
-        retval = await instance.getTokenDetails(1);
+        retval = await instance.getTokenDetail(1);
         assert.equal(retval[6].toNumber(), 3, "error on step 6");
 
         retval = await instance.getProfitShareParticipantsList(artist);

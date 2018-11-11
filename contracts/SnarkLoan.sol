@@ -369,7 +369,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     }
 
     /// @notice Return loan detail
-    function getLoanDetails(uint256 loanId) public view returns (
+    function getLoanDetail(uint256 loanId) public view returns (
         uint256 amountOfNonApprovedTokens,
         uint256 amountOfApprovedTokens,
         uint256 amountOfDeclinedTokens,
@@ -379,7 +379,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         uint256 loanPrice,
         address loanOwner) 
     {
-        return _storage.getLoanDetails(loanId);
+        return _storage.getLoanDetail(loanId);
     }
 
     /// @notice записываем стоимость вызова функции StopLoan

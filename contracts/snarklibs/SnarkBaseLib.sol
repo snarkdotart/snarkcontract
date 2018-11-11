@@ -405,7 +405,7 @@ library SnarkBaseLib {
             keccak256(abi.encodePacked("token", "isTokenAcceptOfLoanRequestFromOthers", tokenId)));
     }
 
-    function getTokenDetails(address storageAddress, uint256 tokenId) 
+    function getTokenDetail(address storageAddress, uint256 tokenId) 
         public 
         view 
         returns (

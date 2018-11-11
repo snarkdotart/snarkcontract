@@ -266,7 +266,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         return _storage.getOfferByToken(_tokenId);
     }
 
-    function getOfferDetails(uint256 _offerId) public view returns (
+    function getOfferDetail(uint256 _offerId) public view returns (
         uint256 offerId,
         uint256 offerPrice,
         uint256 offerStatus,
@@ -296,7 +296,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         return _storage.getNumberBidsOfOwner(_bidOwner);
     }
 
-    function getBidDetails(uint256 _bidId) public view returns (
+    function getBidDetail(uint256 _bidId) public view returns (
         uint256 bidId, 
         address bidOwner, 
         uint256 bidPrice,

@@ -302,7 +302,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     
     // /// @dev Return details about token
     // /// @param tokenId Token Id of digital work
-    function getTokenDetails(uint256 tokenId) 
+    function getTokenDetail(uint256 tokenId) 
         public 
         view 
         returns (
@@ -319,7 +319,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             bool isAcceptOfLoanRequestFromOthers
         ) 
     {
-        return _storage.getTokenDetails(tokenId);
+        return _storage.getTokenDetail(tokenId);
     }
 
     /// @dev Change in profit sharing. Change can only be to the percentages for already registered wallet addresses.
