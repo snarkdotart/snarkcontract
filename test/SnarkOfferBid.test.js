@@ -24,23 +24,21 @@ contract('SnarkOfferBid', async (accounts) => {
     it("2. test addOffer and cancelOffer functions", async () => {
         const owner = accounts[0];
         const tokenId = 1;
-        const price = 50;
         const offerId = 1;
-        ////////////////////
-
-        let retval = await instance_snarkbase.getTokensCountByOwner(owner);
-        assert.equal(retval.toNumber(), 0, "error on step getTokensCountByOwner before addSnark");
+        const price = web3.toWei(4, 'ether');
 
         const tokenHash = web3.sha3("tokenHash");
         const limitedEdition = 1;
         const profitShareFromSecondarySale = 20;
-        // const tokenUrl = "http://snark.art";
         const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
         const participants = [
             '0xC04691B99EB731536E35F375ffC85249Ec713597', 
             '0xB94691B99EB731536E35F375ffC85249Ec717233'
         ];
         const profits = [ 20, 80 ];
+
+        let retval = await instance_snarkbase.getTokensCountByOwner(owner);
+        assert.equal(retval.toNumber(), 0, "error on step getTokensCountByOwner before addSnark");
 
         await instance_snarkbase.createProfitShareScheme(owner, participants, profits);
 
@@ -86,10 +84,28 @@ contract('SnarkOfferBid', async (accounts) => {
         retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
         assert.equal(retval.toNumber(), 0, "error on step 4");
 
-        await instance.addOffer(tokenId, price);
+        console.log("*************************");
+        console.log('Input param of addOffer - Token Id: ', tokenId);
+        console.log('Input param of addOffer - Offer Price: ', price);
+
+        await instance.addOffer(tokenId, price, { from: owner });
 
         retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
         assert.equal(retval.toNumber(), 1, "error on step 5");
+
+        retval = await instance.getOfferDetail(1);
+        console.log("*************************");
+        console.log("Offer Detail:");
+        console.log("Offer Id: ", retval[0].toNumber());
+        assert.equal(retval[0].toNumber(), offerId, "wrong OfferId after addOffer");
+        console.log("Offer Price: ", retval[1].toNumber());
+        assert.equal(retval[1].toNumber(), price, "wrong Offer price after addOffer");
+        console.log("Offer Status: ", retval[2].toNumber());
+        assert.equal(retval[2].toNumber(), 2, "wrong Offer status after addOffer");
+        console.log("Token Id: ", retval[3].toNumber());
+        console.log("Token Owner: ", retval[4]);
+        assert.equal(retval[4].toUpperCase(), owner.toUpperCase(), "wrong Offer status after addOffer");
+        console.log("*************************");
 
         try { await instance.addOffer(tokenId, price + 200); } catch(e) {
             assert.equal(e.message, 'VM Exception while processing transaction: revert Token should not be involved in sales');

@@ -25,16 +25,16 @@ library SnarkOfferBidLib {
         setOfferForToken(_storageAddress, _tokenId, offerId);
         addOfferToOwnerOffersList(_storageAddress, _offerOwner, offerId);
         setOwnerOfOffer(_storageAddress, offerId, _offerOwner);
+        setSaleStatusForOffer(_storageAddress, offerId, 2);
         SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("saleTypeToToken", _tokenId)), 1); // Offer
-        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("saleStatusToOffer", offerId)), 2); // Active
     }
 
     function cancelOffer(address _storageAddress, uint256 _offerId) public {
         uint256 tokenId = getTokenByOffer(_storageAddress, _offerId);
         setOfferForToken(_storageAddress, tokenId, 0); // delete
         deleteOfferFromOwnerOffersList(_storageAddress, _offerId);
+        setSaleStatusForOffer(_storageAddress, _offerId, 3); // Finish
         SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("saleTypeToToken", tokenId)), 0); // None
-        SnarkStorage(_storageAddress).setUint(keccak256(abi.encodePacked("saleStatusToOffer", _offerId)), 3); // Finish
     }
 
     function getOfferPrice(address _storageAddress, uint256 _offerId) public view returns (uint256 price) {
