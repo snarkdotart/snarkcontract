@@ -243,7 +243,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         (profit, price) = _storage.calculatePlatformProfitShare(price);
         _storage.takePlatformProfitShare(profit);
         _storage.buy(tokenId, price, tokenOwner, msg.sender);
-        if (refunds > 0) msg.sender.transfer(refunds);
+        if (refunds > 0) msg.sender.send(refunds);
         
         // Outstanding bids are returned to bidders
         // And then bids are deleted

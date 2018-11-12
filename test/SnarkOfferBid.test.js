@@ -200,6 +200,30 @@ contract('SnarkOfferBid', async (accounts) => {
 
         retval = await instance_snarkbase.getWithdrawBalance(owner);
         assert.equal(retval.toNumber(), price - profit, "error on step 17");
+
+        const withdraw_balance_before = retval.toNumber();
+        const wallet_balance_before = web3.eth.getBalance(owner).toNumber();
+
+        console.log(`Balance on wallet of owner before withdraw: ${ wallet_balance_before }`);
+        console.log(`Withdraw balance of owner before withdraw: ${ withdraw_balance_before }`);
+
+        let gasNeeded = await instance_snarkbase.withdrawFunds.estimateGas();
+        console.log('Estimate Gas: ', gasNeeded);
+
+        let gasPrice = 2000000000;//await web3.eth.getGasPrice();
+        console.log('Gas Price: ', gasPrice);
+
+        let gasInWei = gasNeeded * gasPrice;
+        console.log('Gas in Wei: ', gasInWei);
+
+        await instance_snarkbase.withdrawFunds({ from: owner });
+
+        const wallet_balance_after = web3.eth.getBalance(owner).toNumber();
+        console.log(`Balance on wallet of owner after withdraw: ${ wallet_balance_after }`);
+        // alert.equal(wallet_balance_after, withdraw_balance_before + wallet_balance_before - gasInWei);
+
+        retval = await instance_snarkbase.getWithdrawBalance(owner);
+        console.log(`Withdraw balance of after after withdraw: ${ retval.toNumber() }`);
     });
 
     it("4. test addBid and deleteBid functions", async () => {

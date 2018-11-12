@@ -212,7 +212,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         // перекидываем деньги на снарковский кошелек, т.к. с него будет 
         // вызываться обратная передача токенов их владельцам
         address snarkWallet = _storage.getSnarkWalletAddress();
-        snarkWallet.transfer(msg.value);
+        snarkWallet.send(msg.value);
         /*************************************************************/
         // если остались токены в списке NotApproved, то перекидываем их в Declined
         // и удаляем все запросы из списка владельцев токенов
