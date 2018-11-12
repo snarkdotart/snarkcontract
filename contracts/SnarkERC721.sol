@@ -30,6 +30,11 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         _;
     }
 
+    modifier correctToken(uint256 _tokenId) {
+        require(_tokenId > 0 && _tokenId <= _storage.getTotalNumberOfTokens());
+        _;
+    }
+
     constructor(address storageAddress) public {
         // get an address of a storage
         _storage = storageAddress;
@@ -63,8 +68,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @dev Returns an URI for a given token ID
     /// Throws if the token ID does not exist. May return an empty string.
     /// @param _tokenId uint256 ID of the token to query
-    function tokenURI(uint256 _tokenId) public view returns (string) {
-        require(_tokenId > 0 && _tokenId <= _storage.getTotalNumberOfTokens());
+    function tokenURI(uint256 _tokenId) public view correctToken(_tokenId) returns (string) {
         return _storage.getTokenURL(_tokenId);
     }
 
@@ -103,8 +107,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @dev NFTs assigned to zero address are considered invalid, and queries
     ///      about them do throw.
     /// @return The address of the owner of the NFT
-    function ownerOf(uint256 _tokenId) public view returns (address) {
-        require(_tokenId > 0 && _tokenId <= _storage.getTotalNumberOfTokens());
+    function ownerOf(uint256 _tokenId) public view correctToken(_tokenId) returns (address) {
         address tokenOwner = _storage.getOwnerOfToken(_tokenId);
         require(tokenOwner != address(0));
         return tokenOwner;
@@ -113,7 +116,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @dev Returns whether the specified token exists
     /// @param _tokenId uint256 ID of the token to query the existance of
     /// @return whether the token exists
-    function exists(uint256 _tokenId) public view returns (bool _exists) {
+    function exists(uint256 _tokenId) public view correctToken(_tokenId) returns (bool _exists) {
         return (_storage.getOwnerOfToken(_tokenId) != address(0));
     }
 
@@ -123,7 +126,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     ///  operator of the current owner.
     /// @param _to address to be approved for the given token ID
     /// @param _tokenId uint256 ID of the token to be approved
-    function approve(address _to, uint256 _tokenId) public {
+    function approve(address _to, uint256 _tokenId) public correctToken(_tokenId) {
         address tokenOwner = ownerOf(_tokenId);
         require(tokenOwner != _to);
         require(msg.sender == tokenOwner || isApprovedForAll(tokenOwner, msg.sender));
@@ -137,8 +140,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @dev Throws if `_tokenId` is not a valid NFT
     /// @param _tokenId The NFT to find the approved address for
     /// @return The approved address for this NFT, or the zero address if there is none
-    function getApproved(uint256 _tokenId) public view returns (address _operator) {
-        require(_tokenId < totalSupply());
+    function getApproved(uint256 _tokenId) public view correctToken(_tokenId) returns (address _operator) {
         address tokenOwner = ownerOf(_tokenId);
         return _storage.getApprovalsToToken(tokenOwner, _tokenId);
     }
@@ -172,7 +174,12 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @param _from The current owner of the NFT
     /// @param _to The new owner
     /// @param _tokenId The NFT to transfer
-    function transferFrom(address _from, address _to, uint256 _tokenId) public canTransfer(_tokenId) payable {
+    function transferFrom(address _from, address _to, uint256 _tokenId) 
+        public 
+        canTransfer(_tokenId) 
+        correctToken(_tokenId) 
+        payable 
+    {
         require(
             _storage.getSaleTypeToToken(_tokenId) == uint256(SaleType.None), 
             "Token has to be free from different obligations on Snark platform"
@@ -232,7 +239,11 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @param _from The current owner of the NFT
     /// @param _to The new owner
     /// @param _tokenId The NFT to transfer
-    function freeTransfer(address _from, address _to, uint256 _tokenId) public canTransfer(_tokenId) {
+    function freeTransfer(address _from, address _to, uint256 _tokenId) 
+        public 
+        canTransfer(_tokenId) 
+        correctToken(_tokenId) 
+    {
         require(_from != address(0));
         require(_to != address(0));
         require(_from != _to);
