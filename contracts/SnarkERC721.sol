@@ -116,7 +116,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @dev Returns whether the specified token exists
     /// @param _tokenId uint256 ID of the token to query the existance of
     /// @return whether the token exists
-    function exists(uint256 _tokenId) public view correctToken(_tokenId) returns (bool _exists) {
+    function exists(uint256 _tokenId) public view returns (bool _exists) {
         return (_storage.getOwnerOfToken(_tokenId) != address(0));
     }
 
