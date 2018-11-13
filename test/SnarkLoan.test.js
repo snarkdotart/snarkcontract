@@ -20,292 +20,292 @@ contract('SnarkLoan', async (accounts) => {
         console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
     });
 
-    it("2. test createLoan function", async () => {
-        const eventLoanCreated = instance.LoanCreated({ fromBlock: 'latest' });
-        eventLoanCreated.watch(function (error, result) {
-            if (!error) {
-                const retLoanId = result.args.loanId.toNumber();
-                const retLoanOwner = result.args.loanBidOwner;
-                const retArray = result.args.unacceptedTokens;
-                const retNumberOfElements = result.args.numberOfUnaccepted.toNumber();
-                console.log(`event LoanCreated:`);
-                console.log(`owner - ${retLoanOwner}`);
-                console.log(`loan Id - ${retLoanId}`);
-                console.log(`count unaccepted - ${retNumberOfElements}`);
-                console.log(`array - ${retArray}`);
-            }
-        });
+    // it("2. test createLoan function", async () => {
+    //     const eventLoanCreated = instance.LoanCreated({ fromBlock: 'latest' });
+    //     eventLoanCreated.watch(function (error, result) {
+    //         if (!error) {
+    //             const retLoanId = result.args.loanId.toNumber();
+    //             const retLoanOwner = result.args.loanBidOwner;
+    //             const retArray = result.args.unacceptedTokens;
+    //             const retNumberOfElements = result.args.numberOfUnaccepted.toNumber();
+    //             console.log(`event LoanCreated:`);
+    //             console.log(`owner - ${retLoanOwner}`);
+    //             console.log(`loan Id - ${retLoanId}`);
+    //             console.log(`count unaccepted - ${retNumberOfElements}`);
+    //             console.log(`array - ${retArray}`);
+    //         }
+    //     });
 
-        /// START preparing
-        const tokenOwner = accounts[0];
-        const tokenHash = web3.sha3("tokenHash");
-        const limitedEdition = 3;
-        const profitShareFromSecondarySale = 20;
-        // const tokenUrl = "http://snark.art";
-        const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
-        const participants = [
-            '0xC04691B99EB731536E35F375ffC85249Ec713597', 
-            '0xB94691B99EB731536E35F375ffC85249Ec717233'
-        ];
-        const profits = [ 20, 80 ];
+    //     /// START preparing
+    //     const tokenOwner = accounts[0];
+    //     const tokenHash = web3.sha3("tokenHash");
+    //     const limitedEdition = 3;
+    //     const profitShareFromSecondarySale = 20;
+    //     // const tokenUrl = "http://snark.art";
+    //     const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
+    //     const participants = [
+    //         '0xC04691B99EB731536E35F375ffC85249Ec713597', 
+    //         '0xB94691B99EB731536E35F375ffC85249Ec717233'
+    //     ];
+    //     const profits = [ 20, 80 ];
 
-        await instance_snarkbase.createProfitShareScheme(tokenOwner, participants, profits);
+    //     await instance_snarkbase.createProfitShareScheme(tokenOwner, participants, profits);
 
-        let retval = await instance_snarkbase.getNumberOfProfitShareSchemesForOwner(tokenOwner);
-        assert.equal(retval.toNumber(), 1, "error on step 5");
+    //     let retval = await instance_snarkbase.getNumberOfProfitShareSchemesForOwner(tokenOwner);
+    //     assert.equal(retval.toNumber(), 1, "error on step 5");
 
-        const profitShareSchemeId = await instance_snarkbase.getProfitShareSchemeIdForOwner(tokenOwner, 0);
+    //     const profitShareSchemeId = await instance_snarkbase.getProfitShareSchemeIdForOwner(tokenOwner, 0);
 
-        await instance_snarkbase.addToken(
-            tokenOwner,
-            tokenHash,
-            limitedEdition,
-            profitShareFromSecondarySale,
-            tokenUrl,
-            profitShareSchemeId,
-            false,
-            false,
-            { from: tokenOwner }
-        );
+    //     await instance_snarkbase.addToken(
+    //         tokenOwner,
+    //         tokenHash,
+    //         limitedEdition,
+    //         profitShareFromSecondarySale,
+    //         tokenUrl,
+    //         profitShareSchemeId,
+    //         false,
+    //         false,
+    //         { from: tokenOwner }
+    //     );
 
-        retval = await instance_snarkbase.getOwnerOfToken(1);
-        assert.equal(retval, tokenOwner, "error: there isn't any owner for the first token");
-        console.log(`owner of 1 token after run addToken: ${retval}`)
+    //     retval = await instance_snarkbase.getOwnerOfToken(1);
+    //     assert.equal(retval, tokenOwner, "error: there isn't any owner for the first token");
+    //     console.log(`owner of 1 token after run addToken: ${retval}`)
 
-        retval = await instance_snarkbase.getOwnerOfToken(2);
-        assert.equal(retval, tokenOwner, "error: there isn't any owner for the second token");
-        console.log(`owner of 2 token after run addToken: ${retval}`)
+    //     retval = await instance_snarkbase.getOwnerOfToken(2);
+    //     assert.equal(retval, tokenOwner, "error: there isn't any owner for the second token");
+    //     console.log(`owner of 2 token after run addToken: ${retval}`)
 
-        retval = await instance_snarkbase.getOwnerOfToken(3);
-        assert.equal(retval, tokenOwner, "error: there isn't any owner for the third token");
-        console.log(`owner of 3 token after run addToken: ${retval}`)
+    //     retval = await instance_snarkbase.getOwnerOfToken(3);
+    //     assert.equal(retval, tokenOwner, "error: there isn't any owner for the third token");
+    //     console.log(`owner of 3 token after run addToken: ${retval}`)
 
-        retval = await instance_snarkbase.getTokensCountByOwner(tokenOwner);
-        assert.equal(retval.toNumber(), 3, "error on step 1");
-        /// END preparing
+    //     retval = await instance_snarkbase.getTokensCountByOwner(tokenOwner);
+    //     assert.equal(retval.toNumber(), 3, "error on step 1");
+    //     /// END preparing
         
-        const borrower = accounts[1];
-        const loanCost = 9000000000;
-        const startDateTimestamp = (new Date()).getTime() / 1000;
-        const duration = 3;
-        const tokensIds = [1, 2, 3];
+    //     const borrower = accounts[1];
+    //     const loanCost = 9000000000;
+    //     const startDateTimestamp = (new Date()).getTime() / 1000;
+    //     const duration = 3;
+    //     const tokensIds = [1, 2, 3];
 
-        retval = await instance_snarkbase.getSaleTypeToToken(1);
-        assert.equal(retval.toNumber(), 0, "error on step 2");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(1);
+    //     assert.equal(retval.toNumber(), 0, "error on step 2");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(2);
-        assert.equal(retval.toNumber(), 0, "error on step 3");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(2);
+    //     assert.equal(retval.toNumber(), 0, "error on step 3");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(3);
-        assert.equal(retval.toNumber(), 0, "error on step 4");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(3);
+    //     assert.equal(retval.toNumber(), 0, "error on step 4");
 
-        await instance.createLoan(tokensIds, startDateTimestamp, duration, { from: borrower, value: loanCost });
+    //     await instance.createLoan(tokensIds, startDateTimestamp, duration, { from: borrower, value: loanCost });
 
-        retval = await instance.getTokenListForLoan(1);
-        assert.equal(retval.length, 3, "error on step 5");
-        assert.equal(retval[0], 1, "error on step 6");
-        assert.equal(retval[1], 2, "error on step 7");
-        assert.equal(retval[2], 3, "error on step 8");
+    //     retval = await instance.getTokenListForLoan(1);
+    //     assert.equal(retval.length, 3, "error on step 5");
+    //     assert.equal(retval[0], 1, "error on step 6");
+    //     assert.equal(retval[1], 2, "error on step 7");
+    //     assert.equal(retval[2], 3, "error on step 8");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(1);
-        assert.equal(retval.toNumber(), 0, "error on step 9");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(1);
+    //     assert.equal(retval.toNumber(), 0, "error on step 9");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(2);
-        assert.equal(retval.toNumber(), 0, "error on step 10");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(2);
+    //     assert.equal(retval.toNumber(), 0, "error on step 10");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(3);
-        assert.equal(retval.toNumber(), 0, "error on step 11");
-    });
+    //     retval = await instance_snarkbase.getSaleTypeToToken(3);
+    //     assert.equal(retval.toNumber(), 0, "error on step 11");
+    // });
 
-    it("3. test acceptLoan function", async () => {
-        const tokenOwner = accounts[0];
-        const borrower = accounts[1];
+    // it("3. test acceptLoan function", async () => {
+    //     const tokenOwner = accounts[0];
+    //     const borrower = accounts[1];
 
-        const eventLoanAccepted = instance.LoanAccepted({ fromBlock: 'latest' });
-        eventLoanAccepted.watch(function (error, result) {
-            if (!error) {
-                const retLoanId = result.args.loanId.toNumber();
-                const retTokenOwner = result.args.tokenOwner;
-                const retTokenId = result.args.tokenId.toNumber();
-                console.log(`event LoanAccepted: owner - ${retTokenOwner}, 
-                    loan Id - ${retLoanId}, token Id - ${retTokenId}`);
-            }
-        });
+    //     const eventLoanAccepted = instance.LoanAccepted({ fromBlock: 'latest' });
+    //     eventLoanAccepted.watch(function (error, result) {
+    //         if (!error) {
+    //             const retLoanId = result.args.loanId.toNumber();
+    //             const retTokenOwner = result.args.tokenOwner;
+    //             const retTokenId = result.args.tokenId.toNumber();
+    //             console.log(`event LoanAccepted: owner - ${retTokenOwner}, 
+    //                 loan Id - ${retLoanId}, token Id - ${retTokenId}`);
+    //         }
+    //     });
         
-        let retval = await instance.getTokenListForLoan(1);
-        assert.equal(retval.length, 3, "error on step 2");
+    //     let retval = await instance.getTokenListForLoan(1);
+    //     assert.equal(retval.length, 3, "error on step 2");
 
-        retval = await instance.getTokenAcceptedStatusListForLoan(1);
-        assert.equal(retval.length, 3, "error on step 3");
-        assert.equal(retval[0], false, "error on step 4");
-        assert.equal(retval[1], false, "error on step 5");
-        assert.equal(retval[2], false, "error on step 6");
+    //     retval = await instance.getTokenAcceptedStatusListForLoan(1);
+    //     assert.equal(retval.length, 3, "error on step 3");
+    //     assert.equal(retval[0], false, "error on step 4");
+    //     assert.equal(retval[1], false, "error on step 5");
+    //     assert.equal(retval[2], false, "error on step 6");
         
-        retval = await instance_snarkbase.getSaleTypeToToken(1);
-        assert.equal(retval.toNumber(), 0, "error on step 7");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(1);
+    //     assert.equal(retval.toNumber(), 0, "error on step 7");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(2);
-        assert.equal(retval.toNumber(), 0, "error on step 8");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(2);
+    //     assert.equal(retval.toNumber(), 0, "error on step 8");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(3);
-        assert.equal(retval.toNumber(), 0, "error on step 9");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(3);
+    //     assert.equal(retval.toNumber(), 0, "error on step 9");
 
-        retval = await instance_snarkbase.getOwnerOfToken(1);
-        console.log(`real owner of token (before accept): ${retval}`);
-        assert.equal(retval, tokenOwner, "error on step 10");
+    //     retval = await instance_snarkbase.getOwnerOfToken(1);
+    //     console.log(`real owner of token (before accept): ${retval}`);
+    //     assert.equal(retval, tokenOwner, "error on step 10");
 
-        retval = await instance.getActualTokenOwnerForLoan(1, 1);
-        console.log(`current token owner is (before accept): ${retval}`);
-        assert.equal(retval, 0, "error on step 11");
+    //     retval = await instance.getActualTokenOwnerForLoan(1, 1);
+    //     console.log(`current token owner is (before accept): ${retval}`);
+    //     assert.equal(retval, 0, "error on step 11");
 
-        await instance.acceptLoan([1,2], { from: tokenOwner });
+    //     await instance.acceptLoan([1,2], { from: tokenOwner });
 
-        retval = await instance_snarkbase.getOwnerOfToken(1);
-        console.log(`real owner of token (before accept): ${retval}`);
-        assert.equal(retval, tokenOwner, "error on step 12");
+    //     retval = await instance_snarkbase.getOwnerOfToken(1);
+    //     console.log(`real owner of token (before accept): ${retval}`);
+    //     assert.equal(retval, tokenOwner, "error on step 12");
 
-        retval = await instance.getActualTokenOwnerForLoan(1, 1);
-        console.log(`current token owner is (after accept): ${retval}`);
-        assert.equal(retval, tokenOwner, "error on step 13");
+    //     retval = await instance.getActualTokenOwnerForLoan(1, 1);
+    //     console.log(`current token owner is (after accept): ${retval}`);
+    //     assert.equal(retval, tokenOwner, "error on step 13");
 
-        retval = await instance.getTokenAcceptedStatusListForLoan(1);
-        assert.equal(retval.length, 3, "error on step 14");
-        assert.equal(retval[0], true, "error on step 15");
-        assert.equal(retval[1], true, "error on step 16");
-        assert.equal(retval[2], false, "error on step 17");
+    //     retval = await instance.getTokenAcceptedStatusListForLoan(1);
+    //     assert.equal(retval.length, 3, "error on step 14");
+    //     assert.equal(retval[0], true, "error on step 15");
+    //     assert.equal(retval[1], true, "error on step 16");
+    //     assert.equal(retval[2], false, "error on step 17");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(1);
-        assert.equal(retval.toNumber(), 2, "error on step 18");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(1);
+    //     assert.equal(retval.toNumber(), 2, "error on step 18");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(2);
-        assert.equal(retval.toNumber(), 2, "error on step 19");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(2);
+    //     assert.equal(retval.toNumber(), 2, "error on step 19");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(3);
-        assert.equal(retval.toNumber(), 0, "error on step 20");
-    });
+    //     retval = await instance_snarkbase.getSaleTypeToToken(3);
+    //     assert.equal(retval.toNumber(), 0, "error on step 20");
+    // });
 
-    it("4. test startLoan function", async () => {
-        const loanId = 1;
-        const tokenOwner = accounts[0];
-        const borrower = accounts[1];
+    // it("4. test startLoan function", async () => {
+    //     const loanId = 1;
+    //     const tokenOwner = accounts[0];
+    //     const borrower = accounts[1];
 
-        let retval = await instance.getTokenListForLoan(loanId);
-        assert.equal(retval.length, 3, "error on step 1");
+    //     let retval = await instance.getTokenListForLoan(loanId);
+    //     assert.equal(retval.length, 3, "error on step 1");
 
-        retval = await instance.getTokenAcceptedStatusListForLoan(loanId);
-        assert.equal(retval.length, 3, "error on step 3");
-        assert.equal(retval[0], true, "error on step 4");
-        assert.equal(retval[1], true, "error on step 5");
-        assert.equal(retval[2], false, "error on step 6");
+    //     retval = await instance.getTokenAcceptedStatusListForLoan(loanId);
+    //     assert.equal(retval.length, 3, "error on step 3");
+    //     assert.equal(retval[0], true, "error on step 4");
+    //     assert.equal(retval[1], true, "error on step 5");
+    //     assert.equal(retval[2], false, "error on step 6");
 
-        retval = await instance.getLoanSaleStatus(loanId);
-        assert.equal(retval.toNumber(), 1, "error on step 7");
+    //     retval = await instance.getLoanSaleStatus(loanId);
+    //     assert.equal(retval.toNumber(), 1, "error on step 7");
 
-        retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
-        assert.equal(retval.toNumber(), 0, "error on step 8");
+    //     retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
+    //     assert.equal(retval.toNumber(), 0, "error on step 8");
 
-        retval = await instance_snarkbase.getWithdrawBalance(borrower);
-        assert.equal(retval.toNumber(), 0, "error on step 9");
+    //     retval = await instance_snarkbase.getWithdrawBalance(borrower);
+    //     assert.equal(retval.toNumber(), 0, "error on step 9");
 
-        retval = await instance_snarkbase.getOwnerOfToken(1);
-        assert.equal(retval, tokenOwner, "error on step 10");
+    //     retval = await instance_snarkbase.getOwnerOfToken(1);
+    //     assert.equal(retval, tokenOwner, "error on step 10");
 
-        retval = await instance.getActualTokenOwnerForLoan(loanId, 1);
-        assert.equal(retval, tokenOwner, "error on step 11");
+    //     retval = await instance.getActualTokenOwnerForLoan(loanId, 1);
+    //     assert.equal(retval, tokenOwner, "error on step 11");
 
-        await instance.startLoan(loanId);
+    //     await instance.startLoan(loanId);
 
-        retval = await instance_snarkbase.getOwnerOfToken(1);
-        assert.equal(retval, borrower, "error on step 12");
+    //     retval = await instance_snarkbase.getOwnerOfToken(1);
+    //     assert.equal(retval, borrower, "error on step 12");
 
-        retval = await instance.getActualTokenOwnerForLoan(loanId, 1);
-        assert.equal(retval, tokenOwner, "error on step 13");
+    //     retval = await instance.getActualTokenOwnerForLoan(loanId, 1);
+    //     assert.equal(retval, tokenOwner, "error on step 13");
 
-        retval = await instance.getTokenListForLoan(loanId);
-        assert.equal(retval.length, 2, "error on step 14");
+    //     retval = await instance.getTokenListForLoan(loanId);
+    //     assert.equal(retval.length, 2, "error on step 14");
 
-        retval = await instance.getLoanSaleStatus(loanId);
-        assert.equal(retval.toNumber(), 2, "error on step 15");
+    //     retval = await instance.getLoanSaleStatus(loanId);
+    //     assert.equal(retval.toNumber(), 2, "error on step 15");
 
-        retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
-        console.log('pendingWithdrawals of token Owner:', retval.toNumber());
-        assert.equal(retval.toNumber(), 6000000000, "error on step 16");
+    //     retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
+    //     console.log('pendingWithdrawals of token Owner:', retval.toNumber());
+    //     assert.equal(retval.toNumber(), 6000000000, "error on step 16");
 
-        retval = await instance_snarkbase.getWithdrawBalance(borrower);
-        console.log('pendingWithdrawals of Borrower:', retval.toNumber());
-        assert.equal(retval.toNumber(), 3000000000, "error on step 17");
-    });
+    //     retval = await instance_snarkbase.getWithdrawBalance(borrower);
+    //     console.log('pendingWithdrawals of Borrower:', retval.toNumber());
+    //     assert.equal(retval.toNumber(), 3000000000, "error on step 17");
+    // });
 
-    it("5. test cancelLoanToken function", async () => {
-        const loanId = 1;
-        const tokenOwner = accounts[0];
-        const borrower = accounts[1];
+    // it("5. test cancelLoanToken function", async () => {
+    //     const loanId = 1;
+    //     const tokenOwner = accounts[0];
+    //     const borrower = accounts[1];
 
-        let retval = await instance.getTokenListForLoan(loanId);
-        assert.equal(retval.length, 2, "error on step 1");
+    //     let retval = await instance.getTokenListForLoan(loanId);
+    //     assert.equal(retval.length, 2, "error on step 1");
 
-        retval = await instance.getLoanSaleStatus(loanId);
-        assert.equal(retval.toNumber(), 2, "error on step 2");
+    //     retval = await instance.getLoanSaleStatus(loanId);
+    //     assert.equal(retval.toNumber(), 2, "error on step 2");
 
-        retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
-        assert.equal(retval.toNumber(), 6000000000, "error on step 3");
+    //     retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
+    //     assert.equal(retval.toNumber(), 6000000000, "error on step 3");
 
-        retval = await instance_snarkbase.getWithdrawBalance(borrower);
-        assert.equal(retval.toNumber(), 3000000000, "error on step 4");
+    //     retval = await instance_snarkbase.getWithdrawBalance(borrower);
+    //     assert.equal(retval.toNumber(), 3000000000, "error on step 4");
 
-        retval = await instance_snarkbase.getOwnerOfToken(1);
-        assert.equal(retval, borrower, "error on step 5");
+    //     retval = await instance_snarkbase.getOwnerOfToken(1);
+    //     assert.equal(retval, borrower, "error on step 5");
 
-        retval = await instance.getActualTokenOwnerForLoan(loanId, 1);
-        assert.equal(retval, tokenOwner, "error on step 6");
+    //     retval = await instance.getActualTokenOwnerForLoan(loanId, 1);
+    //     assert.equal(retval, tokenOwner, "error on step 6");
 
-        await instance.cancelLoanToken(1, { from: tokenOwner, value: 3000000000 });
+    //     await instance.cancelLoanToken(1, { from: tokenOwner, value: 3000000000 });
 
-        retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
-        console.log('pendingWithdrawals of token Owner:', retval.toNumber());
-        assert.equal(retval.toNumber(), 6000000000, "error on step 7");
+    //     retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
+    //     console.log('pendingWithdrawals of token Owner:', retval.toNumber());
+    //     assert.equal(retval.toNumber(), 6000000000, "error on step 7");
 
-        retval = await instance_snarkbase.getWithdrawBalance(borrower);
-        console.log('pendingWithdrawals of Borrower:', retval.toNumber());
-        assert.equal(retval.toNumber(), 6000000000, "error on step 8");
+    //     retval = await instance_snarkbase.getWithdrawBalance(borrower);
+    //     console.log('pendingWithdrawals of Borrower:', retval.toNumber());
+    //     assert.equal(retval.toNumber(), 6000000000, "error on step 8");
 
-        retval = await instance.getTokenListForLoan(loanId);
-        assert.equal(retval.length, 1, "error on step 9");
-    });
+    //     retval = await instance.getTokenListForLoan(loanId);
+    //     assert.equal(retval.length, 1, "error on step 9");
+    // });
 
-    it("6. test stopLoan function", async () => {
-        const loanId = 1;
-        const tokenOwner = accounts[0];
-        const borrower = accounts[1];
+    // it("6. test stopLoan function", async () => {
+    //     const loanId = 1;
+    //     const tokenOwner = accounts[0];
+    //     const borrower = accounts[1];
 
-        let retval = await instance.getLoanSaleStatus(loanId);
-        assert.equal(retval.toNumber(), 2, "error on step 1");
+    //     let retval = await instance.getLoanSaleStatus(loanId);
+    //     assert.equal(retval.toNumber(), 2, "error on step 1");
         
-        retval = await instance.getTokenListForLoan(loanId);
-        assert.equal(retval.length, 1, "error on step 2");
-        const tokenId = retval[0].toNumber();
+    //     retval = await instance.getTokenListForLoan(loanId);
+    //     assert.equal(retval.length, 1, "error on step 2");
+    //     const tokenId = retval[0].toNumber();
 
-        retval = await instance_snarkbase.getOwnerOfToken(tokenId);
-        assert.equal(retval, borrower, "error on step 3");
+    //     retval = await instance_snarkbase.getOwnerOfToken(tokenId);
+    //     assert.equal(retval, borrower, "error on step 3");
 
-        retval = await instance.getActualTokenOwnerForLoan(loanId, tokenId);
-        assert.equal(retval, tokenOwner, "error on step 4");
+    //     retval = await instance.getActualTokenOwnerForLoan(loanId, tokenId);
+    //     assert.equal(retval, tokenOwner, "error on step 4");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
-        assert.equal(retval.toNumber(), 2, "error on step 5");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
+    //     assert.equal(retval.toNumber(), 2, "error on step 5");
 
-        await instance.stopLoan(loanId);
+    //     await instance.stopLoan(loanId);
 
-        retval = await instance.getLoanSaleStatus(loanId);
-        assert.equal(retval.toNumber(), 3, "error on step 6");
+    //     retval = await instance.getLoanSaleStatus(loanId);
+    //     assert.equal(retval.toNumber(), 3, "error on step 6");
 
-        retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
-        assert.equal(retval.toNumber(), 0, "error on step 7");
+    //     retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
+    //     assert.equal(retval.toNumber(), 0, "error on step 7");
         
-        retval = await instance.getActualTokenOwnerForLoan(loanId, tokenId);
-        assert.equal(retval, tokenOwner, "error on step 8");
+    //     retval = await instance.getActualTokenOwnerForLoan(loanId, tokenId);
+    //     assert.equal(retval, tokenOwner, "error on step 8");
 
-        retval = await instance_snarkbase.getOwnerOfToken(tokenId);
-        assert.equal(retval, tokenOwner, "error on step 9");
-    });
+    //     retval = await instance_snarkbase.getOwnerOfToken(tokenId);
+    //     assert.equal(retval, tokenOwner, "error on step 9");
+    // });
 });
