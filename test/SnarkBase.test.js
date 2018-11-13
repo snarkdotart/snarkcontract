@@ -177,6 +177,27 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getTokensCountByOwner(artist);
         assert.equal(retval.toNumber(), 10, "error on step 4");
 
+        // check if it allows to set 0 
+        try {
+            await instance.changeProfitShareSchemeForToken(1, 0, { from: artist });
+        } catch (e) {
+            assert.equal(e.message, 'VM Exception while processing transaction: revert id of scheme can\'t be zero');
+        }
+
+        retval = await instance.getProfitShareSchemeCountByAddress(accounts[0]);
+        assert.equal(retval.toNumber(), 1, `wrong amount of profit share scheme for ${ accounts[0] }`);
+        retval = await instance.getProfitShareSchemeIdByIndex(accounts[0],0);
+        const accountZeroSchemeId = retval.toNumber();
+
+        console.log(`${accounts[0]} contain ${accountZeroSchemeId} scheme`);
+
+        // check if it's possible to set other's profit share scheme id
+        try {
+            await instance.changeProfitShareSchemeForToken(1, accountZeroSchemeId, { from: artist });
+        } catch(e) {
+            assert.equal(e.message, 'VM Exception while processing transaction: revert Profit share scheme is not your');
+        }
+        
         await instance.changeProfitShareSchemeForToken(1, 3, { from: artist });
 
         retval = await instance.getProfitShareParticipantsCount(artist);

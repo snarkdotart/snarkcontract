@@ -66,6 +66,22 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         _;
     }
 
+    modifier onlyProfitShareSchemeOfOwner(uint256 tokenId, uint256 schemeId) {
+        require(schemeId > 0, "id of scheme can't be zero");
+        
+        address artist = _storage.getTokenArtist(tokenId);
+        require(msg.sender == artist, "Only artist can change the profit share scheme");
+
+        bool isSchemeOwner = false;
+        uint256 schemeNumber = getNumberOfProfitShareSchemesForOwner(artist);        
+        for (uint256 i = 0; i < schemeNumber; i++) {
+            uint256 schId = getProfitShareSchemeIdForOwner(artist, i);
+            isSchemeOwner = isSchemeOwner || (schId == schemeId);
+        }
+        require(isSchemeOwner == true, "Profit share scheme is not your");
+        _;
+    }
+
     /// @dev Modifier that allows access for a participant only
     modifier onlyParticipantOf(uint256 tokenId) {
         bool isItParticipant = false;
@@ -330,7 +346,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         uint256 newProfitShareSchemeId
     ) 
         public
-        onlyArtistOf(tokenId) 
+        onlyProfitShareSchemeOfOwner(tokenId, newProfitShareSchemeId)
     {
         _storage.setTokenProfitShareSchemeId(tokenId, newProfitShareSchemeId);
     }
