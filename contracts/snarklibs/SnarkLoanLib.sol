@@ -37,24 +37,24 @@ library SnarkLoanLib {
         return loanId;
     }
 
-    /// @notice увеличивает общее количество лоанов в системе
+    /// @notice increase the number of loans in the system 
     function increaseNumberOfLoans(address storageAddress) public returns (uint256) {
         uint256 totalNumber = getTotalNumberOfLoans(storageAddress).add(1);
         SnarkStorage(storageAddress).setUint(keccak256("totalNumberOfLoans"), totalNumber);
         return totalNumber;
     }
 
-    /// @notice возвращает общее количество лоанов в системе
+    /// @notice returns total number of loans in the system 
     function getTotalNumberOfLoans(address storageAddress) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfLoans"));
     }
 
-    /// @notice возвращает владельца loan-а
+    /// @notice returns loan owner 
     function getOwnerOfLoan(address storageAddress, uint256 loanId) public view returns (address) {
         return SnarkStorage(storageAddress).addressStorage(keccak256(abi.encodePacked("loanOwner", loanId)));
     }
 
-    /// @notice устанавливает владельца loan-а
+    /// @notice sets the loan owner
     function setOwnerOfLoan(address storageAddress, address loanOwner, uint256 loanId) public {
         SnarkStorage(storageAddress).setAddress(
             keccak256(abi.encodePacked("loanOwner", loanId)),
@@ -62,35 +62,35 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice Добавляет токен в список определенного типа
+    /// @notice Adds token to the list of a specific type 
     function addTokenToListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId, uint256 listType) public {
-        // проверяем, был ли уже включен токен в лоан ранее, или это первый раз
+        // check if the token was included in the loan previously or if it is the first time 
         if (isTokenIncludedInLoan(storageAddress, loanId, tokenId)) {
-            // если уже не первый раз, то значит происходит перемещение токена из одного списка в другой
-            // а это значит, что его необходимо удалить из предыдущего списка
-            // но предварительно надо проверить, не пытаемся ли мы переместить токен в тот же самый список,
-            // в котором он уже находиться. И если да, то exception, ибо можно вызвать дублирование токена в списке.
+            // if it is not the first time, it means that the token transfer is happening from one list to another 
+            // and that means that it needs to be removed from the previous list 
+            // but before this is done we need to check if we are trying to move the token into the same list
+            // in which it is already located. If yes, create exception, or we risk duplicating the token in the list.
             require(
                 getTypeOfTokenListForLoan(storageAddress, loanId, tokenId) != listType, 
-                "Token is already belongs selected type"
+                "Token already belongs to selected type"
             );
             removeTokenFromListOfLoan(storageAddress, loanId, tokenId);
         } else {
-            // если добавление токена происходит первый раз, то помечаем его как добавленный в лоан
+            // if token addition is happing for the first time, mark it as added to the loan
             setTokenAsIncludedInLoan(storageAddress, loanId, tokenId, true);
         }
-        // запоминаем тип списка, в который попал токен
+        // set the list type in which we added token
         setTypeOfTokenListForLoan(storageAddress, loanId, tokenId, listType);
-        // записываем токен в конец списка
+        // add token to the end of the list 
         uint256 index = increaseNumberOfTokensInListByType(storageAddress, loanId, listType).sub(1);
         setTokenForLoanListByTypeAndIndex(storageAddress, loanId, listType, index, tokenId);
     }
 
-    /// @notice удаляем токен из списка, в котором он находился до вызова этой функции
+    /// @notice remove token form the list in which it existed prior to calling this function 
     function removeTokenFromListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId) public {
-        // получаем тип списка, в котором находится токен
+        // receive list type in which the token exists 
         uint256 listType = getTypeOfTokenListForLoan(storageAddress, loanId, tokenId);
-        // удаляем по индексу токен из списка токен
+        // remove token index from the token list
         uint256 indexOfToken = getTokenIndexInListOfLoanByType(storageAddress, loanId, tokenId);
         uint256 maxIndex = getNumberOfTokensInListByType(storageAddress, loanId, listType).sub(1);
         if (indexOfToken < maxIndex) {
@@ -100,7 +100,7 @@ library SnarkLoanLib {
         decreaseNumberOfTokensInListByType(storageAddress, loanId, listType);
     }
 
-    /// @notice помогает узнать используется ли токен в лоане или нет
+    /// @notice check is the token is participating in a loan or not 
     function isTokenIncludedInLoan(address storageAddress, uint256 loanId, uint256 tokenId)
         public 
         view 
@@ -111,7 +111,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice помечаем, что токен используется в выбранном лоане
+    /// @notice set that the token is participating in the selected loan 
     function setTokenAsIncludedInLoan(address storageAddress, uint256 loanId, uint256 tokenId, bool isIncluded) 
         public 
     {
@@ -121,7 +121,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice возвращаем к какому типу списка сейчас принадлежит токен
+    /// @notice return the list type the token belongs to
     function getTypeOfTokenListForLoan(address storageAddress, uint256 loanId, uint256 tokenId) 
         public 
         view 
@@ -132,7 +132,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice запоминаем к какому типу списка сейчас принадлежит токен
+    /// @notice set to which list type the token belongs to 
     function setTypeOfTokenListForLoan(address storageAddress, uint256 loanId, uint256 tokenId, uint256 listType) 
         public
     {
@@ -142,7 +142,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice возвращает количество токетов в определенном списке
+    /// @notice returns the number of tokens in the specific list
     function getNumberOfTokensInListByType(address storageAddress, uint256 loanId, uint256 listType) 
         public 
         view 
@@ -153,7 +153,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice увеличиваем значение количества токенов в определенном списке
+    /// @notice increase the number of tokens in the specific list
     function increaseNumberOfTokensInListByType(address storageAddress, uint256 loanId, uint256 listType) 
         public 
         returns (uint256) 
@@ -166,7 +166,7 @@ library SnarkLoanLib {
         return numberOfTokens;
     }
 
-    /// @notice уменьшаем значение количества токенов в определенном списке
+    /// @notice decrease the number of tokens in the specific list 
     function decreaseNumberOfTokensInListByType(address storageAddress, uint256 loanId, uint256 listType) 
         public 
         returns (uint256) 
@@ -179,7 +179,7 @@ library SnarkLoanLib {
         return numberOfTokens;
     }
 
-    /// @notice получаем id токена в списке определенного типа по определенному индексу
+    /// @notice receive token id from the list of specific type in a specific index
     function getTokenForLoanListByTypeAndIndex(address storageAddress, uint256 loanId, uint256 listType, uint256 index) 
         public
         view
@@ -190,7 +190,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice записываем токен в список определенного типа по определенному индексу
+    /// @notice set token into the list of specific type and a specific index 
     function setTokenForLoanListByTypeAndIndex(
         address storageAddress, 
         uint256 loanId, 
@@ -207,7 +207,7 @@ library SnarkLoanLib {
         setTokenIndexInListOfLoanByType(storageAddress, loanId, tokenId, index);
     }
 
-    /// @notice возвращает список токенов в выбранном списке (NotApproved, Approved, Declined)
+    /// @notice return tokens in a specific list (NotApproved, Approved, Declined)
     function getTokensListOfLoanByType(address storageAddress, uint256 loanId, uint256 listType) 
         public 
         view 
@@ -221,8 +221,7 @@ library SnarkLoanLib {
         return list;
     }
 
-    /// @notice возвращаем индекс для токена в списке. не важно в каком, т.к. токен может находиться
-    ///         только в одном списке из 3-х
+    /// @notice return token index in the list, doesnt matter in which one since the token can only exist in only 1 of 3
     function getTokenIndexInListOfLoanByType(
         address storageAddress,
         uint256 loanId,
@@ -237,7 +236,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice запоминаем под каким индексом токен записан в списке
+    /// @notice set under which index the token is in the list
     function setTokenIndexInListOfLoanByType(
         address storageAddress,
         uint256 loanId,
@@ -252,37 +251,37 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice возвращает дату начала аренды
+    /// @notice return date of the loan start 
     function getStartDateOfLoan(address storageAddress, uint256 loanId) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToStartDate", loanId)));
     }
 
-    /// @notice устанавливает дату начала аренды
+    /// @notice set date of the loan start 
     function setStartDateOfLoan(address storageAddress, uint256 loanId, uint256 startDate) public {
         SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("loanToStartDate", loanId)), startDate);
     }
 
-    /// @notice возвращает продолжительность аренды
+    /// @notice return loan duration 
     function getDurationOfLoan(address storageAddress, uint256 loanId) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToDuration", loanId)));
     }
 
-    /// @notice устанавливает продолжительность аренды
+    /// @notice set loan duration 
     function setDurationOfLoan(address storageAddress, uint256 loanId, uint256 duration) public {
         SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("loanToDuration", loanId)), duration);
     }
 
-    /// @notice возвращает статус аренды
+    /// @notice return loan status
     function getLoanSaleStatus(address storageAddress, uint256 loanId) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToSaleStatus", loanId)));
     }
 
-    /// @notice устанавливает статус аренды
+    /// @notice set loan status
     function setLoanSaleStatus(address storageAddress, uint256 loanId, uint256 saleStatus) public {
         SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("loanToSaleStatus", loanId)), saleStatus);
     }
 
-    /// @notice возвращает установки по кредиту
+    /// @notice return loan terms
     function getLoanDetail(address storageAddress, uint256 loanId)
         public 
         view 
@@ -307,7 +306,7 @@ library SnarkLoanLib {
         loanOwner = getOwnerOfLoan(storageAddress, loanId);
     }
 
-    /// @notice проверяет занят ли токен на выбранный период
+    /// @notice check is there is a schedule conflict for a specific token and specific period request
     function isTokenBusyForPeriod(
         address storageAddress, 
         uint256 tokenId, 
@@ -327,14 +326,14 @@ library SnarkLoanLib {
         return isBusy;
     }
 
-    /// @notice проверяет в календаре токена не занят ли он на определенную дату
+    /// @notice checks in the token calendar if it is busy on a specific date 
     function isTokenBusyOnDay(address storageAddress, uint256 tokenId, uint256 date) public view returns (bool) {
         return SnarkStorage(storageAddress).boolStorage(
             keccak256(abi.encodePacked("tokenCalendar", tokenId, date))
         );
     }
 
-    /// @notice возвращает id loan из календаря для токена на определенную дату
+    /// @notice returns loan id from the token calendar on a specific date 
     function getEventIdOnDayForToken(address storageAddress, uint256 tokenId, uint256 date) 
         public 
         view 
@@ -345,7 +344,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice помечает занятый период для токена
+    /// @notice marks the busy period for the token 
     function makeTokenBusyForPeriod(
         address storageAddress, 
         uint256 loanId, 
@@ -362,7 +361,7 @@ library SnarkLoanLib {
         }
     }
 
-    /// @notice помечает, что токен день занят в установленный день, а также каким кредитом именно
+    /// @notice marks that the token is busy on a specific date and by which loan 
     function makeTokenBusyOnDay(address storageAddress, uint256 loanId, uint256 tokenId, uint256 date) public {
         SnarkStorage(storageAddress).setBool(
             keccak256(abi.encodePacked("tokenCalendar", tokenId, date)),
@@ -374,7 +373,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice освобождает занятый период для токена
+    /// @notice frees up the busy period for the token 
     function makeTokenFreeForPeriod(
         address storageAddress,
         uint256 tokenId,
@@ -390,7 +389,7 @@ library SnarkLoanLib {
         }
     }
 
-    /// @notice освобождает в календаре выбранный день для токена на определенную дату
+    /// @notice frees up in the calendar a specific token on a specific date 
     function makeTokenFreeOnDay(address storageAddress, uint256 tokenId, uint256 date) public {
         SnarkStorage(storageAddress).setBool(
             keccak256(abi.encodePacked("tokenCalendar", tokenId, date)),
@@ -402,17 +401,17 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice возвращает максимальную продолжительность, на которую возможно взять токен в заем
+    /// @notice returns maximum duration for which a token can be loaned  
     function getDefaultLoanDuration(address storageAddress) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(keccak256("defaultLoanDuration"));
     }
 
-    /// @notice устанавливает максимальную продолжительность, на которую возможно взять токен в заем
+    /// @notice set maximum duration for which a token can be loaned  
     function setDefaultLoanDuration(address storageAddress, uint256 duration) public {
         SnarkStorage(storageAddress).setUint(keccak256("defaultLoanDuration"), duration);
     }
 
-    /// @notice добавляет новый запрос на аренду токена для владельца токена
+    /// @notice creates new loan request for the token to the token owner
     function addLoanRequestToTokenOwner(address storageAddress, address tokenOwner, uint256 tokenId, uint256 loanId)
         public 
     {
@@ -422,7 +421,7 @@ library SnarkLoanLib {
         saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId, index);
     }
 
-    /// @notice производит запись токена в список запросов по владельцу токена и индексу
+    /// @notice sets the token into request list for the token owner and index 
     function setTokenForLoanRequestByTokenOwnerAndIndex(
         address storageAddress, 
         address tokenOwner, 
@@ -437,7 +436,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice производит запись лоана в список запросов по владельцу токена и индексу
+    /// @notice sets loan into request list for token owners and index 
     function setLoanForLoanRequestByTokenOwnerAndIndex(
         address storageAddress, 
         address tokenOwner, 
@@ -452,7 +451,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice сохраяет индекс запроса для владельца токена
+    /// @notice save loan request index for token owner 
     function saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(
         address storageAddress,
         address tokenOwner,
@@ -468,7 +467,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice возвращает индекс запроса для владельца токена по token id и loan id
+    /// @notice returns loan request index for token owner by token id and loan id 
     function getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(
         address storageAddress,
         address tokenOwner,
@@ -484,7 +483,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice удаляет запрос из списка владельца токена
+    /// @notice remove loan request from the list of token owner 
     function deleteLoanRequestFromTokenOwner(address storageAddress, uint256 loanId, uint256 tokenId) public {
         address tokenOwner = getOwnerOfLoan(storageAddress, loanId);
         uint256 index = getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId);
@@ -499,7 +498,7 @@ library SnarkLoanLib {
         decreaseCountLoanRequestsForTokenOwner(storageAddress, tokenOwner);
     }
 
-    /// @notice Возвращает информацию запроса по индексу
+    /// @notice Returns loan request information by index 
     function getLoanRequestForTokenOwnerByIndex(address storageAddress, address tokenOwner, uint256 index)
         public
         view
@@ -517,7 +516,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice возвращает общее количество запросов на аренду для владельца токенов
+    /// @notice returns total loan requests for token owner 
     function getCountLoanRequestsForTokenOwner(address storageAddress, address tokenOwner)
         public
         view
@@ -528,7 +527,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice увеличивает счетчик числа запросов для владельца токена
+    /// @notice increases total loan requests for token owner 
     function increaseCountLoanRequestsForTokenOwner(address storageAddress, address tokenOwner)
         public
         returns (uint256)
@@ -541,7 +540,7 @@ library SnarkLoanLib {
         return count;
     }
 
-    /// @notice уменьшает счетчик числа запросов для владельца токена
+    /// @notice decreases total loan requests for token owner 
     function decreaseCountLoanRequestsForTokenOwner(address storageAddress, address tokenOwner)
         public
         returns (uint256)
@@ -567,7 +566,7 @@ library SnarkLoanLib {
         return list;
     }
     
-    /// @notice возвращает адрес текущего владельца токена для loan-а
+    /// @notice returns the address of the current token owner for the loan
     function getActualTokenOwnerForLoan(
         address storageAddress, 
         uint256 loanId, 
@@ -582,7 +581,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice сохраняем адрес текущего владельца токена для loan-а
+    /// @notice set the address of the current token owner for the loan 
     function setActualTokenOwnerForLoan(
         address storageAddress, 
         uint256 loanId, 
@@ -597,24 +596,24 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice возвращает предложенную сумму за кредит всех токенов, входящих в лоан
+    /// @notice return the offered loan amount for all tokens in the loan  
     function getPriceOfLoan(address storageAddress, uint256 loanId) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("priceOfLoan", loanId)));
     }
 
-    /// @notice сохраняет предложенную сумму за кредит всех токенов, входящих в лоан
+    /// @notice set the offered loan amount for all tokens in the loan  
     function setPriceOfLoan(address storageAddress, uint256 loanId, uint256 price) public {
         SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("priceOfLoan", loanId)), price);
     }
 
-    /// @notice добавляет loan в список laon-ов пользователя
+    /// @notice add loan to the loan list of the loan owner 
     function addLoanToLoanListOfLoanOwner(address storageAddress, address loanOwner, uint256 loanId) public {
         uint256 index = increaseCountOfLoansForLoanOwner(storageAddress, loanOwner).sub(1);
         setLoanToLoanListOfLoanOwnerByIndex(storageAddress, loanOwner, index, loanId);
         saveIndexOfLoanInLoanListOfLoanOwner(storageAddress, loanOwner, loanId, index);
     }
 
-    /// @notice удаляет лоан из списка лоанов пользователя
+    /// @notice remove loan from the loan list of the loan owner 
     function deleteLoanFromLoanListOfLoanOwner(address storageAddress, address loanOwner, uint256 loanId) public {
         uint256 index = getIndexOfLoanInLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
         uint256 maxIndex = getCountOfLoansForLoanOwner(storageAddress, loanOwner).sub(1);
@@ -626,7 +625,7 @@ library SnarkLoanLib {
         decreaseCountOfLoansForLoanOwner(storageAddress, loanOwner);
     }
 
-    /// @notice возвращает лоан из списка лоанов пользователя по индексу
+    /// @notice return loan from the list of loan owners by index 
     function getLoanFromLoanListOfLoanOwnerByIndex(
         address storageAddress,
         address loanOwner,
@@ -641,7 +640,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice записывает лоан в список пользователя на определенную позицию
+    /// @notice sets loan into the list of loan owners for a specific position 
     function setLoanToLoanListOfLoanOwnerByIndex(
         address storageAddress,
         address loanOwner,
@@ -656,7 +655,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice возвращает индекс лоана в списке пользователя
+    /// @notice return loan index from the loan owner 
     function getIndexOfLoanInLoanListOfLoanOwner(
         address storageAddress, 
         address loanOwner, 
@@ -671,7 +670,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice записывает индекс лоана в списке пользователя
+    /// @notice set loan index to the loan owner 
     function saveIndexOfLoanInLoanListOfLoanOwner(
         address storageAddress, 
         address loanOwner, 
@@ -686,7 +685,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice увеличивает счетчик количества loan-ов в списке пользователя
+    /// @notice increase the number of loans in the loan owner list
     function increaseCountOfLoansForLoanOwner(address storageAddress, address loanOwner) public returns (uint256) {
         uint256 count = getCountOfLoansForLoanOwner(storageAddress, loanOwner).add(1);
         SnarkStorage(storageAddress).setUint(
@@ -696,7 +695,7 @@ library SnarkLoanLib {
         return count;
     }
 
-    /// @notice уменьшает счетчик количества лоанов в списке пользователя
+    /// @notice decrease the number of loans in the loan owner list
     function decreaseCountOfLoansForLoanOwner(address storageAddress, address loanOwner) public returns (uint256) {
         uint256 count = getCountOfLoansForLoanOwner(storageAddress, loanOwner).sub(1);
         SnarkStorage(storageAddress).setUint(
@@ -706,14 +705,14 @@ library SnarkLoanLib {
         return count;
     }
 
-    /// @notice возвращает количество лоанов у пользователя в списке
+    /// @notice return the number of loans in the loan owner list
     function getCountOfLoansForLoanOwner(address storageAddress, address loanOwner) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(
             keccak256(abi.encodePacked("LoansNumberOfLoanOwner", loanOwner))
         );
     }
 
-    /// @notice возвращает список лоанов пользователя
+    /// @notice return loan list of the loan owner  
     function getLoansListOfLoanOwner(address storageAddress, address loanOwner) public view returns (uint256[]) {
         uint256 countLoans = getCountOfLoansForLoanOwner(storageAddress, loanOwner);
         uint256[] memory list = new uint256[](countLoans);
@@ -723,14 +722,14 @@ library SnarkLoanLib {
         return list;
     }
 
-    /// @notice возвращает стоимость операции вызова StopLoan
+    /// @notice return the cost of gas for the call of function StopLoan
     function getCostOfStopLoanOperationForLoan(address storageAddress, uint256 loanId) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(
             keccak256(abi.encodePacked("costOfDeleteLoanOperation", loanId))
         );
     }
 
-    /// @notice записываем стоимость вызова функции StopLoan
+    /// @notice set the cost of gas for the call of function StopLoan
     function setCostOfStopLoanOperationForLoan(address storageAddress, uint256 loanId, uint256 cost) public {
         SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("costOfDeleteLoanOperation", loanId)),
@@ -739,7 +738,7 @@ library SnarkLoanLib {
     }
 
     /*************************************************************************************/
-    /// @notice добавляет лоан в список лоанов для токена
+    /// @notice add loan into the loan list of a token 
     function addLoanToTokensLoanList(address storageAddress, uint256 tokenId, uint256 loanId) public {
         if (!isLoanInTokensLoanList(storageAddress, tokenId, loanId)) {
             uint256 index = increaseNumberOfLoansInTokensLoanList(storageAddress, tokenId).sub(1);
@@ -749,7 +748,7 @@ library SnarkLoanLib {
         }
     }
 
-    /// @notice удаляет лоан из списка лоанов для токена
+    /// @notice remove loan from the loan list of a token 
     function removeLoanFromTokensLoanList(address storageAddress, uint256 tokenId, uint256 loanId) public {
         if (isLoanInTokensLoanList(storageAddress, tokenId, loanId)) {
             uint256 index = getIndexOfLoanInTokensLoanList(storageAddress, tokenId, loanId);
@@ -765,14 +764,14 @@ library SnarkLoanLib {
         }
     }
     
-    /// @notice возвращает количество лоанов для токена
+    /// @notice returns the number of loans for a token 
     function getNumberOfLoansInTokensLoanList(address storageAddress, uint256 tokenId) public view returns (uint256) {
         return SnarkStorage(storageAddress).uintStorage(
             keccak256(abi.encodePacked("numberOfLoansForToken", tokenId))
         );
     }
 
-    /// @notice увеличивает счетчик количества лоанов в списке
+    /// @notice increases the number of loans for a token 
     function increaseNumberOfLoansInTokensLoanList(address storageAddress, uint256 tokenId) public returns (uint256) {
         uint256 number = getNumberOfLoansInTokensLoanList(storageAddress, tokenId).add(1);
         SnarkStorage(storageAddress).setUint(
@@ -782,7 +781,7 @@ library SnarkLoanLib {
         return number;
     }
 
-    /// @notice уменьшает счетчик количества лоанов в списке
+    /// @notice decrease the number of loans for a token 
     function decreaseNumberOfLoansInTokensLoanList(address storageAddress, uint256 tokenId) public returns (uint256) {
         uint256 number = getNumberOfLoansInTokensLoanList(storageAddress, tokenId).sub(1);
         SnarkStorage(storageAddress).setUint(
@@ -792,7 +791,7 @@ library SnarkLoanLib {
         return number;
     }
 
-    /// @notice возвращает лоан из списка по индексу
+    /// @notice return the loan from the loan list by index 
     function getLoanFromLoansInTokensLoanListByIndex(address storageAddress, uint256 tokenId, uint256 index) 
         public 
         view 
@@ -803,7 +802,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice записывает лоан в список по индексу
+    /// @notice sets the loan into the loan list by index
     function setLoanFromLoansInTokensLoanListByIndex(
         address storageAddress, 
         uint256 tokenId, 
@@ -818,7 +817,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice возвращает список лоанов из списка для токена
+    /// @notice returns the loan list from the token loan list 
     function getListOfLoansFromTokensLoanList(address storageAddress, uint256 tokenId) public view returns (uint256[]) {
         uint256 numberOfLoans = getNumberOfLoansInTokensLoanList(storageAddress, tokenId);
         uint256[] memory loanList = new uint256[](numberOfLoans);
@@ -828,7 +827,7 @@ library SnarkLoanLib {
         return loanList;
     }
 
-    /// @notice возвращает true или false в зависимости от того, есть ли loan в списке у токена
+    /// @notice returns true or false depending is the loan is in the token loan list 
     function isLoanInTokensLoanList(address storageAddress, uint256 tokenId, uint256 loanId)
         public
         view
@@ -839,7 +838,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice помечает, что лоан уже есть в списке у токена
+    /// @notice sets that the loan is in the token loan list 
     function markLoanInTokensLoanListAsInUse(address storageAddress, uint256 tokenId, uint256 loanId, bool isUsed) 
         public 
     {
@@ -849,7 +848,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice возвращает индекс лоана в списке у токена
+    /// @notice returns loan index from the token loan list 
     function getIndexOfLoanInTokensLoanList(address storageAddress, uint256 tokenId, uint256 loanId)
         public
         view
@@ -860,7 +859,7 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice записывает индекс под которым хранится лоан в списке у токена
+    /// @notice sets the loan index into the token loan list 
     function setIndexOfLoanInTokensLoanList(address storageAddress, uint256 tokenId, uint256 loanId, uint256 index)
         public 
     {
@@ -870,22 +869,22 @@ library SnarkLoanLib {
         );
     }
 
-    /// @notice удаление токена из лоана. возможно выполнение только до момента старта лоана
+    /// @notice removal of token from loan.  possible only prior to loan start.
     function cancelTokenInLoan(address storageAddress, uint256 tokenId) public {
         uint256[] memory loanList = getListOfLoansFromTokensLoanList(storageAddress, tokenId);
         for (uint256 i = 0; i < loanList.length; i++) {
-            // убеждаемся, что удалять будем не в завершенных лоанах
+            // check that the removal is not for loans with Finished status
             require(
                 getLoanSaleStatus(storageAddress, loanList[i]) != 3,
                 "Loan can't be in 'Finished' status"
             );
-            // перемещаем токен из Approved list в Declined list
+            // transfer token from Approved list into Declined list
             addTokenToListOfLoan(storageAddress, loanList[i], tokenId, 2);
-            // удаляем из календаря токенов запланированные дни
+            // remove from the token calendar the booked days 
             uint256 startDate = getStartDateOfLoan(storageAddress, loanList[i]);
             uint256 duration = getDurationOfLoan(storageAddress, loanList[i]);
             makeTokenFreeForPeriod(storageAddress, tokenId, startDate, duration);
-            // удаляем из запросов к владельцам токенов
+            // remove loan request from the token owners 
             deleteLoanRequestFromTokenOwner(storageAddress, loanList[i], tokenId);
         }
         if (loanList.length > 0) {

@@ -210,7 +210,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         }
     }
     
-    // У пользователя будет 2 списка - активных и пассивыных
+    // User will have 2 lists - active and passive
     /// @dev Function to allow the bidder to cancel their own bid
     /// @param _bidId Bid ID
     function cancelBid(uint256 _bidId) public correctBid(_bidId) onlyBidOwner(_bidId) {

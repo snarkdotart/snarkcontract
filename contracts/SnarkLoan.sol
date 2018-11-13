@@ -54,7 +54,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         _storage = storageAddress;
     }
     
-    /// @dev Function to destroy a contract in the blockchain
+    /// @dev Function to destroy the contract in the blockchain
     function kill() external onlyOwner {
         selfdestruct(owner);
     }
@@ -67,9 +67,9 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         return _storage.getDefaultLoanDuration();
     }
 
-    /// @dev в качестве startDate дата должна приходить в формате datetime
-    /// без учета времени, например: 1298851200000 => 2011-02-28T00:00:00.000Z
-    /// duration - простое число в днях, например 10 (дней)
+    /// @dev attributes of startDate input should be in the format datetime
+    /// without consideration for time, for example: 1298851200000 => 2011-02-28T00:00:00.000Z
+    /// duration - simple number in days, example 10 (days)
     function createLoan(uint256[] tokensIds, uint256 startDate, uint256 duration) public payable restrictedAccess {
         require(duration <= getDefaultLoanDuration(), "Duration exceeds a max value");
         // check if the user requested their own tokens
@@ -79,7 +79,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 _storage.getOwnerOfToken(tokensIds[i]) != msg.sender,
                 "Borrower can't request loan for their own tokens"
             );
-            // проверяем, чтобы токен сейчас не продавался
+            // check that the token is not being sold 
             require(_storage.getSaleTypeToToken(
                 tokensIds[i]) != uint256(SaleType.Offer), 
                 "Token's sale type cannot be 'Offer'"
@@ -92,19 +92,19 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         bool isAgree = false;
         for (i = 0; i < tokensIds.length; i++) {
             address tokenOwner = _storage.getOwnerOfToken(tokensIds[i]);
-            // запоминаем владельца токена, чтобы потом знать кому возвращать токен
+            // storing the token's owner so that the token can be returned to them 
             _storage.setActualTokenOwnerForLoan(loanId, tokensIds[i], tokenOwner);
             if (_storage.isTokenBusyForPeriod(tokensIds[i], startDate, duration)) {
-                // токен уже занят. перекидываем его в Declined List - 2
+                // if there is a schedule conflict, token is moved to Declined List - 2
                 _storage.addTokenToListOfLoan(loanId, tokensIds[i], 2);
             } else {
                 isAgree = (msg.sender == owner) ? 
                     _storage.isTokenAcceptOfLoanRequestFromSnark(tokensIds[i]) :
                     _storage.isTokenAcceptOfLoanRequestFromOthers(tokensIds[i]);
                 if (isAgree) {
-                    // занимаем период в календаре и какой лоан застолбил его день
+                    // storing the reserved period in the calendar and the loan that created the reserve 
                     _storage.makeTokenBusyForPeriod(loanId, tokensIds[i], startDate, duration);
-                    // перекидываем токен в Approved List - 1
+                    // token is moved to the Approved List - 1
                     _storage.addTokenToListOfLoan(loanId, tokensIds[i], 1);
                 } else {
                     _storage.addLoanRequestToTokenOwner(
@@ -118,11 +118,11 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         emit LoanCreated(msg.sender, loanId, _storage.getTokensListOfLoanByType(loanId, 0));
     }
 
-    /// @notice пользователь соглашается с запросом на заем токена
+    /// @notice owner agrees with the loan request for their token 
     function acceptLoan(uint256 loanId, uint256[] tokenIds) public {
         require(tokenIds.length > 0, "Array of tokens can't be empty");
-        // можно принять условия на лоан только пока он не начал свою работу
-        // и убеждиться, что владелец лоана не удалил его до этого момента
+        // it is possible to accept loan request only prior to loan start 
+        // and need to make sure that the loan request is still active and was not cancelled 
         require(
             _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Active) &&
             _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Finished),
@@ -142,57 +142,57 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             uint256 _saleType = _storage.getSaleTypeToToken(tokenIds[i]);
             require(_saleType != uint256(SaleType.Offer), "Token's sale type cannot be 'Offer'");
 
-            // проверяем, занят ли этот токен на запрашиваемые даты или нет
+            // check if the token is available for the requested dates 
             if (_storage.isTokenBusyForPeriod(tokenIds[i], startDate, duration)) {
-                // занятый токен перемещаем в Declined list
+                // tokens with date conflicts are moved to Declined list
                 _storage.addTokenToListOfLoan(loanId, tokenIds[i], 2);
-                // Оповещаем, что токен отвергнут
+                // Create notification that loan request is declined
                 emit LoanDeclined(msg.sender, loanId, tokenIds[i]);
             } else {
-                // свободный токен перемещаем в Approved list
+                // available token is moved to Approved list
                 _storage.addTokenToListOfLoan(loanId, tokenIds[i], 1);
-                // занимаем в календаре токена запрашиваемые даты
+                // mark the requested loan dates in the calendar 
                 _storage.makeTokenBusyForPeriod(loanId, tokenIds[i], startDate, duration);
-                // Оповещаем, что токен аппрувнут
+                // Create notification that loan request is Approved
                 emit LoanAccepted(msg.sender, loanId, tokenIds[i]);
             }
-            // удаляем request у пользователя на данный токен для этого кредита
+            // remove loan request from the token owner for the specific token and specific loan
             _storage.deleteLoanRequestFromTokenOwner(loanId, tokenIds[i]);
         }
     }
 
-    /// @notice просто помечает, что лоан начался. функция должна быть максимально "легкой",
-    /// так как плата будет производиться со стороны Snark
-    /// @dev после вызова этой функции необходимо произвести оценку вызова функции StopLoan со 
-    /// стороны backend-a с помощью contractInstance.method.estimateGas(ARGS...) и записать
-    /// эту стоимость с помощью setCostOfStopLoanOperationForLoan, чтобы при вызове 
-    /// функции borrowTokensOfLoan на клиенте выставлять соответствующую стоимость.
-    /// Вызывать функцию стоит только через минуту после начала суток (в 0:01), дабы
-    /// гарантировать, что предыдущая аренда была остановлена. Например, была аренда
-    /// с 14 числа на 3 дня. Значит запуск должен произойти 14 числа в 0:01, т.к. 13-ое число
-    /// должно отработать полностью, если там была аренда и в начале суток 14 числа должна была
-    /// произойти остановка предыдущего лоана ровно в 0:00.
+    /// @notice Mark that the loan started. Function should be very simple,
+    /// since the payment will be made by Snark
+    /// @dev After the function is called it is necessary to assess the need to estimate cost of the function StopLoan from 
+    /// backend with the help of contractInstance.method.estimateGas(ARGS...) and write
+    /// this cost with the help of setCostOfStopLoanOperationForLoan, so that when the call is made for
+    /// function borrowTokensOfLoan the user will see the cost necessary to pay for all transfers.
+    /// Function should be called only after 1 minute after the start of day (in 0:01), so that
+    /// there is certainty that the previous loan has ended. For example, there was a loan 
+    /// from 14th of the month for 3 days. So the start should occur on 14th at 0:01, because 13th must be over
+    /// if there was a loan for that date and it should end on 14th at 0:00
+    /// when the previous loan stops and the next loan begins at 0:01
     function startLoan(uint256 loanId) public onlyOwner correctLoan(loanId) {
-        // проверяем, чтобы не было случайного повторного запуска
+        // check that there was not an accidental double launch
         require(
             _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Active) &&
             _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Finished),
             "Loan can't be in 'Active' of 'Finished' status"
         );
-        // выставляем самому лоану saleStatus = Active
+        // store for the loan saleStatus = Active
         _storage.setLoanSaleStatus(loanId, 2); // 2 - Active
-        // распределяем деньги за аренду лоана между владельцами участвующих токенов
+        // share money for the loan between the participants of the accepted tokens 
         uint256 loanPrice = _storage.getPriceOfLoan(loanId);
         if (loanPrice > 0) {
-            // получаем список токенов, которые будут переданы в аренду
+            // receive the list of tokens that will participate in the loan
             uint256[] memory tokenList = _storage.getTokensListOfLoanByType(loanId, 1);
-            // вычисляем сумму, которая будет перечислена каждому владельцу токена
+            // calculate the amount that will be sent to each token owner that agreed to the loan 
             uint256 income = loanPrice.div(tokenList.length);
             for (uint256 i = 0; i < tokenList.length; i++) {
                 address tokenOwner = _storage.getActualTokenOwnerForLoan(loanId, tokenList[i]);
-                // списываем сумму с баланса контракта
+                // withdraw the sum from the contract balance 
                 _storage.subPendingWithdrawals(_storage, income);
-                // и зачисляем ее на баланс владельца токена
+                // and add the amount to the balance of the token owner 
                 _storage.addPendingWithdrawals(tokenOwner, income);
             }
         }
@@ -200,29 +200,29 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         emit LoanStarted(loanId);
     }
 
-    /// @notice функция производит перевод токенов в кошелек владельца лоана,
-    /// при этом ему необходимо заплатить также и за операцию обратного перевода
+    /// @notice function initiates the transfer of tokens into the wallet of the loan requester,
+    /// and the requester needs to pay gas for both transfer to and for transfer back of the tokens 
     function borrowLoanedTokens(uint256 loanId) public payable onlyLoanOwner(loanId) correctLoan(loanId) {
-        // вызвать эту функцию можно только, если лоан уже активный
+        // call of this function can only be made if the loan is aActive 
         require(_storage.getLoanSaleStatus(loanId) == uint256(SaleStatus.Active), "Loan is not active");
         /*************************************************************/
-        // Проверяем на правильность пришедшей суммы
+        // Check that the amount of money that arrived is correct
         uint256 price = _storage.getCostOfStopLoanOperationForLoan(loanId);
         require(msg.value >= price, "");
-        // перекидываем деньги на снарковский кошелек, т.к. с него будет 
-        // вызываться обратная передача токенов их владельцам
+        // Move the funds to Snark wallet, because it will be used to call 
+        // the return of the tokens to their rightful owners after loan ends 
         address snarkWallet = _storage.getSnarkWalletAddress();
         snarkWallet.send(msg.value);
         /*************************************************************/
-        // если остались токены в списке NotApproved, то перекидываем их в Declined
-        // и удаляем все запросы из списка владельцев токенов
+        // if there are tokens left in the list NotApproved, then move them to Declined
+        // and delete all loan requests from the list of these token owners 
         uint256[] memory notApprovedTokens = _storage.getTokensListOfLoanByType(loanId, 0);
         for (uint256 i = 0; i < notApprovedTokens.length; i++) {
             _storage.addTokenToListOfLoan(loanId, notApprovedTokens[i], 2);
-            // и удаляем requests у tokenOwners
+            // remove requests from tokenOwners
             _storage.deleteLoanRequestFromTokenOwner(loanId, notApprovedTokens[i]);
         }
-        // выставляем всем токенам в Approved списке saleType = Loan
+        // for all tokens in Approved list set saleType = Loan
         uint256[] memory approvedTokens = _storage.getTokensListOfLoanByType(loanId, 1);
         for (i = 0; i < approvedTokens.length; i++) {
             _storage.setSaleTypeToToken(approvedTokens[i], uint256(SaleType.Loan));
@@ -237,10 +237,10 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     }
 
     /// @notice Only contract can end loan according to schedule
-    /// @dev функцию надо вызывать ровно в начале суток, по истечению переода, например,
-    /// аренда с 12 числа на 3 дня. Это значит вызов этой функции должен произойти 15 числа в 0:00.
+    /// @dev function must be called at the start of the day, after the end of period, for example,
+    /// if the loan is from the 12th of the month for 3 days. This means that the function should be called on the 15th at 0:00.
     function stopLoan(uint256 loanId) public onlyOwner correctLoan(loanId) {
-        // остановить мы может только работающий лоан
+        // we can only end an active loan 
         require(_storage.getLoanSaleStatus(loanId) == uint256(SaleStatus.Active), "Loan is not active");
         address loanOwner = _storage.getOwnerOfLoan(loanId);
         _storage.setLoanSaleStatus(loanId, uint256(SaleStatus.Finished));
@@ -248,7 +248,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         for (uint256 i = 0; i < approvedTokens.length; i++) {
             _storage.setSaleTypeToToken(approvedTokens[i], uint256(SaleType.None));
             address currentOwnerOfToken = _storage.getOwnerOfToken(approvedTokens[i]);
-            // проверяем на всякий случай, что токен все еще принадлежит borrower-у
+            // check just in case that the token still belongs to the borrower 
             require(loanOwner == currentOwnerOfToken, "Token owner is not a loan owner yet");
             _storage.transferToken(
                 approvedTokens[i],
@@ -256,15 +256,15 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 _storage.getActualTokenOwnerForLoan(loanId, approvedTokens[i])
             );
         }
-        // удаляем лоан из списка лоан овнера
+        // remove loan from the loan owner list 
         _storage.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId);
         
         emit LoanFinished(loanId);
     }
 
-    /// @notice владелец токена может удалить свой лоан до момента его начала работы
+    /// @notice token owner can cancel their loan prior to start of loan 
     function deleteLoan(uint256 loanId) public onlyLoanOwner(loanId) correctLoan(loanId) {
-        // проверяем статус лоана - он должен быть не активным и не завершенным
+        // check loan status - it must not be Active or Finished
         require(
             _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Active) &&
             _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Finished),
@@ -274,29 +274,29 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         address loanOwner = _storage.getOwnerOfLoan(loanId);
         uint256 startDate = _storage.getStartDateOfLoan(loanId);
         uint256 duration = _storage.getDurationOfLoan(loanId);
-        // необходимо обработать только токены, находящиеся в списке Approved
+        // only need to perform the action on tokens in the Approved list
         uint256[] memory approvedTokens = _storage.getTokensListOfLoanByType(loanId, 1);
         for (uint256 i = 0; i < approvedTokens.length; i++) {
-            // удаляем из календаря токенов запланированные дни
+            // remove the booked days from the token calendar 
             _storage.makeTokenFreeForPeriod(approvedTokens[i], startDate, duration);
-            // удаляем все запросы к владельцам токенов
+            // remove the loan request from the token owners 
             _storage.deleteLoanRequestFromTokenOwner(loanId, approvedTokens[i]);
-            // удаляем лоан из списка владельца лоана
+            // remove loan from the loan owner list 
             _storage.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId);
         }
-        // возвращаем предоплату за аренду, зачисляя на счет владельца лоана
+        // return any loan compensation from the token owner to the loan owner
         uint256 loanPrice = _storage.getPriceOfLoan(loanId);
         if (loanPrice > 0) {
-            // списываем сумму с баланса контракта
+            // withdraw the amount from the contract balance
             _storage.subPendingWithdrawals(_storage, loanPrice);
-            // и зачисляем ее на баланс владельца токена
+            // and move it to the balance of loan owner
             _storage.addPendingWithdrawals(loanOwner, loanPrice);
         }
 
         emit LoanDeleted(loanId);
     }
 
-    /// @notice позволяет владельцу токена явно отозвать свой токен от участия в лоане
+    /// @notice allow token owner to the remove their token from participation in a loan 
     function cancelTokenInLoan(uint256 tokenId) public {
         require(
             msg.sender == _storage.getOwnerOfToken(tokenId), 
@@ -306,7 +306,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         _storage.cancelTokenInLoan(tokenId);
     }
 
-    /// @notice возвращает токены во всех 3-х списках лоана
+    /// @notice return tokens in all 3 loan lists
     function getTokenListsOfLoanByTypes(uint256 loanId) public view returns (
         uint256[] notApprovedTokensList,
         uint256[] approvedTokensList,
@@ -317,12 +317,12 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         declinedTokensList = _storage.getTokensListOfLoanByType(loanId, 2);
     }
 
-    /// @notice возвращает список запросов на аренду по владельцу токена
+    /// @notice return list of loan request by token owner 
     function getLoanRequestsListOfTokenOwner(address tokenOwner) public view returns (uint256[]) {
         return _storage.getLoanRequestsListForTokenOwner(tokenOwner);
     }
 
-    /// @notice возвращает список лоанов заемщика
+    /// @notice return list of loan borrowers 
     function getLoansListOfLoanOwner(address loanOwner) public view returns (uint256[]) {
         return _storage.getLoansListOfLoanOwner(loanOwner);
     }
@@ -341,13 +341,13 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         return _storage.getLoanDetail(loanId);
     }
 
-    /// @notice возвращает стоимость вызова функции StopLoan, 
-    /// чтобы можно было выставить ее для borrowLoanedTokens
+    /// @notice return cost of gas associated with function StopLoan, 
+    /// so that it would be possible to charge this amount to the loan requester during call of borrowLoanedTokens
     function getCostOfStopLoanOperationForLoan(uint256 loanId) public view returns (uint256) {
         return _storage.getCostOfStopLoanOperationForLoan(loanId);
     }
 
-    /// @notice записываем стоимость вызова функции StopLoan
+    /// @notice store the gas cost of calling function StopLoan
     function setCostOfStopLoanOperationForLoan(uint256 loanId, uint256 costOfStopOperation) public onlyOwner {
         _storage.setCostOfStopLoanOperationForLoan(loanId, costOfStopOperation);
     }
