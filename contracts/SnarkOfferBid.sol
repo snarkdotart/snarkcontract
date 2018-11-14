@@ -220,7 +220,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         uint256 price = _storage.getBidPrice(_bidId);
         _storage.subPendingWithdrawals(_storage, price);
         _storage.deleteBid(_bidId);
-        bidder.transfer(price);
+        _storage.addPendingWithdrawals(bidder, price);
         emit BidCanceled(tokenId, _bidId);
     }
 
