@@ -327,19 +327,17 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     }
 
     function _takeBackBidAmountsAndDeleteAllTokenBids(uint256 _tokenId) internal {
-        uint256 bidsCount = _storage.getNumberBidsOfToken(_tokenId);
-        uint256 bidId;
+        uint256[] memory bidsList = _storage.getListOfBidsForToken(_tokenId);
         address bidder;
         uint256 bidPrice;
-        for (uint256 i = 0; i < bidsCount; i++) {
-            bidId = _storage.getBidOfTokenByIndex(_tokenId, 0);
-            bidder = _storage.getOwnerOfBid(bidId);
-            bidPrice = _storage.getBidPrice(bidId);
+        for (uint256 i = 0; i < bidsList.length; i++) {
+            bidder = _storage.getOwnerOfBid(bidsList[i]);
+            bidPrice = _storage.getBidPrice(bidsList[i]);
             // Move bid amount from contract to the bidder
             _storage.subPendingWithdrawals(_storage, bidPrice);
             _storage.addPendingWithdrawals(bidder, bidPrice);
             // Delete the bid
-            _storage.deleteBid(bidId);
+            _storage.deleteBid(bidsList[i]);
         }
     }
 

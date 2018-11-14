@@ -414,6 +414,8 @@ contract('SnarkOfferBid', async (accounts) => {
         const bidder2 = accounts[2];
         const costOfBid1 = web3.toWei(0.1, "Ether");
         const costOfBid2 = web3.toWei(0.2, "Ether");
+        const costOfBid3 = web3.toWei(0.22, "Ether");
+        const costOfBid4 = web3.toWei(0.24, "Ether");
 
         let retval = await instance.getOwnerOffersCount(owner);
         assert.equal(retval.toNumber(), 0, "error on step 1");
@@ -459,7 +461,7 @@ contract('SnarkOfferBid', async (accounts) => {
         retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
         assert.equal(retval.toNumber(), 1, "error on step 10");
 
-        // 3. Create 2 bids to this token
+        // 3. Create 4 bids to this token
         retval = await instance.getTotalNumberOfBids();
         assert.equal(retval.toNumber(), 4, "error on step 11");
 
@@ -473,18 +475,26 @@ contract('SnarkOfferBid', async (accounts) => {
         assert.equal(retval.toNumber(), 0, "error on step 14");
 
         await instance.addBid(tokenId, {from: bidder1, value: costOfBid1 });
-        retval = await instance.getTotalNumberOfBids();
-        const bidId_of_bidder1 = retval.toNumber();
+        // retval = await instance.getTotalNumberOfBids();
 
         await instance.addBid(tokenId, {from: bidder2, value: costOfBid2 });
-        retval = await instance.getTotalNumberOfBids();
-        const bidId_of_bidder2 = retval.toNumber();
+        // retval = await instance.getTotalNumberOfBids();
+
+        await instance.addBid(tokenId, {from: bidder1, value: costOfBid3 });
+        // retval = await instance.getTotalNumberOfBids();
+        
+        await instance.addBid(tokenId, {from: bidder2, value: costOfBid4 });
+        // retval = await instance.getTotalNumberOfBids();
 
         retval = await instance.getNumberBidsOfOwner(bidder1);
-        assert.equal(retval.toNumber(), 1, "error on step 15");
+        assert.equal(retval.toNumber(), 2, "error on step 15");
 
         retval = await instance.getNumberBidsOfOwner(bidder2);
-        assert.equal(retval.toNumber(), 1, "error on step 16");
+        assert.equal(retval.toNumber(), 2, "error on step 16");
+
+        // get list of bids for token and print all of them
+        retval = await instance.getListOfBidsForToken(tokenId);
+        console.log(retval);
 
         // 4. Cancel the offer
         retval = await instance_snarkbase.getWithdrawBalance(bidder1);
