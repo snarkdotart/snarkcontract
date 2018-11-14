@@ -228,11 +228,23 @@ library SnarkOfferBidLib {
         setBidSaleStatus(_storageAddress, _bidId, 3); // 3 - Finished
 
         uint256 tokenId = getTokenByBid(_storageAddress, _bidId);
-        uint256 maxBid = getMaxBidForToken(_storageAddress, tokenId);
-        if (_bidId == maxBid) {
-            setMaxBidPriceForToken(_storageAddress, tokenId, 0);
-            setMaxBidForToken(_storageAddress, tokenId, 0);
+        updateMaxBidPriceForToken(_storageAddress, tokenId);
+    }
+
+    function updateMaxBidPriceForToken(address _storageAddress, uint256 _tokenId) public {
+        uint256[] memory bidsList = getListOfBidsForToken(_storageAddress, _tokenId);
+        uint256 maxBidPrice = 0;
+        uint256 maxBidId = 0;
+        uint256 bidPrice = 0;
+        for (uint256 i = 0; i < bidsList.length; i++) {
+            bidPrice = getBidPrice(_storageAddress, bidsList[i]);
+            if (bidPrice > maxBidPrice) {
+                maxBidPrice = bidPrice;
+                maxBidId = bidsList[i];
+            }
         }
+        setMaxBidPriceForToken(_storageAddress, _tokenId, maxBidPrice);
+        setMaxBidForToken(_storageAddress, _tokenId, maxBidId);
     }
 
     function getBidPrice(address _storageAddress, uint256 _bidId) public view returns (uint256) {
