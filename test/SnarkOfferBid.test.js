@@ -319,6 +319,10 @@ contract('SnarkOfferBid', async (accounts) => {
 
         await instance.acceptBid(3, { from: tokenOwner });
 
+        retval = await instance.getBidIdMaxPrice(tokenId);
+        assert.equal(retval[0], 0, "error: getBidIdMaxPrice returns wrong bidId");
+        assert.equal(retval[1], 0, "error: getBidIdMaxPrice returns wrong maxPrice");
+
         retval = await instance_snarkbase.getOwnerOfToken(tokenId);
         assert.equal(retval, bidOwner, "error on step 16");
 
@@ -520,7 +524,6 @@ contract('SnarkOfferBid', async (accounts) => {
         assert.equal(retval.toNumber(), 0, "error on step 20");
 
         retval = await instance.getBidIdMaxPrice(tokenId);
-        console.log("Max Bid and Price: ", retval);
         assert.equal(retval[0], 0, "error on step 21");
         assert.equal(retval[1], 0, "error on step 22");
     });
