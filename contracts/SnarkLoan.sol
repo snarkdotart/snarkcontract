@@ -55,7 +55,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     }
     
     /// @notice Will receive any eth sent to the contract
-    function() external payable {}
+    function() external payable {} // solhint-disable-line
 
     /// @dev Function to destroy the contract in the blockchain
     function kill() external onlyOwner {

@@ -22,7 +22,7 @@ contract SnarkStorage is Ownable, ISnarkStorage {
     }
     
     /// @notice Will receive any eth sent to the contract
-    function() external payable {}
+    function() external payable {} // solhint-disable-line
 
     /// @dev Function to destroy a contract in the blockchain
     function kill() external onlyOwner {
