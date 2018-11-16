@@ -89,7 +89,10 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             );
         }
          // Transfer money funds into the contract 
-        if (msg.value > 0) _storage.addPendingWithdrawals(_storage, msg.value);
+        if (msg.value > 0) { 
+            _storage.transfer(msg.value);
+            _storage.addPendingWithdrawals(_storage, msg.value); 
+        }
         // Create new entry for a Loan
         uint256 loanId = _storage.createLoan(msg.sender, msg.value, tokensIds, startDate, duration);
         bool isAgree = false;

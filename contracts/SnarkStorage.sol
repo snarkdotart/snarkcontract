@@ -21,6 +21,9 @@ contract SnarkStorage is Ownable, ISnarkStorage {
         boolStorage[keccak256(abi.encodePacked("accessAllowed", msg.sender))] = true;
     }
     
+    /// @notice Will receive any eth sent to the contract
+    function() external payable {}
+
     /// @dev Function to destroy a contract in the blockchain
     function kill() external onlyOwner {
         selfdestruct(owner);
@@ -32,6 +35,12 @@ contract SnarkStorage is Ownable, ISnarkStorage {
     
     function denyAccess(address _allowedAddress) external onlyPlatform {
         delete boolStorage[keccak256(abi.encodePacked("accessAllowed", _allowedAddress))];
+    }
+    
+    function transferFunds(address _to, uint256 _value) external onlyPlatform {
+        if (address(this).balance > _value) {
+            _to.transfer(_value);
+        }
     }
 
     function setBool(bytes32 _key, bool _val) external onlyPlatform { boolStorage[_key] = _val; }

@@ -190,6 +190,9 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         require(_from != address(0));
         require(_to != address(0));
         require(_from != _to);
+
+        _storage.transfer(msg.value);
+        
         _clearApproval(_from, _tokenId);
 
         uint256 profit;

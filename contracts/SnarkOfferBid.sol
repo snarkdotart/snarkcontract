@@ -171,7 +171,9 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
         uint256 maxBidPrice = _storage.getMaxBidPriceForToken(_tokenId);
         require(msg.value > maxBidPrice, "Price of new bid has to be bigger than previous one");
-
+        
+        _storage.transfer(msg.value);
+        
         uint256 bidId = _storage.addBid(msg.sender, _tokenId, msg.value);
         // adding an amount of this bid to a contract balance
         _storage.addPendingWithdrawals(_storage, msg.value);
@@ -252,7 +254,9 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         address tokenOwner = _storage.getOwnerOfToken(tokenId);
 
         require(msg.sender != tokenOwner, "Token owner can't buy their own token");
-
+        
+        _storage.transfer(msg.value);
+        
         uint256 profit;
         (profit, price) = _storage.calculatePlatformProfitShare(price);
         _storage.takePlatformProfitShare(profit);
