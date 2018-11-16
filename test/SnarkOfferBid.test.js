@@ -1,6 +1,7 @@
 var SnarkOfferBid = artifacts.require("SnarkOfferBid");
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkStorage = artifacts.require("SnarkStorage");
+var SnarkERC721 = artifacts.require("SnarkERC721");
 
 contract('SnarkOfferBid', async (accounts) => {
 
@@ -9,6 +10,7 @@ contract('SnarkOfferBid', async (accounts) => {
     before(async () => {
         instance = await SnarkOfferBid.deployed();
         instance_snarkbase = await SnarkBase.deployed();
+        instance_erc721 = await SnarkERC721.deployed();
     });
 
     it("1. get size of the SnarkOfferBid library", async () => {
@@ -599,6 +601,15 @@ contract('SnarkOfferBid', async (accounts) => {
         retval = await instance.getBidIdMaxPrice(tokenId);
         assert.equal(retval[0], bidId, "error on step 2");
         assert.equal(retval[1], bidCostRight, "error on step 3");
+
+        // check if it's possible to call freeTransfer while exist Offer
+        // issue #19
+        const tokenOwner = await instance_snarkbase.getOwnerOfToken(tokenId);
+        try {
+            await instance_erc721.freeTransfer(tokenOwner, accounts[5], tokenId);
+        } catch(e) {
+            assert.equal(e.message, 'VM Exception while processing transaction: revert');
+        }
 
         // после cancelOffer бид должен удалиться и maxBid и Price должны обнулиться
         await instance.cancelOffer(offerId);
