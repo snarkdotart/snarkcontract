@@ -268,7 +268,9 @@ contract('SnarkOfferBid', async (accounts) => {
         assert.equal(retval.toNumber(), 1, "error on step 2");
 
         retval = await instance.getNumberBidsOfOwner(bidOwner);
-        assert.equal(retval.toNumber(), 1, "error on step 3");
+        assert.equal(retval.toNumber(), 1, "error on step 3_1");
+        retval = await instance.getNumberBidsOfOwner(bidOwner2);
+        assert.equal(retval.toNumber(), 0, "error on step 3_2");
 
         retval = await instance_snarkbase.getOwnerOfToken(tokenId);
         assert.equal(retval, tokenOwner, "error on step 4");
@@ -355,7 +357,7 @@ contract('SnarkOfferBid', async (accounts) => {
         assert.equal(balanceOfContract, 0, "error on step 21");
         console.log(`contract's balance before addBid: ${ balanceOfContract }`);
 
-        await instance.addBid(tokenId, {from: tokenOwner, value: web3.toWei(0.67, 'ether')});
+        await instance.addBid(tokenId, {from: tokenOwner, value: web3.toWei(0.4, 'ether')});
 
         retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
         console.log(`tokenOwner's balance after addBid: ${ retval.toNumber() }`);
@@ -408,18 +410,18 @@ contract('SnarkOfferBid', async (accounts) => {
     });
 
     it("5. test issue #31 on github", async () => {
-        console.log("********************************************");
-        console.log("Scenario:");
-        console.log("********************************************");
-        console.log("1. Create an offer.");
-        console.log("2. Create two bids to this offer.");
-        console.log("3. Cancel an offer.");
-        console.log("********************************************");
-        console.log("Wrong behaviour:");
-        console.log("********************************************");
-        console.log("It will fail with error message:");
-        console.log("Error: VM Exception while processing transaction: revert bid is already excluded from the list");
-        console.log("********************************************");
+        // ********************************************
+        // Scenario
+        // ********************************************
+        // 1. Create an offer.
+        // 2. Create two bids to this offer.
+        // 3. Cancel an offer.
+        // ********************************************
+        // Result
+        // ********************************************
+        // It will fail with error message:
+        // Error: VM Exception while processing transaction: revert bid is already excluded from the list
+        // ********************************************
 
         const owner = accounts[0];
         const bidder1 = accounts[1];
@@ -466,9 +468,6 @@ contract('SnarkOfferBid', async (accounts) => {
         assert.equal(retval.toNumber(), 0, "error on step 8");
 
         await instance.addOffer(tokenId, web3.toWei(0.3, "Ether"), { from: owner });
-
-        retval = await instance.getTotalNumberOfOffers();
-        const offerId = retval.toNumber();
 
         retval = await instance_snarkbase.getSaleTypeToToken(tokenId);
         assert.equal(retval.toNumber(), 1, "error on step 10");
@@ -566,18 +565,99 @@ contract('SnarkOfferBid', async (accounts) => {
         retval = await instance_snarkbase.getWithdrawBalance(bidder2);
         balanceOfBidder2 = retval.toNumber();
         console.log(`Balance of bidder 2: ${ balanceOfBidder2 }`)
-
-        await instance.cancelOffer(offerId);
-
-        retval = await instance.getNumberBidsOfOwner(bidder1);
-        assert.equal(retval.toNumber(), 0, "error on step 37");
-
-        retval = await instance.getNumberBidsOfOwner(bidder2);
-        assert.equal(retval.toNumber(), 0, "error on step 38");
-
-        retval = await instance.getBidIdMaxPrice(tokenId);
-        assert.equal(retval[0], 0, "error on step 39");
-        assert.equal(retval[1], 0, "error on step 40");
     });
 
+    it("6. test issue #25 on github", async () => {
+        const owner = accounts[0];
+        const bidder = accounts[1];
+        const bidCostRight = web3.toWei(0.2, "Ether");
+        const bidCostWrong = web3.toWei(0.8, "Ether");
+        const offerCost = web3.toWei(0.3, "Ether");
+
+        let retval = await instance.getTotalNumberOfOffers();
+        const offerId = retval.toNumber();
+
+        let tokenId = await instance_snarkbase.getTokensCount();
+        tokenId = tokenId.toNumber();
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 0, "error on step 1");
+
+        // добавляем новый бид. читаем количество = id bid 
+        try {
+            await instance.addBid(tokenId, {from: bidder, value: bidCostWrong });
+        } catch(e) {
+            assert.equal(e.message, 'VM Exception while processing transaction: revert Bid amount must be less than the offer price');
+        }
+
+        await instance.addBid(tokenId, {from: bidder, value: bidCostRight });
+
+        retval = await instance.getTotalNumberOfBids();
+        const bidId = retval.toNumber();
+
+        // проверяем чтобы он был max Bid и Price
+        retval = await instance.getBidIdMaxPrice(tokenId);
+        assert.equal(retval[0], bidId, "error on step 2");
+        assert.equal(retval[1], bidCostRight, "error on step 3");
+
+        // после cancelOffer бид должен удалиться и maxBid и Price должны обнулиться
+        await instance.cancelOffer(offerId);
+
+        retval = await instance.getNumberBidsOfOwner(bidder);
+        assert.equal(retval.toNumber(), 0, "error on step 4");
+
+        retval = await instance.getBidIdMaxPrice(tokenId);
+        assert.equal(retval[0], 0, "error on step 5");
+        assert.equal(retval[1], 0, "error on step 6");
+    });
+
+    it("7. test issue #35 on github", async () => {
+        // ********************************************
+        // Scenario
+        // ********************************************
+        // 1. Create a bid without offer for a token without offer for 1.5 ETH.
+        // 2. Accept this bid.
+        // 3. Previous owner creates a bid for same token for 1 ETH. ( after the bid was accepted ).
+        // ********************************************
+        // Result
+        // ********************************************
+        // It gets rejected with error message: revert Price of new bid has to be bigger than previous one.
+        // ********************************************
+
+        const bidder = accounts[1];
+        const bidCost = web3.toWei(1.5, "Ether");
+        const bidCost2 = web3.toWei(1, "Ether");
+
+        let tokenId = await instance_snarkbase.getTokensCount();
+        tokenId = tokenId.toNumber();
+
+        const owner = await instance_snarkbase.getOwnerOfToken(tokenId);
+
+        let retval = await instance.getOfferByToken(tokenId);
+        assert.equal(retval.toNumber(), 0, "error on step 1");
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 0, "error on step 2");
+
+        await instance.addBid(tokenId, { from: bidder, value: bidCost });
+        const bidId = await instance.getTotalNumberOfBids();
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 1, "error on step 3");
+
+        await instance.acceptBid(bidId, { from: owner });
+
+        retval = await instance_snarkbase.getOwnerOfToken(tokenId);
+        assert.equal(retval, bidder, "error on step 4");
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 0, "error on step 5");
+
+        await instance.addBid(tokenId, { from: owner, value: bidCost2 });
+        // const bidId2 = await instance.getTotalNumberOfBids();
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 1, "error on step 6");
+
+    });
 });
