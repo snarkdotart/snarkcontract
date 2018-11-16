@@ -54,6 +54,9 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         _storage = storageAddress;
     }
     
+    /// @notice Will receive any eth sent to the contract
+    function() external payable {}
+
     /// @dev Function to destroy the contract in the blockchain
     function kill() external onlyOwner {
         selfdestruct(owner);
@@ -163,8 +166,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
 
     /// @notice Mark that the loan started. Function should be very simple,
     /// since the payment will be made by Snark
-    /// @dev After the function is called it is necessary to assess the need to estimate cost of the function StopLoan from 
-    /// backend with the help of contractInstance.method.estimateGas(ARGS...) and write
+    /// @dev After the function is called it is necessary to assess the need to estimate cost of the function StopLoan
+    /// from backend with the help of contractInstance.method.estimateGas(ARGS...) and write
     /// this cost with the help of setCostOfStopLoanOperationForLoan, so that when the call is made for
     /// function borrowTokensOfLoan the user will see the cost necessary to pay for all transfers.
     /// Function should be called only after 1 minute after the start of day (in 0:01), so that
@@ -212,7 +215,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         // Move the funds to Snark wallet, because it will be used to call 
         // the return of the tokens to their rightful owners after loan ends 
         address snarkWallet = _storage.getSnarkWalletAddress();
-        snarkWallet.send(msg.value);
+        snarkWallet.transfer(msg.value);
         /*************************************************************/
         // if there are tokens left in the list NotApproved, then move them to Declined
         // and delete all loan requests from the list of these token owners 
@@ -238,7 +241,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
 
     /// @notice Only contract can end loan according to schedule
     /// @dev function must be called at the start of the day, after the end of period, for example,
-    /// if the loan is from the 12th of the month for 3 days. This means that the function should be called on the 15th at 0:00.
+    /// if the loan is from the 12th of the month for 3 days. 
+    /// This means that the function should be called on the 15th at 0:00.
     function stopLoan(uint256 loanId) public onlyOwner correctLoan(loanId) {
         // we can only end an active loan 
         require(_storage.getLoanSaleStatus(loanId) == uint256(SaleStatus.Active), "Loan is not active");

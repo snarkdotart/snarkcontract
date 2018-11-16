@@ -377,7 +377,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         uint256 balance = _storage.getPendingWithdrawals(msg.sender);
         require(balance > 0);
         _storage.subPendingWithdrawals(msg.sender, balance);
-        msg.sender.send(balance);
+        msg.sender.transfer(balance);
     }
 
     function setSnarkWalletAddress(address snarkWalletAddr) public onlyOwner {

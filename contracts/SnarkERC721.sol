@@ -45,6 +45,9 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         _registerInterface(INTERFACEID_ERC721METADATA);
     }
 
+    /// @notice Will receive any eth sent to the contract
+    function() external payable {}
+
     /// @dev Function to destroy a contract in the blockchain
     function kill() external onlyOwner {
         selfdestruct(owner);

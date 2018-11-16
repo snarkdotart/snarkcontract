@@ -216,6 +216,7 @@ library SnarkOfferBidLib {
         setMaxBidForToken(_storageAddress, _tokenId, bidId);
         setOwnerOfBid(_storageAddress, bidId, _bidOwner);
         setTokenToBid(_storageAddress, bidId, _tokenId);
+        setBidToTokenAndBidOwner(_storageAddress, _bidOwner, _tokenId, bidId);
         setBidPrice(_storageAddress, bidId, _price);
         setBidSaleStatus(_storageAddress, bidId, 2); // 2 - Active
         addBidToTokenBidsList(_storageAddress, _tokenId, bidId);
@@ -228,7 +229,8 @@ library SnarkOfferBidLib {
         setBidSaleStatus(_storageAddress, _bidId, 3); // 3 - Finished
 
         uint256 tokenId = getTokenByBid(_storageAddress, _bidId);
-        updateMaxBidPriceForToken(_storageAddress, tokenId);
+        address bidOwner = getOwnerOfBid(_storageAddress, _bidId);
+        setBidToTokenAndBidOwner(_storageAddress, bidOwner, tokenId, 0);
     }
 
     function updateMaxBidPriceForToken(address _storageAddress, uint256 _tokenId) public {
@@ -324,7 +326,10 @@ library SnarkOfferBidLib {
 
     function deleteBidFromTokenBidsList(address _storageAddress, uint256 _bidId) public {
         uint256 tokenId = getTokenByBid(_storageAddress, _bidId);
-        require(getBidActivityForToken(_storageAddress, _bidId, tokenId), "bid is already excluded from the token's list");
+        require(
+            getBidActivityForToken(_storageAddress, _bidId, tokenId), 
+            "bid is already excluded from the token's list"
+        );
         setBidActivityForToken(_storageAddress, _bidId, tokenId, false);
         uint256 index = getBidIndexInListForToken(_storageAddress, tokenId, _bidId);
         uint256 maxIndex = getNumberBidsOfToken(_storageAddress, tokenId).sub(1);
@@ -436,7 +441,10 @@ library SnarkOfferBidLib {
 
     function deleteBidFromOwnerBidsList(address _storageAddress, uint256 _bidId) public {
         address bidOwner = getOwnerOfBid(_storageAddress, _bidId);
-        require(getBidActivityForOwner(_storageAddress, _bidId, bidOwner), "bid is already excluded from the owner's list");
+        require(
+            getBidActivityForOwner(_storageAddress, _bidId, bidOwner), 
+            "bid is already excluded from the owner's list"
+        );
         setBidActivityForOwner(_storageAddress, _bidId, bidOwner, false);
         uint256 index = getBidIndexInListForOwner(_storageAddress, bidOwner, _bidId);
         uint256 maxIndex = getNumberBidsOfOwner(_storageAddress, bidOwner).sub(1);
@@ -535,5 +543,22 @@ library SnarkOfferBidLib {
             keccak256(abi.encodePacked("numberBidsOfOwner", _bidOwner)), newAmount);
     }
 
+    function getBidForTokenAndBidOwner(address _storageAddress, address _bidOwner, uint256 _tokenId)
+        public
+        view
+        returns (uint256)
+    {
+        return SnarkStorage(_storageAddress).uintStorage(
+            keccak256(abi.encodePacked("mappingBidToTokenAndBidOwner", _bidOwner, _tokenId))
+        );
+    }
 
+    function setBidToTokenAndBidOwner(address _storageAddress, address _bidOwner, uint256 _tokenId, uint256 _bidId)
+        public 
+    {
+        SnarkStorage(_storageAddress).setUint(
+            keccak256(abi.encodePacked("mappingBidToTokenAndBidOwner", _bidOwner, _tokenId)),
+            _bidId
+        );
+    }
 }

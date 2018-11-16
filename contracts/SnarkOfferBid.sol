@@ -71,6 +71,9 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _storage = _storageAddress;
     }
 
+    /// @notice Will receive any eth sent to the contract
+    function() external payable {}
+
     /// @dev Function to destroy a contract in the blockchain
     function kill() external onlyOwner {
         selfdestruct(owner);
@@ -129,6 +132,14 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     function addBid(uint256 _tokenId) public payable {
         // token has to be exist
         require(_tokenId > 0 && _tokenId <= _storage.getTotalNumberOfTokens());
+        // check an amount of bids for the token
+        require(_storage.getNumberBidsOfToken(_tokenId) < 11, "Token can't have more than 10 bids");
+        // check if we already have a bid for this token from the sender
+        require(
+            _storage.getBidForTokenAndBidOwner(msg.sender, _tokenId) == 0, 
+            "You already have a bid for this token. Please cancel it before add a new one."
+        );
+
         // it does not matter if the token is available for sale
         // it is possible to accept a bid unless
         // the token is part of a loan
@@ -220,6 +231,9 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         uint256 price = _storage.getBidPrice(_bidId);
         _storage.subPendingWithdrawals(_storage, price);
         _storage.deleteBid(_bidId);
+        if (_storage.getMaxBidForToken(tokenId) == _bidId) {
+            _storage.updateMaxBidPriceForToken(tokenId);
+        }
         _storage.addPendingWithdrawals(bidder, price);
         emit BidCanceled(tokenId, _bidId);
     }
@@ -243,12 +257,17 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         (profit, price) = _storage.calculatePlatformProfitShare(price);
         _storage.takePlatformProfitShare(profit);
         _storage.buy(tokenId, price, tokenOwner, msg.sender);
-        if (refunds > 0) msg.sender.send(refunds);
-        
-        // Outstanding bids are returned to bidders
-        // And then bids are deleted
-        _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
-
+        if (refunds > 0) {
+            _storage.addPendingWithdrawals(msg.sender, refunds);
+        }
+        // delete own's bid for the token if it exists
+        uint256 bidId = _storage.getBidForTokenAndBidOwner(msg.sender, tokenId);
+        if (bidId > 0) {
+            _storage.deleteBid(bidId);
+            if (_storage.getMaxBidForToken(tokenId) == bidId) {
+                _storage.updateMaxBidPriceForToken(tokenId);
+            }
+        }
         // check if there is an offer for the token and delete it
         _storage.cancelOffer(_offerId);
     }
@@ -339,6 +358,9 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             // Delete the bid
             _storage.deleteBid(bidsList[i]);
         }
+        // there aren't any max bid for the token now
+        _storage.setMaxBidPriceForToken(_tokenId, 0);
+        _storage.setMaxBidForToken(_tokenId, 0);
     }
 
 }
