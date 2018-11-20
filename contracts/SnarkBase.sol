@@ -234,11 +234,11 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         require(_storage.doesProfitShareSchemeIdBelongsToOwner(artistAddress, profitShareSchemeId) == true,
             "Artist has to have the profit share schemeId");
         // Check for an identical hash of the digital token in existence to prevent uploading a duplicate token
-        require(_storage.getTokenHashAsInUse(hashOfToken) == false);
+        require(_storage.getTokenHashAsInUse(hashOfToken) == false, "Token is already exist with the same hash");
         // Check that the number of token editions is >= 1 and <= 10
         // otherwise there is a chance to spend all the Gas
-        require(limitedEdition >= 1 && limitedEdition <= 25);
-        require(profitShareForSecondarySale <= 100);
+        require(limitedEdition >= 1 && limitedEdition <= 25, "Limited edition should be less or equal 25");
+        require(profitShareForSecondarySale <= 100, "Profit Share for secondary sale has to be less or equal 100");
         // Create the number of editions specified by the limitEdition
         for (uint8 i = 0; i < limitedEdition; i++) {
             uint256 tokenId = _storage.addToken(
