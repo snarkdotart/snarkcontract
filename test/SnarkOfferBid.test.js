@@ -671,4 +671,125 @@ contract('SnarkOfferBid', async (accounts) => {
         assert.equal(retval.toNumber(), 1, "error on step 6");
 
     });
+
+    it("8. test github issue #26", async () => {
+        const owner = accounts[2];
+        const tokenHash = web3.sha3("8. test github issue #26");
+        const limitedEdition = 1;
+        const profitShareFromSecondarySale = 0;
+        const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
+        const participants = [ accounts[2] ];
+        const profits = [ 100 ];
+
+        let retval = await instance_snarkbase.getTokensCountByOwner(owner);
+        assert.equal(retval.toNumber(), 0, "error on step 1");
+
+        retval = await instance_snarkbase.getNumberOfProfitShareSchemesForOwner(owner);
+        assert.equal(retval.toNumber(), 0, "error on step 2");
+
+        await instance_snarkbase.createProfitShareScheme(owner, participants, profits);
+
+        retval = await instance_snarkbase.getNumberOfProfitShareSchemesForOwner(owner);
+        assert.equal(retval.toNumber(), 1, "error on step 3");
+
+        const profitShareSchemeId = await instance_snarkbase.getProfitShareSchemeIdForOwner(owner, 0);
+
+        await instance_snarkbase.addToken(
+            owner,
+            tokenHash,
+            limitedEdition,
+            profitShareFromSecondarySale,
+            tokenUrl,
+            profitShareSchemeId,
+            true,
+            true,
+            { from: accounts[0] }
+        );
+
+        retval = await instance_snarkbase.getTokensCountByOwner(owner);
+        assert.equal(retval.toNumber(), 1, "error on step 4");
+
+        const tokenId = await instance_snarkbase.getTokensCount();
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 0, "error on step 5");
+
+        // 1
+        await instance.addBid(tokenId, {from: accounts[3], value: web3.toWei(0.1, 'ether') });
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 1, "error on step 6");
+
+        // 2
+        await instance.addBid(tokenId, {from: accounts[4], value: web3.toWei(0.12, 'ether') });
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 2, "error on step 7");
+
+        // 3
+        await instance.addBid(tokenId, {from: accounts[5], value: web3.toWei(0.14, 'ether') });
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 3, "error on step 8");
+
+        // 4
+        await instance.addBid(tokenId, {from: accounts[6], value: web3.toWei(0.16, 'ether') });
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 4, "error on step 9");
+
+        // 5
+        await instance.addBid(tokenId, {from: accounts[7], value: web3.toWei(0.18, 'ether') });
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 5, "error on step 10");
+
+        // 6
+        await instance.addBid(tokenId, {from: accounts[8], value: web3.toWei(0.2, 'ether') });
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 6, "error on step 11");
+
+        // 7
+        await instance.addBid(tokenId, {from: accounts[9], value: web3.toWei(0.22, 'ether') });
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 7, "error on step 12");
+
+        // 8
+        await instance.addBid(tokenId, {from: accounts[10], value: web3.toWei(0.24, 'ether') });
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 8, "error on step 13");
+
+        // 9
+        await instance.addBid(tokenId, {from: accounts[11], value: web3.toWei(0.26, 'ether') });
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 9, "error on step 14");
+
+        // 10
+        await instance.addBid(tokenId, {from: accounts[12], value: web3.toWei(0.28, 'ether') });
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 10, "error on step 15");
+
+        try {
+            await instance.addBid(tokenId, {from: accounts[13], value: web3.toWei(0.3, 'ether') });
+        } catch(e) {
+            assert.equal(e.message, 'VM Exception while processing transaction: revert Token can\'t have more than 10 bids', "error on step 16");
+        }
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 10, "error on step 17");
+
+        try {
+            await instance.addBid(tokenId, {from: accounts[14], value: web3.toWei(0.32, 'ether') });
+        } catch(e) {
+            assert.equal(e.message, 'VM Exception while processing transaction: revert Token can\'t have more than 10 bids', "error on step 18");
+        }
+
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 10, "error on step 19");
+    });
 });

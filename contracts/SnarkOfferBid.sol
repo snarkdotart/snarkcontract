@@ -133,7 +133,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         // token has to be exist
         require(_tokenId > 0 && _tokenId <= _storage.getTotalNumberOfTokens());
         // check an amount of bids for the token
-        require(_storage.getNumberBidsOfToken(_tokenId) < 11, "Token can't have more than 10 bids");
+        uint256 amountOfBids = _storage.getNumberBidsOfToken(_tokenId);
+        require(amountOfBids < 10, "Token can't have more than 10 bids");
         // check if we already have a bid for this token from the sender
         require(
             _storage.getBidForTokenAndBidOwner(msg.sender, _tokenId) == 0, 
