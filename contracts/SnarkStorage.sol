@@ -38,9 +38,8 @@ contract SnarkStorage is Ownable, ISnarkStorage {
     }
     
     function transferFunds(address _to, uint256 _value) external onlyPlatform {
-        if (address(this).balance > _value) {
-            _to.transfer(_value);
-        }
+        require(address(this).balance >= _value, "Not enough ETH to transfer funds to the user");
+        _to.transfer(_value);
     }
 
     function setBool(bytes32 _key, bool _val) external onlyPlatform { boolStorage[_key] = _val; }
