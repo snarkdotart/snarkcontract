@@ -3,7 +3,9 @@ var SnarkBaseExtraLib = artifacts.require("snarklibs/SnarkBaseExtraLib");
 var SnarkBaseLib = artifacts.require("snarklibs/SnarkBaseLib");
 
 module.exports = function(deployer) {
-    deployer.link(SafeMath, SnarkBaseLib);
-    deployer.link(SnarkBaseExtraLib, SnarkBaseLib);
-    deployer.deploy(SnarkBaseLib);
+    deployer.then(async () => {
+        await deployer.link(SafeMath, SnarkBaseLib);
+        await deployer.link(SnarkBaseExtraLib, SnarkBaseLib);
+        await deployer.deploy(SnarkBaseLib);
+    });
 };

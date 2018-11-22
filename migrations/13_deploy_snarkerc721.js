@@ -7,18 +7,15 @@ var SnarkERC721 = artifacts.require("SnarkERC721");
 var SnarkStorage = artifacts.require("SnarkStorage");
 
 module.exports = function(deployer) {
-    deployer.link(SafeMath, SnarkERC721);
-    deployer.link(AddressUtils, SnarkERC721);
-    deployer.link(SnarkCommonLib, SnarkERC721);
-    deployer.link(SnarkBaseLib, SnarkERC721);
-    deployer.link(SnarkBaseExtraLib, SnarkERC721);
-    deployer.deploy(SnarkERC721, SnarkStorage.address).then(
-        function(snarkERC721_instance) {
-            SnarkStorage.deployed().then(
-                function(storage_instance) {
-                    storage_instance.allowAccess(snarkERC721_instance.address);
-                }
-            );
-        }
-    );
+    deployer.then(async () => {
+        let storage_instance = await SnarkStorage.deployed();
+        await deployer.link(SafeMath, SnarkERC721);
+        await deployer.link(AddressUtils, SnarkERC721);
+        await deployer.link(SnarkCommonLib, SnarkERC721);
+        await deployer.link(SnarkBaseLib, SnarkERC721);
+        await deployer.link(SnarkBaseExtraLib, SnarkERC721);
+        await deployer.deploy(SnarkERC721, storage_instance.address);
+        let snarkERC721_instance = await SnarkERC721.deployed();
+        await storage_instance.allowAccess(snarkERC721_instance.address);
+    });
 };

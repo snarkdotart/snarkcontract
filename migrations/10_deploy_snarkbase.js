@@ -5,20 +5,17 @@ var SnarkBaseExtraLib = artifacts.require("snarklibs/SnarkBaseExtraLib");
 var SnarkBase = artifacts.require("SnarkBase");
 
 module.exports = function(deployer) {
-    deployer.link(SnarkCommonLib, SnarkBase);
-    deployer.link(SnarkBaseExtraLib, SnarkBase);
-    deployer.link(SnarkBaseLib, SnarkBase);
-    deployer.deploy(SnarkBase, SnarkStorage.address).then(
-        function(snarkbase_instance) {
-            SnarkStorage.deployed().then(
-                function(storage_instance) {
-                    storage_instance.allowAccess(snarkbase_instance.address);
-                    snarkbase_instance.setTokenName("Snark Art Token");
-                    snarkbase_instance.setTokenSymbol("SAT");
-                    snarkbase_instance.changeRestrictAccess(true);
-                    snarkbase_instance.setPlatformProfitShare(5);
-                }
-            );
-        }
-    );
+    deployer.then(async () => {
+        let storage_instance = await SnarkStorage.deployed();
+        await deployer.link(SnarkCommonLib, SnarkBase);
+        await deployer.link(SnarkBaseExtraLib, SnarkBase);
+        await deployer.link(SnarkBaseLib, SnarkBase);
+        await deployer.deploy(SnarkBase, storage_instance.address);
+        let snarkbase_instance = await SnarkBase.deployed();
+        await storage_instance.allowAccess(snarkbase_instance.address);
+        await snarkbase_instance.setTokenName("89 seconds Atomized");
+        await snarkbase_instance.setTokenSymbol("SNP001");
+        await snarkbase_instance.changeRestrictAccess(true);
+        await snarkbase_instance.setPlatformProfitShare(5);
+    });
 };

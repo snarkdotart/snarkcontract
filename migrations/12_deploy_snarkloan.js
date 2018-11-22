@@ -6,19 +6,15 @@ var SnarkLoan = artifacts.require("SnarkLoan");
 var SnarkStorage = artifacts.require("SnarkStorage");
 
 module.exports = function(deployer) {
-    deployer.link(SafeMath, SnarkLoan);
-    deployer.link(SnarkCommonLib, SnarkLoan);
-    deployer.link(SnarkBaseLib, SnarkLoan);
-    deployer.link(SnarkLoanLib, SnarkLoan);
-
-    deployer.deploy(SnarkLoan, SnarkStorage.address).then(
-        function(snarkLoan_instance) {
-            SnarkStorage.deployed().then(
-                function(storage_instance) {
-                    storage_instance.allowAccess(snarkLoan_instance.address);
-                    snarkLoan_instance.setDefaultLoanDuration(30);
-                }
-            );
-        }
-    );
+    deployer.then(async () => {
+        let storage_instance = await SnarkStorage.deployed();
+        await deployer.link(SafeMath, SnarkLoan);
+        await deployer.link(SnarkCommonLib, SnarkLoan);
+        await deployer.link(SnarkBaseLib, SnarkLoan);
+        await deployer.link(SnarkLoanLib, SnarkLoan);
+        await deployer.deploy(SnarkLoan, storage_instance.address);
+        let snarkLoan_instance = await SnarkLoan.deployed();
+        await storage_instance.allowAccess(snarkLoan_instance.address);
+        await snarkLoan_instance.setDefaultLoanDuration(30);
+    });
 };
