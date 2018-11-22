@@ -72,7 +72,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// Throws if the token ID does not exist. May return an empty string.
     /// @param _tokenId uint256 ID of the token to query
     function tokenURI(uint256 _tokenId) public view correctToken(_tokenId) returns (string) {
-        return _storage.getTokenURL(_tokenId);
+        return _storage.getDecorationUrl(_tokenId);
     }
 
     /**********************/

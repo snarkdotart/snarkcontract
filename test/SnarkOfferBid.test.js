@@ -52,12 +52,15 @@ contract('SnarkOfferBid', async (accounts) => {
         await instance_snarkbase.addToken(
             owner,
             tokenHash,
-            limitedEdition,
-            profitShareFromSecondarySale,
             tokenUrl,
-            profitShareSchemeId,
-            true,
-            true
+            'ipfs://decorator.io',
+            'bla-blaa-blaaa',
+            [
+                limitedEdition,
+                profitShareFromSecondarySale,
+                profitShareSchemeId
+            ],
+            [true, true]
         );
 
         retval = await instance_snarkbase.getTokensCountByOwner(owner);
@@ -448,8 +451,10 @@ contract('SnarkOfferBid', async (accounts) => {
         await instance_snarkbase.addToken(
             owner, 
             web3.sha3("QmTa69PvuAn65brzc4UodfdgvfXDey2sf7a1ivNgnkCPwN"),
-            1, 0, "http://ipfs.io/ipfs/QmTa69PvuAn65brzc4UodfdgvfXDey2sf7a1ivNgnkCPwN",
-            profitShareSchemeId, true, true, { from: owner }
+            "http://ipfs.io/ipfs/QmTa69PvuAn65brzc4UodfdgvfXDey2sf7a1ivNgnkCPwN",
+            'ipfs://decorator.io',
+            'bla-blaa-blaaa',
+            [1, 0, profitShareSchemeId], [true, true], { from: owner }
         );
 
         let tokenId = await instance_snarkbase.getTokensCount();
@@ -697,12 +702,18 @@ contract('SnarkOfferBid', async (accounts) => {
         await instance_snarkbase.addToken(
             owner,
             tokenHash,
-            limitedEdition,
-            profitShareFromSecondarySale,
             tokenUrl,
-            profitShareSchemeId,
-            true,
-            true,
+            'ipfs://decorator.io',
+            'bla-blaa-blaaa',
+            [
+                limitedEdition,
+                profitShareFromSecondarySale,
+                profitShareSchemeId
+            ],
+            [
+                true,
+                true
+            ],
             { from: accounts[0] }
         );
 

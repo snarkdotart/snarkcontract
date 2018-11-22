@@ -101,16 +101,30 @@ contract('SnarkBase', async (accounts) => {
             }
         });
 
+        // let limitedEditionProfitSFSSProfitSSID = [
+        //     limitedEdition,
+        //     profitShareFromSecondarySale,
+        //     profitShareSchemeId
+        // ];
+
+        a = [
+            limitedEdition,
+            profitShareFromSecondarySale,
+            profitShareSchemeId
+        ];
+        b = [
+            true, 
+            true
+        ];
         try {
             await instance.addToken(
                 artist,
                 tokenHash,
-                limitedEdition,
-                profitShareFromSecondarySale,
                 tokenUrl,
-                profitShareSchemeId,
-                true,
-                true
+                'ipfs://decorator.io',
+                'big-secret',
+                a,
+                b
             );
         } catch(e) {
             assert.equal(e.message, 'VM Exception while processing transaction: revert Artist has to have the profit share schemeId');
@@ -121,17 +135,16 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getNumberOfProfitShareSchemesForOwner(artist);
         assert.equal(retval.toNumber(), 1, "error on step 5");
 
-        profitShareSchemeId = await instance.getProfitShareSchemeIdForOwner(artist, 0);
+        a[2] = await instance.getProfitShareSchemeIdForOwner(artist, 0);
 
         await instance.addToken(
             artist,
             tokenHash,
-            limitedEdition,
-            profitShareFromSecondarySale,
             tokenUrl,
-            profitShareSchemeId,
-            true,
-            true
+            'ipfs://decorator.io',
+            'bla-blaa-blaaa',
+            a,
+            b
         );
 
         retval = await instance.getTokensCount();
@@ -296,34 +309,52 @@ contract('SnarkBase', async (accounts) => {
         await instance.addToken(
             artist1,
             tokenHash1,
-            limitedEdition,
-            profitShareFromSecondarySale,
             tokenUrl1,
-            5,
-            true,
-            true
+            'ipfs://decorator.io',
+            'bla-blaa-blaaa',
+            [
+                limitedEdition,
+                profitShareFromSecondarySale,
+                5
+            ],
+            [
+                true,
+                true
+            ]
         );
 
         await instance.addToken(
             artist2,
             tokenHash2,
-            limitedEdition,
-            profitShareFromSecondarySale,
             tokenUrl2,
-            6,
-            true,
-            true
+            'ipfs://decorator.io',
+            'bla-blaa-blaaa',
+            [
+                limitedEdition,
+                profitShareFromSecondarySale,
+                6
+            ],
+            [
+                true,
+                true
+            ]
         );
 
         await instance.addToken(
             artist3,
             tokenHash3,
-            limitedEdition,
-            profitShareFromSecondarySale,
             tokenUrl3,
-            7,
-            true,
-            true
+            'ipfs://decorator.io',
+            'bla-blaa-blaaa',
+            [
+                limitedEdition,
+                profitShareFromSecondarySale,
+                7
+            ],
+            [
+                true,
+                true
+            ]
         );
 
         retval = await instance.getTokensCount();

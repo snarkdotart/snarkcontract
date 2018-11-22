@@ -211,63 +211,77 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     }
 
     /// @dev Function to add a new digital token to blockchain. Only Snark can call this function.
+    /// @param artistAddress Address of artist
     /// @param hashOfToken Unique hash of the token
-    /// @param limitedEdition Number of token edititons
-    /// @param profitShareForSecondarySale Profit share % during secondary sale
-    ///        going back to the artist and their list of participants
     /// @param tokenUrl IPFS URL to digital work
-    /// @param profitShareSchemeId Profit share scheme Id
+    /// @param decorationUrl IPFS URL to json decoration file
+    /// @param decriptionKey Decription key for digital work
+    /// @param limitedEditionProfitSFSSProfitSSID Array of 3 variables: 
+    ///         0 - Number of token edititons,
+    ///         1 - Profit share % during secondary sale, going back to the artist and their list of participants
+    ///         2 - Profit share scheme Id,
+    /// @param isAcceptOfLoanRequestFromSnarkFromOthers sign of auto accept of requests from Snark and other users
     function addToken(
         address artistAddress,
         string hashOfToken,
-        uint8 limitedEdition,
-        uint8 profitShareForSecondarySale,
         string tokenUrl,
-        uint8 profitShareSchemeId,
-        bool isAcceptOfLoanRequestFromSnark,
-        bool isAcceptOfLoanRequestFromOthers
+        string decorationUrl,
+        string decriptionKey,
+        uint256[] limitedEditionProfitSFSSProfitSSID,
+        bool[] isAcceptOfLoanRequestFromSnarkFromOthers
     ) 
         public
         restrictedAccess
     {
         // check if profitShareSchemeId belongs to artistAddress
-        require(_storage.doesProfitShareSchemeIdBelongsToOwner(artistAddress, profitShareSchemeId) == true,
+        require(_storage.doesProfitShareSchemeIdBelongsToOwner(
+                artistAddress, limitedEditionProfitSFSSProfitSSID[2]) == true,
             "Artist has to have the profit share schemeId");
         // Check for an identical hash of the digital token in existence to prevent uploading a duplicate token
-        require(_storage.getTokenHashAsInUse(hashOfToken) == false, "Token is already exist with the same hash");
+        require(_storage.getTokenHashAsInUse(hashOfToken) == false, 
+            "Token is already exist with the same hash"
+        );
         // Check that the number of token editions is >= 1 and <= 10
         // otherwise there is a chance to spend all the Gas
-        require(limitedEdition >= 1 && limitedEdition <= 25, "Limited edition should be less or equal 25");
-        require(profitShareForSecondarySale <= 100, "Profit Share for secondary sale has to be less or equal 100");
+        require(limitedEditionProfitSFSSProfitSSID[0] >= 1 && limitedEditionProfitSFSSProfitSSID[0] <= 25,
+            "Limited edition should be less or equal 25"
+        );
+        require(limitedEditionProfitSFSSProfitSSID[1] <= 100, 
+            "Profit Share for secondary sale has to be less or equal 100"
+        );
         // Create the number of editions specified by the limitEdition
-        for (uint8 i = 0; i < limitedEdition; i++) {
+        uint256[] memory lEeNlPpSSIDpSFSS = new uint256[](5);
+        for (uint8 i = 0; i < limitedEditionProfitSFSSProfitSSID[0]; i++) {
+            lEeNlPpSSIDpSFSS[0] = limitedEditionProfitSFSSProfitSSID[0];    // limitedEdition
+            lEeNlPpSSIDpSFSS[1] = i + 1;                                    // editionNumber
+            lEeNlPpSSIDpSFSS[2] = 0;                                        // lastPrice
+            lEeNlPpSSIDpSFSS[3] = limitedEditionProfitSFSSProfitSSID[2];    // profitShareSchemeId
+            lEeNlPpSSIDpSFSS[4] = limitedEditionProfitSFSSProfitSSID[1];    // profitShareForSecondarySale
+
             uint256 tokenId = _storage.addToken(
-                artistAddress,
-                hashOfToken,
-                limitedEdition,
-                i + 1,
-                0,
-                profitShareSchemeId,
-                profitShareForSecondarySale,
-                tokenUrl,
-                isAcceptOfLoanRequestFromSnark,
-                isAcceptOfLoanRequestFromOthers
+                artistAddress,                                              // artistAddress
+                hashOfToken,                                                // tokenHash
+                lEeNlPpSSIDpSFSS,
+                tokenUrl,                                                   // tokenUrl
+                isAcceptOfLoanRequestFromSnarkFromOthers
             );
             // set that a digital work with this hash has already been loaded
             _storage.setTokenHashAsInUse(hashOfToken, true);
+            // Add new token to new artist's token list
+            _storage.addTokenToArtistList(tokenId, artistAddress);
+            // Set a decription key for original file of token
+            _storage.setTokenDecryptionKey(tokenId, decriptionKey);
+            // Set a url for token decoration on OpenSea platform
+            _storage.setDecorationUrl(tokenId, decorationUrl);
             // Enter the new owner
             _storage.setOwnerOfToken(tokenId, artistAddress);
             // Add new token to new owner's token list
             _storage.addTokenToOwner(artistAddress, tokenId);
-            // Add new token to new artist's token list
-            _storage.addTokenToArtistList(tokenId, artistAddress);
-            // Emit token event
+            // emit token event
             emit TokenCreated(artistAddress, hashOfToken, tokenId);
+            // emit transfer token event
+            emit Transfer(address(0), artistAddress, tokenId);
         }
-    }
-
-    function setTokenDecryptionKey(uint256 tokenId, string decryptionKey) public onlyOwner {
-        _storage.setTokenDecryptionKey(tokenId, decryptionKey);
     }
 
     function getTokenDecryptionKey(uint256 tokenId) public view returns (string) {
@@ -331,6 +345,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             uint256 profitShareSchemeId,
             uint256 profitShareFromSecondarySale, 
             string tokenUrl,
+            string decorationUrl,
             bool isAcceptOfLoanRequestFromSnark,
             bool isAcceptOfLoanRequestFromOthers
         ) 

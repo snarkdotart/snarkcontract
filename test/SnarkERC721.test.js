@@ -26,14 +26,14 @@ contract('SnarkERC721', async (accounts) => {
     });
 
     it("2. test name function", async () => {
-        const _name = 'Snark Art Token';
+        const _name = '89 seconds Atomized';
 
         let retval = await instance.name();
         assert.equal(retval, _name);
     });
 
     it("3. test symbol function", async () => {
-        const _symbol = 'SAT';
+        const _symbol = 'SNP001';
 
         retval = await instance.symbol();
         assert.equal(retval, _symbol);
@@ -59,6 +59,7 @@ contract('SnarkERC721', async (accounts) => {
         const profitShareFromSecondarySale = 20;
         // const tokenUrl = "http://snark.art";
         const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
+        const decorUrl = 'ipfs://decorator.io';
         const profitShareSchemeId = 1;
 
         retval = await instance_snarkbase.getTokensCount();
@@ -67,12 +68,15 @@ contract('SnarkERC721', async (accounts) => {
         await instance_snarkbase.addToken(
             accounts[0],
             tokenHash,
-            limitedEdition,
-            profitShareFromSecondarySale,
             tokenUrl,
-            profitShareSchemeId,
-            true,
-            true
+            decorUrl,
+            'bla-blaa-blaaa',
+            [
+                limitedEdition,
+                profitShareFromSecondarySale,
+                profitShareSchemeId
+            ],
+            [true, true]
         );
 
         retval = await instance_snarkbase.getTokensCount();
@@ -81,7 +85,7 @@ contract('SnarkERC721', async (accounts) => {
         // ------ TESTING ------
 
         retval = await instance.tokenURI(1);
-        assert.equal(retval, tokenUrl, "error on step 5");
+        assert.equal(retval, decorUrl, "error on step 5");
     });
 
     it("5. test totalSupply function", async () => {

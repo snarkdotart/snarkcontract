@@ -193,14 +193,9 @@ library SnarkBaseLib {
         address storageAddress, 
         address artistAddress, 
         string tokenHash,
-        uint256 limitedEdition,
-        uint256 editionNumber,
-        uint256 lastPrice,
-        uint256 profitShareSchemeId,
-        uint256 profitShareFromSecondarySale,
+        uint256[] lEeNlPpSSIDpSFSS,
         string tokenUrl,
-        bool isAcceptLoanRequestFromSnark,
-        bool isAcceptLoanRequestFromOthers
+        bool[] isAcceptLoanRequestFromSnarkFromOthers
     ) 
         public
         returns (uint256 tokenId)
@@ -212,21 +207,22 @@ library SnarkBaseLib {
         SnarkStorage(storageAddress).setString(
             keccak256(abi.encodePacked("token", "hashOfToken", tokenId)), tokenHash);
         SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("token", "limitedEdition", tokenId)), limitedEdition);
+            keccak256(abi.encodePacked("token", "limitedEdition", tokenId)), lEeNlPpSSIDpSFSS[0]);  // limitedEdition
         SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("token", "editionNumber", tokenId)), editionNumber);
+            keccak256(abi.encodePacked("token", "editionNumber", tokenId)), lEeNlPpSSIDpSFSS[1]);   // editionNumber
         SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("token", "lastPrice", tokenId)), lastPrice);
+            keccak256(abi.encodePacked("token", "lastPrice", tokenId)), lEeNlPpSSIDpSFSS[2]);       // lastPrice
+        // profitShareSchemeId
         SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("token", "profitShareSchemeId", tokenId)), profitShareSchemeId);
+            keccak256(abi.encodePacked("token", "profitShareSchemeId", tokenId)), lEeNlPpSSIDpSFSS[3]);
         SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("token", "profitShareFromSecondarySale", tokenId)), 
-            profitShareFromSecondarySale);
+            lEeNlPpSSIDpSFSS[4]); // profitShareFromSecondarySale
         SnarkStorage(storageAddress).setString(
             keccak256(abi.encodePacked("token", "url", tokenId)), tokenUrl);
         addArtistToList(storageAddress, artistAddress);
-        setTokenAcceptOfLoanRequestFromSnark(storageAddress, tokenId, isAcceptLoanRequestFromSnark);
-        setTokenAcceptOfLoanRequestFromOthers(storageAddress, tokenId, isAcceptLoanRequestFromOthers);
+        setTokenAcceptOfLoanRequestFromSnark(storageAddress, tokenId, isAcceptLoanRequestFromSnarkFromOthers[0]);
+        setTokenAcceptOfLoanRequestFromOthers(storageAddress, tokenId, isAcceptLoanRequestFromSnarkFromOthers[1]);
     }
 
     function addTokenToArtistList(address storageAddress, uint256 tokenId, address artistAddress) public {
@@ -283,6 +279,13 @@ library SnarkBaseLib {
         SnarkStorage(storageAddress).setString(
             keccak256(abi.encodePacked("token", "decryptionKey", tokenId)),
             decryptionKey
+        );
+    }
+
+    function setDecorationUrl(address storageAddress, uint256 tokenId, string decorUrl) public {
+        SnarkStorage(storageAddress).setString(
+            keccak256(abi.encodePacked("decorationUrl", tokenId)),
+            decorUrl
         );
     }
 
@@ -418,6 +421,7 @@ library SnarkBaseLib {
             uint256 profitShareSchemeId,
             uint256 profitShareFromSecondarySale,
             string tokenUrl,
+            string decorationUrl,
             bool isAcceptOfLoanRequestFromSnark,
             bool isAcceptOfLoanRequestFromOthers
         )
@@ -431,6 +435,7 @@ library SnarkBaseLib {
         profitShareSchemeId = storageAddress.getTokenProfitShareSchemeId(tokenId);
         profitShareFromSecondarySale = getTokenProfitShareFromSecondarySale(storageAddress, tokenId);
         tokenUrl = getTokenURL(storageAddress, tokenId);
+        decorationUrl = getDecorationUrl(storageAddress, tokenId);
         isAcceptOfLoanRequestFromSnark = isTokenAcceptOfLoanRequestFromSnark(storageAddress, tokenId);
         isAcceptOfLoanRequestFromOthers = isTokenAcceptOfLoanRequestFromOthers(storageAddress, tokenId);
     }
@@ -523,6 +528,12 @@ library SnarkBaseLib {
     function getTokenDecryptionKey(address storageAddress, uint256 tokenId) public view returns (string) {
         return SnarkStorage(storageAddress).stringStorage(
             keccak256(abi.encodePacked("token", "decryptionKey", tokenId))
+        );
+    }
+
+    function getDecorationUrl(address storageAddress, uint256 tokenId) public view returns (string) {
+        return SnarkStorage(storageAddress).stringStorage(
+            keccak256(abi.encodePacked("decorationUrl", tokenId))
         );
     }
 
