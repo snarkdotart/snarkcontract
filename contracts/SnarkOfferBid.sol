@@ -277,6 +277,10 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _storage.cancelOffer(_offerId);
     }
 
+    function setLinkDropPrice(uint256 tokenId, uint256 price) public onlyOwner {
+        _storage.setTokenLastPrice(tokenId, price);
+    }
+
     function getSaleStatusForOffer(uint256 _offerId) public view returns (uint256) {
         return _storage.getSaleStatusForOffer(_offerId);
     }
