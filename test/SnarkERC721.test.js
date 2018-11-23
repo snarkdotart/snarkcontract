@@ -13,6 +13,28 @@ contract('SnarkERC721', async (accounts) => {
     before(async () => {
         instance = await SnarkERC721.deployed();
         instance_snarkbase = await SnarkBase.deployed();
+
+        const event1 = instance.Transfer({ fromBlock: 'latest' });
+        event1.watch(function (error, result) {
+            if (!error) {
+                console.log(result);
+            }
+        });
+        
+        const event2 = instance.ApprovalForAll({ fromBlock: 'latest' });
+        event2.watch(function (error, result) {
+            if (!error) {
+                console.log(result);
+            }
+        });
+        
+        const event3 = instance.Approval({ fromBlock: 'latest' });
+        event3.watch(function (error, result) {
+            if (!error) {
+                console.log(result);
+            }
+        });
+        
     });
 
     it("1. get size of the SnarkERC721 library", async () => {
@@ -139,12 +161,12 @@ contract('SnarkERC721', async (accounts) => {
 
     it("12. test setApprovalForAll and isApprovedForAll functions", async () => {
         retval = await instance.isApprovedForAll(tokenOwner, participants[1]);
-        assert.isFalse(retval, "error on step 1");
+        assert.equal(retval, false, "error on step 1");
 
         await instance.setApprovalForAll(participants[1], true);
 
         retval = await instance.isApprovedForAll(tokenOwner, participants[1]);
-        assert.isTrue(retval, "error on step 2");
+        assert.equal(retval, true, "error on step 2");
     });
 
     it("13. test transferFrom function", async () => {
