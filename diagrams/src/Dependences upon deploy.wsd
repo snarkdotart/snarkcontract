@@ -1,0 +1,61 @@
+@startuml Deploy Scheme
+
+package "Undepended Libs" {
+  [Migration]
+  [SnarkStorage]
+  [AddressUtils]
+  [SafeMath]
+}
+
+package "Depended Libs" {
+  [SnarkBaseExtraLib]
+  [SnarkBaseLib]
+  [SnarkCommonLib]
+  [SnarkOfferBidLib]
+  [SnarkLoanLib]
+}
+
+package "Contracts" {
+  [SnarkBase]
+  [SnarkOfferBid]
+  [SnarkLoan]
+  [SnarkERC721]
+}
+
+[SafeMath] --> [SnarkBaseExtraLib]
+[SafeMath] --> [SnarkBaseLib]
+[SnarkBaseExtraLib] --> [SnarkBaseLib]
+[SafeMath] --> [SnarkCommonLib]
+[SnarkBaseLib] --> [SnarkCommonLib]
+[SnarkBaseExtraLib] --> [SnarkCommonLib]
+[SafeMath] --> [SnarkOfferBidLib]
+[SafeMath] --> [SnarkLoanLib]
+
+[SnarkStorage] --> [SnarkBase]
+[SnarkCommonLib] --> [SnarkBase]
+[SnarkBaseLib] --> [SnarkBase]
+[SnarkBaseExtraLib] --> [SnarkBase]
+
+[SnarkStorage] --> [SnarkOfferBid]
+[SafeMath] --> [SnarkOfferBid]
+[SnarkCommonLib] --> [SnarkOfferBid]
+[SnarkBaseLib] --> [SnarkOfferBid]
+[SnarkBaseExtraLib] --> [SnarkOfferBid]
+[SnarkOfferBidLib] --> [SnarkOfferBid]
+[SnarkLoanLib] --> [SnarkOfferBid]
+
+[SnarkStorage] --> [SnarkLoan]
+[SafeMath] --> [SnarkLoan]
+[SnarkCommonLib] --> [SnarkLoan]
+[SnarkBaseLib] --> [SnarkLoan]
+[SnarkLoanLib] --> [SnarkLoan]
+
+[SnarkStorage] --> [SnarkERC721]
+[SafeMath] --> [SnarkERC721]
+[AddressUtils] --> [SnarkERC721]
+[SnarkCommonLib] --> [SnarkERC721]
+[SnarkBaseLib] --> [SnarkERC721]
+[SnarkBaseExtraLib] --> [SnarkERC721]
+
+
+@enduml
