@@ -20,6 +20,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /*** STORAGE ***/
 
     address private _storage;
+    address private _erc721;
 
     /*** EVENTS ***/
 
@@ -67,8 +68,12 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _;
     }
 
-    constructor(address _storageAddress) public {
-        _storage = _storageAddress;
+    /// @dev Constructor of contract
+    /// @param storageAddress Address of a storage contract
+    /// @param erc721Address Address of a ERC721 contract
+    constructor(address storageAddress, address erc721Address) public {
+        _storage = storageAddress;
+        _erc721 = erc721Address;
     }
 
     /// @notice Will receive any eth sent to the contract
@@ -210,6 +215,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         _storage.takePlatformProfitShare(profit);
 
         _storage.buy(tokenId, price, tokenOwner, bidOwner);
+        _erc721.echoTransfer(tokenOwner, bidOwner, tokenId);
         _storage.deleteBid(_bidId);
 
         // deleting all bids related to the token
@@ -262,6 +268,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         (profit, price) = _storage.calculatePlatformProfitShare(price);
         _storage.takePlatformProfitShare(profit);
         _storage.buy(tokenId, price, tokenOwner, msg.sender);
+        _erc721.echoTransfer(tokenOwner, msg.sender, tokenId);
         if (refunds > 0) {
             _storage.addPendingWithdrawals(msg.sender, refunds);
         }

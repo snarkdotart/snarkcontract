@@ -4,6 +4,7 @@ import "../openzeppelin/SafeMath.sol";
 import "../SnarkStorage.sol";
 import "./SnarkBaseLib.sol";
 import "./SnarkBaseExtraLib.sol";
+import "../SnarkERC721.sol";
 
 
 library SnarkCommonLib {
@@ -95,6 +96,10 @@ library SnarkCommonLib {
         _storageAddress.setTokenLastPrice(_tokenId, _value);
         _storageAddress.setSaleTypeToToken(_tokenId, 0);
         transferToken(_storageAddress, _tokenId, _from, _to);
+    }
+
+    function echoTransfer(address _erc721Address, address _from, address _to, uint256 _tokenId) internal {
+        SnarkERC721(_erc721Address).echoTransfer(_from, _to, _tokenId);
     }
     
 }

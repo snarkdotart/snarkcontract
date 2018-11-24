@@ -17,21 +17,21 @@ contract('SnarkERC721', async (accounts) => {
         const event1 = instance.Transfer({ fromBlock: 'latest' });
         event1.watch(function (error, result) {
             if (!error) {
-                console.log(result);
+                console.log(`${ result.event}`);
             }
         });
         
         const event2 = instance.ApprovalForAll({ fromBlock: 'latest' });
         event2.watch(function (error, result) {
             if (!error) {
-                console.log(result);
+                console.log(`${ result.event}`);
             }
         });
         
         const event3 = instance.Approval({ fromBlock: 'latest' });
         event3.watch(function (error, result) {
             if (!error) {
-                console.log(result);
+                console.log(`${ result.event}`);
             }
         });
         

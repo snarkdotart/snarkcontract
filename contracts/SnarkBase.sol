@@ -20,6 +20,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /*** STORAGE ***/
 
     address private _storage;
+    address private _erc721;
 
     /*** EVENTS ***/
 
@@ -101,8 +102,10 @@ contract SnarkBase is Ownable, SnarkDefinitions {
 
     /// @dev Constructor of contract
     /// @param storageAddress Address of a storage contract
-    constructor(address storageAddress) public {
+    /// @param erc721Address Address of a ERC721 contract
+    constructor(address storageAddress, address erc721Address) public {
         _storage = storageAddress;
+        _erc721 = erc721Address;
     }
 
     /// @dev Function to destroy a contract in the blockchain
@@ -280,6 +283,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             // emit token event
             emit TokenCreated(artistAddress, hashOfToken, tokenId);
             // emit transfer token event
+            _erc721.echoTransfer(address(0), artistAddress, tokenId);
             emit Transfer(address(0), artistAddress, tokenId);
         }
     }

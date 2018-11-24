@@ -1,4 +1,5 @@
 var SnarkStorage = artifacts.require("SnarkStorage");
+var SnarkERC721 = artifacts.require("SnarkERC721");
 var SnarkCommonLib = artifacts.require("snarklibs/SnarkCommonLib");
 var SnarkBaseLib = artifacts.require("snarklibs/SnarkBaseLib");
 var SnarkBaseExtraLib = artifacts.require("snarklibs/SnarkBaseExtraLib");
@@ -7,10 +8,11 @@ var SnarkBase = artifacts.require("SnarkBase");
 module.exports = function(deployer) {
     deployer.then(async () => {
         let storage_instance = await SnarkStorage.deployed();
+        let erc721_instance = await SnarkERC721.deployed();
         await deployer.link(SnarkCommonLib, SnarkBase);
         await deployer.link(SnarkBaseExtraLib, SnarkBase);
         await deployer.link(SnarkBaseLib, SnarkBase);
-        await deployer.deploy(SnarkBase, storage_instance.address);
+        await deployer.deploy(SnarkBase, storage_instance.address, erc721_instance.address);
         let snarkbase_instance = await SnarkBase.deployed();
         await storage_instance.allowAccess(snarkbase_instance.address);
         await snarkbase_instance.setTokenName("89 seconds Atomized");

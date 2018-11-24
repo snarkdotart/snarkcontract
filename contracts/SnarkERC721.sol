@@ -261,6 +261,10 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         emit Transfer(_from, _to, _tokenId);
     }
 
+    function echoTransfer(address _from, address _to, uint256 _tokenId) public {
+        emit Transfer(_from, _to, _tokenId);
+    }
+
     /// @dev Internal function to clear current approval of a given token ID
     /// @dev Reverts if the given address is not indeed the owner of the token
     /// @param _owner owner of the token

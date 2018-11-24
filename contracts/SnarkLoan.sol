@@ -18,6 +18,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     using SafeMath for uint256;
 
     address private _storage;
+    address private _erc721;
 
     event LoanCreated(
         address indexed loanBidOwner, 
@@ -50,8 +51,12 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         _;
     }
 
-    constructor(address storageAddress) public {
+    /// @dev Constructor of contract
+    /// @param storageAddress Address of a storage contract
+    /// @param erc721Address Address of a ERC721 contract
+    constructor(address storageAddress, address erc721Address) public {
         _storage = storageAddress;
+        _erc721 = erc721Address;
     }
     
     /// @notice Will receive any eth sent to the contract
