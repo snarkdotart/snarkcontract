@@ -334,6 +334,18 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         return _storage.getNumberBidsOfOwner(_bidOwner);
     }
 
+    function getBidOfOwnerForToken(uint256 _tokenId) public view returns (uint256) {
+        uint256 bidId = 0;
+        uint256[] memory bidsList = getListOfBidsForOwner(msg.sender);
+        for (uint256 i = 0; i < bidsList.length; i++) {
+            if (_storage.getTokenByBid(bidsList[i]) == _tokenId) {
+                bidId = bidsList[i];
+                break;
+            }
+        }
+        return bidId;
+    }
+
     function getBidDetail(uint256 _bidId) public view returns (
         uint256 bidId, 
         address bidOwner, 

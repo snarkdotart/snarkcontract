@@ -725,8 +725,16 @@ contract('SnarkOfferBid', async (accounts) => {
         retval = await instance.getNumberBidsOfToken(tokenId);
         assert.equal(retval.toNumber(), 0, "error on step 5");
 
+        retval = await instance.getBidOfOwnerForToken(tokenId, { from: accounts[3] });
+        assert.equal(retval.toNumber(), 0, "Owner's bid is not zero");
+
         // 1
         await instance.addBid(tokenId, {from: accounts[3], value: web3.toWei(0.1, 'ether') });
+
+        const lastBidId = await instance.getTotalNumberOfBids();
+
+        retval = await instance.getBidOfOwnerForToken(tokenId, { from: accounts[3] });
+        assert.equal(retval.toNumber(), lastBidId, "Bid id has to be bigger then zero");
 
         retval = await instance.getNumberBidsOfToken(tokenId);
         assert.equal(retval.toNumber(), 1, "error on step 6");
