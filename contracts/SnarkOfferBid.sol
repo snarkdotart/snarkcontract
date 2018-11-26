@@ -248,9 +248,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     }
 
     /// @dev Accept the artist's offer
-    /// @param _offerId Offer ID
+    /// @param _offerIdArray Array of Offers ID
     function buyOffer(uint256[] _offerIdArray) public payable {
-        // TODO: price offer брать из уже записанных данных, т.е. второй параметр не нужен
         uint256 sumPrice;
         for (uint256 i = 0; i < _offerIdArray.length; i++) { 
             sumPrice += _storage.getOfferPrice(_offerIdArray[i]); 
@@ -267,8 +266,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
         uint256 profit;
         for (i = 0; i < _offerIdArray.length; i++) {
-            uint256 tokenId = _storage.getTokenByOffer(_offerIdArray[i]);
-            address tokenOwner = _storage.getOwnerOfToken(tokenId);
+            tokenId = _storage.getTokenByOffer(_offerIdArray[i]);
+            tokenOwner = _storage.getOwnerOfToken(tokenId);
             uint256 price = _storage.getOfferPrice(_offerIdArray[i]);
             (profit, price) = _storage.calculatePlatformProfitShare(price);
             _storage.takePlatformProfitShare(profit);
@@ -341,7 +340,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
     function getBidOfOwnerForToken(uint256 _tokenId) public view returns (uint256) {
         uint256 bidId = 0;
-        uint256[] bidsList = getListOfBidsForOwner(msg.server);
+        uint256[] memory bidsList = getListOfBidsForOwner(msg.sender);
         for (uint256 i = 0; i < bidsList.length; i++) {
             if (_storage.getTokenByBid(bidsList[i]) == _tokenId) {
                 bidId = bidsList[i];

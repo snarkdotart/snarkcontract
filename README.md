@@ -1,2 +1,2 @@
-# **Snark Contract**
-Contain a Ethereum smart contract for Snark application
+# ** Snark Contract **
+Contain a Ethereum smart contract for Snark application.
