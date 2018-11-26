@@ -249,39 +249,55 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
     /// @dev Accept the artist's offer
     /// @param _offerId Offer ID
-    function buyOffer(uint256 _offerId) public payable {
-        uint256 tokenId = _storage.getTokenByOffer(_offerId);
-        uint256 price = _storage.getOfferPrice(_offerId);
-        uint256 saleStatus = _storage.getSaleStatusForOffer(_offerId);
-
-        require(saleStatus == uint256(SaleStatus.Active), "Offer status must be active");
-        require(msg.value >= price, "Amount should not be less than the offer price");
+    function buyOffer(uint256[] _offerIdArray, uint256[] _offerPriceArray) public payable {
+        require(
+            _offerIdArray.length == _offerPriceArray.length, 
+            "Lengths of two arrays (offers and their prices) don't match to each other"
+        );
+        uint256 sumPrice = 0;
+        for (uint256 i = 0; i < _offerPriceArray.length; i++) { 
+            require(
+                _offerPriceArray[i] == _storage.getOfferPrice(_offerIdArray[i]), 
+                "Payment of offerId doesn't match with the offer price"
+            );
+            sumPrice += _offerPriceArray[i]; 
+        }
+        require(msg.value >= sumPrice, "Payment doesn't match summary price of all offers");
         
-        uint256 refunds = msg.value.sub(price);
-        address tokenOwner = _storage.getOwnerOfToken(tokenId);
-
-        require(msg.sender != tokenOwner, "Token owner can't buy their own token");
-        
+        uint256 refunds = msg.value.sub(sumPrice);
         _storage.transfer(msg.value);
-        
-        uint256 profit;
-        (profit, price) = _storage.calculatePlatformProfitShare(price);
-        _storage.takePlatformProfitShare(profit);
-        _storage.buy(tokenId, price, tokenOwner, msg.sender);
-        _erc721.echoTransfer(tokenOwner, msg.sender, tokenId);
-        if (refunds > 0) {
-            _storage.addPendingWithdrawals(msg.sender, refunds);
-        }
-        // delete own's bid for the token if it exists
-        uint256 bidId = _storage.getBidForTokenAndBidOwner(msg.sender, tokenId);
-        if (bidId > 0) {
-            _storage.deleteBid(bidId);
-            if (_storage.getMaxBidForToken(tokenId) == bidId) {
-                _storage.updateMaxBidPriceForToken(tokenId);
+
+        for (i = 0; i < _offerIdArray.length; i++) {
+            uint256 tokenId = _storage.getTokenByOffer(_offerIdArray[i]);
+            uint256 price = _storage.getOfferPrice(_offerIdArray[i]);
+            uint256 saleStatus = _storage.getSaleStatusForOffer(_offerIdArray[i]);
+
+            require(saleStatus == uint256(SaleStatus.Active), "Offer status must be active");
+            
+            address tokenOwner = _storage.getOwnerOfToken(tokenId);
+
+            require(msg.sender != tokenOwner, "Token owner can't buy their own token");
+            
+            uint256 profit;
+            (profit, price) = _storage.calculatePlatformProfitShare(price);
+            _storage.takePlatformProfitShare(profit);
+            _storage.buy(tokenId, price, tokenOwner, msg.sender);
+            _erc721.echoTransfer(tokenOwner, msg.sender, tokenId);
+            if (refunds > 0) {
+                _storage.addPendingWithdrawals(msg.sender, refunds);
             }
+            // delete own's bid for the token if it exists
+            uint256 bidId = _storage.getBidForTokenAndBidOwner(msg.sender, tokenId);
+            if (bidId > 0) {
+                _storage.deleteBid(bidId);
+                if (_storage.getMaxBidForToken(tokenId) == bidId) {
+                    _storage.updateMaxBidPriceForToken(tokenId);
+                }
+            }
+            // check if there is an offer for the token and delete it
+            _storage.cancelOffer(_offerId);
         }
-        // check if there is an offer for the token and delete it
-        _storage.cancelOffer(_offerId);
+
     }
 
     function setLinkDropPrice(uint256 tokenId, uint256 price) public onlyOwner {
@@ -332,6 +348,18 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
     function getNumberBidsOfOwner(address _bidOwner) public view returns (uint256) {
         return _storage.getNumberBidsOfOwner(_bidOwner);
+    }
+
+    function getBidOfOwnerForToken(uint256 _tokenId) public view returns (uint256) {
+        uint256 bidId = 0;
+        uint256[] bidsList = getListOfBidsForOwner(msg.server);
+        for (uint256 i = 0; i < bidsList.length; i++) {
+            if (_storage.getTokenByBid(bidsList[i]) == _tokenId) {
+                bidId = bidsList[i];
+                break;
+            }
+        }
+        return bidId;
     }
 
     function getBidDetail(uint256 _bidId) public view returns (
