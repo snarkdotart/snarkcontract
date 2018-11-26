@@ -249,43 +249,31 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
     /// @dev Accept the artist's offer
     /// @param _offerId Offer ID
-    function buyOffer(uint256[] _offerIdArray, uint256[] _offerPriceArray) public payable {
-        require(
-            _offerIdArray.length == _offerPriceArray.length, 
-            "Lengths of two arrays (offers and their prices) don't match to each other"
-        );
-        uint256 sumPrice = 0;
-        for (uint256 i = 0; i < _offerPriceArray.length; i++) { 
-            require(
-                _offerPriceArray[i] == _storage.getOfferPrice(_offerIdArray[i]), 
-                "Payment of offerId doesn't match with the offer price"
-            );
-            sumPrice += _offerPriceArray[i]; 
+    function buyOffer(uint256[] _offerIdArray) public payable {
+        // TODO: price offer брать из уже записанных данных, т.е. второй параметр не нужен
+        uint256 sumPrice;
+        for (uint256 i = 0; i < _offerIdArray.length; i++) { 
+            sumPrice += _storage.getOfferPrice(_offerIdArray[i]); 
+            uint256 tokenId = _storage.getTokenByOffer(_offerIdArray[i]);
+            address tokenOwner = _storage.getOwnerOfToken(tokenId);
+            uint256 saleStatus = _storage.getSaleStatusForOffer(_offerIdArray[i]);
+            require(msg.sender != tokenOwner, "Token owner can't buy their own token");
+            require(saleStatus == uint256(SaleStatus.Active), "Offer status must be active");
         }
         require(msg.value >= sumPrice, "Payment doesn't match summary price of all offers");
         
         uint256 refunds = msg.value.sub(sumPrice);
         _storage.transfer(msg.value);
 
+        uint256 profit;
         for (i = 0; i < _offerIdArray.length; i++) {
             uint256 tokenId = _storage.getTokenByOffer(_offerIdArray[i]);
-            uint256 price = _storage.getOfferPrice(_offerIdArray[i]);
-            uint256 saleStatus = _storage.getSaleStatusForOffer(_offerIdArray[i]);
-
-            require(saleStatus == uint256(SaleStatus.Active), "Offer status must be active");
-            
             address tokenOwner = _storage.getOwnerOfToken(tokenId);
-
-            require(msg.sender != tokenOwner, "Token owner can't buy their own token");
-            
-            uint256 profit;
+            uint256 price = _storage.getOfferPrice(_offerIdArray[i]);
             (profit, price) = _storage.calculatePlatformProfitShare(price);
             _storage.takePlatformProfitShare(profit);
             _storage.buy(tokenId, price, tokenOwner, msg.sender);
             _erc721.echoTransfer(tokenOwner, msg.sender, tokenId);
-            if (refunds > 0) {
-                _storage.addPendingWithdrawals(msg.sender, refunds);
-            }
             // delete own's bid for the token if it exists
             uint256 bidId = _storage.getBidForTokenAndBidOwner(msg.sender, tokenId);
             if (bidId > 0) {
@@ -294,10 +282,11 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
                     _storage.updateMaxBidPriceForToken(tokenId);
                 }
             }
-            // check if there is an offer for the token and delete it
-            _storage.cancelOffer(_offerId);
+            _storage.cancelOffer(_offerIdArray[i]);
         }
-
+        if (refunds > 0) {
+            _storage.addPendingWithdrawals(msg.sender, refunds);
+        }
     }
 
     function setLinkDropPrice(uint256 tokenId, uint256 price) public onlyOwner {
