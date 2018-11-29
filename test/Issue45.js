@@ -3,6 +3,7 @@ var SnarkBase = artifacts.require('SnarkBase');
 var SnarkERC721 = artifacts.require('SnarkERC721');
 var SnarkLoan = artifacts.require('SnarkLoan');
 var SnarkLoanLib = artifacts.require('SnarkLoanLib');
+var SnarkTestFunctions = artifacts.require('SnarkTestFunctions');
 
 var schemeId;
 var BigNumber = require('bignumber.js');
@@ -17,9 +18,6 @@ function showLoanTokens(tokens, title) {
   let t0 = ''
   let t1 = ''
   let t2 = ''
-  console.log('Tokens 0: ', tokens[0])
-  console.log('Tokens 1: ', BigNumber(tokens[1][0]).toString())
-  console.log('Tokens 2: ', tokens[2])
   
   for (let i = 0; i < tokens[0].length;i++) {
     t0 = t0 + ' ' + BigNumber(tokens[0][i]).toNumber()
@@ -51,6 +49,7 @@ contract('SnarkBase', async accounts => {
     instance_erc = await SnarkERC721.deployed();
     instance_loan = await SnarkLoan.deployed();
     instance_loanlib = await SnarkLoanLib.deployed();
+    instance_testFunctions = await SnarkTestFunctions.deployed();
   });
 
   it('1. Add two participant profile scheme. Total equal 100%. Should be accepted.', async () => {
@@ -239,41 +238,41 @@ contract('SnarkBase', async accounts => {
     // function createLoan(uint256[] tokensIds, uint256 startDate, uint256 duration) public payable restrictedAccess {
       let tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
       showLoanTokens(tokens, "Before Loan Creation")
-      let num = await instance_loan.getNumberOfLoansInTokensLoanList(1)
+      let num = await instance_testFunctions.getNumberOfLoansInTokensLoanList(1)
       console.log('Loans for token 1: ', num.toNumber())
 
     await expect(instance_loan.createLoan([1,3], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
 
     tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
     showLoanTokens(tokens, "After Loan Creation")
-    let listOfLoans = await instance_loan.getListOfLoansFromTokensLoanList(1)
+    let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1)
     console.log('List of Loans: ', listOfLoans)
 
-    num = await instance_loan.getNumberOfLoansInTokensLoanList(1)
+    num = await instance_testFunctions.getNumberOfLoansInTokensLoanList(1)
     console.log('Loans for token 1: ', num.toNumber())
 
-    let saleType = await instance_loan.getSaleTypeToToken(1)
+    let saleType = await instance_testFunctions.getSaleTypeToToken(1)
     console.log('Token #1 Sale Type: ', saleType.toNumber())
     
     await expect(instance_loan.startLoan(1,{from:accounts[0]}), "It should be possible to start a Loan").to.be.eventually.fulfilled;
     tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
     showLoanTokens(tokens, "After Starting Loan")
-    listOfLoans = await instance_loan.getListOfLoansFromTokensLoanList(1)
+    listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1)
     console.log('List of Loans: ', listOfLoans)
 
-    saleType = await instance_snarkbase.getSaleTypeToToken(1)
+    saleType = await instance_testFunctions.getSaleTypeToToken(1)
     console.log('Token #1 Sale Type: ', saleType.toNumber())
 
 
   });
   
   it('4. Create one offer. Should be rejected because there is active loan.', async () => {
-    await expect(instance_offer.addOffer(1,web3.toWei(1,"ether"),{from:accounts[1]}),"Loan is started. Should not be possible to add Offer. ").to.be.eventually.fulfilled
+    await expect(instance_offer.addOffer(1,web3.toWei(1,"ether"),{from:accounts[1]}),"Loan is started. Should not be possible to add Offer. ").to.be.eventually.rejected
  
     tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
     showLoanTokens(tokens, "After Adding Offer.")
 
-    let listOfLoans = await instance_loan.getListOfLoansFromTokensLoanList(1)
+    let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1)
     console.log('List of Loans: ', listOfLoans)
   });
 

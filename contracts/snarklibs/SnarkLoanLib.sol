@@ -2,6 +2,7 @@ pragma solidity ^0.4.24;
 
 import "../openzeppelin/SafeMath.sol";
 import "../SnarkStorage.sol";
+import "./SnarkBaseLib.sol";
 
 
 /// @author Vitali Hurski
@@ -28,7 +29,8 @@ library SnarkLoanLib {
         addLoanToLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
         for (uint256 index = 0; index < tokensIds.length; index++) {
             // Type of List: 0 - NotApproved, 1 - Approved, 2 - Declined
-            addTokenToListOfLoan(storageAddress, loanId, tokensIds[index], 0); // 0 - NotApproved
+            addTokenToListOfLoan(storageAddress, loanId, tokensIds[index], 0); // 0 - NotApproved            addLoanToTokensLoanList(storageAddress, tokensIds[index],loanId);
+            addLoanToTokensLoanList(storageAddress, tokensIds[index],loanId);
         }
         setStartDateOfLoan(storageAddress, loanId, startDate);
         setDurationOfLoan(storageAddress, loanId, duration);

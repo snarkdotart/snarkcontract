@@ -145,7 +145,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         uint256 numberOfTokens = _storage.getOwnedTokensCount(msg.sender);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            require(tokenIds[i] > 0 && tokenIds[i] <= numberOfTokens, "Token has to be exist");
+            require(tokenIds[i] > 0 && tokenIds[i] <= numberOfTokens, "Token doesnt exist or you are not an owner.");
 
             address _ownerOfToken = _storage.getOwnerOfToken(tokenIds[i]);
             require(msg.sender == _ownerOfToken, "Only the token owner can accept a loan request.");
@@ -192,21 +192,25 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         );
         // store for the loan saleStatus = Active
         _storage.setLoanSaleStatus(loanId, 2); // 2 - Active
-        // share money for the loan between the participants of the accepted tokens 
         uint256 loanPrice = _storage.getPriceOfLoan(loanId);
-        if (loanPrice > 0) {
-            // receive the list of tokens that will participate in the loan
-            uint256[] memory tokenList = _storage.getTokensListOfLoanByType(loanId, 1);
+        // receive the list of tokens that will participate in the loan
+        uint256[] memory tokenList = _storage.getTokensListOfLoanByType(loanId, 1);
+        require(tokenList.length > 0, "Can not start loan with empty token list");
             // calculate the amount that will be sent to each token owner that agreed to the loan 
             uint256 income = loanPrice.div(tokenList.length);
             for (uint256 i = 0; i < tokenList.length; i++) {
                 address tokenOwner = _storage.getActualTokenOwnerForLoan(loanId, tokenList[i]);
+                _storage.setSaleTypeToToken(tokenList[i],uint256(SaleType.Loan));
+                // share money for the loan between the participants of the accepted tokens 
+                if (income > 0) {    
                 // withdraw the sum from the contract balance 
                 _storage.subPendingWithdrawals(_storage, income);
                 // and add the amount to the balance of the token owner 
                 _storage.addPendingWithdrawals(tokenOwner, income);
-            }
+                }
         }
+
+
 
         emit LoanStarted(loanId);
     }
