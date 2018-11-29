@@ -37,7 +37,8 @@ library SafeMath {
     * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
     */
     function sub(uint256 _a, uint256 _b) internal pure returns (uint256) {
-        assert(_b <= _a);
+        // assert(_b <= _a);
+        require(_b <= _a,"Subtraction error");
         return _a - _b;
     }
 

@@ -487,10 +487,11 @@ library SnarkLoanLib {
 
     /// @notice remove loan request from the list of token owner 
     function deleteLoanRequestFromTokenOwner(address storageAddress, uint256 loanId, uint256 tokenId) public {
-        address tokenOwner = getOwnerOfLoan(storageAddress, loanId);
+        address tokenOwner = SnarkBaseLib.getOwnerOfToken(storageAddress, tokenId);
+
         uint256 index = getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId);
         uint256 maxIndex = getCountLoanRequestsForTokenOwner(storageAddress, tokenOwner).sub(1);
-        require(index < maxIndex, "Index of request exceed of aIndex of request is wrong");
+        require(index <= maxIndex, "deleteLoanRequestFromTokenOwner: index exceeds maxIndex of Loan requests");
         if (index < maxIndex) {
             setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, tokenId);
             setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, loanId);
@@ -498,6 +499,7 @@ library SnarkLoanLib {
         setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
         setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
         decreaseCountLoanRequestsForTokenOwner(storageAddress, tokenOwner);
+        
     }
 
     /// @notice Returns loan request information by index 
@@ -888,6 +890,9 @@ library SnarkLoanLib {
             makeTokenFreeForPeriod(storageAddress, tokenId, startDate, duration);
             // remove loan request from the token owners 
             deleteLoanRequestFromTokenOwner(storageAddress, loanList[i], tokenId);
+            removeLoanFromTokensLoanList(storageAddress, tokenId, loanList[i]);
+            removeTokenFromListOfLoan(storageAddress, loanList[i], tokenId);
+
         }
         if (loanList.length > 0) {
             emit TokenCanceledInLoans(tokenId, loanList);
