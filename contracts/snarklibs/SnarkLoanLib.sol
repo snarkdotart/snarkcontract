@@ -491,10 +491,13 @@ library SnarkLoanLib {
 
         uint256 index = getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId);
         uint256 maxIndex = getCountLoanRequestsForTokenOwner(storageAddress, tokenOwner).sub(1);
-        require(index <= maxIndex, "deleteLoanRequestFromTokenOwner: index exceeds maxIndex of Loan requests");
+        require(index <= maxIndex, "!!! deleteLoanRequestFromTokenOwner: index exceeds maxIndex of Loan requests");
         if (index < maxIndex) {
-            setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, tokenId);
-            setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, loanId);
+            (uint256 maxIndexTokenId,uint256 maxIndexLoanId) = getLoanRequestForTokenOwnerByIndex(storageAddress,tokenOwner, maxIndex);
+            setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, maxIndexTokenId);
+            setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, maxIndexLoanId);
+            saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, maxIndexTokenId, maxIndexLoanId, index);
+
         }
         setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
         setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
