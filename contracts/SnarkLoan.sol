@@ -196,22 +196,19 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         // receive the list of tokens that will participate in the loan
         uint256[] memory tokenList = _storage.getTokensListOfLoanByType(loanId, 1);
         require(tokenList.length > 0, "Can not start loan with empty token list");
-            // calculate the amount that will be sent to each token owner that agreed to the loan 
-            uint256 income = loanPrice.div(tokenList.length);
-            for (uint256 i = 0; i < tokenList.length; i++) {
-                address tokenOwner = _storage.getActualTokenOwnerForLoan(loanId, tokenList[i]);
-                _storage.setSaleTypeToToken(tokenList[i],uint256(SaleType.Loan));
-                // share money for the loan between the participants of the accepted tokens 
-                if (income > 0) {    
+        // calculate the amount that will be sent to each token owner that agreed to the loan 
+        uint256 income = loanPrice.div(tokenList.length);
+        for (uint256 i = 0; i < tokenList.length; i++) {
+            address tokenOwner = _storage.getActualTokenOwnerForLoan(loanId, tokenList[i]);
+            _storage.setSaleTypeToToken(tokenList[i], uint256(SaleType.Loan));
+            // share money for the loan between the participants of the accepted tokens 
+            if (income > 0) {    
                 // withdraw the sum from the contract balance 
                 _storage.subPendingWithdrawals(_storage, income);
                 // and add the amount to the balance of the token owner 
                 _storage.addPendingWithdrawals(tokenOwner, income);
-                }
+            }
         }
-
-
-
         emit LoanStarted(loanId);
     }
 
