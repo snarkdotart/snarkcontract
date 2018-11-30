@@ -12,34 +12,8 @@ var chai = require('chai');
 var chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
 expect = chai.expect;
+var testFunctions = require('./testFunctions.js')
 
-function showLoanTokens(tokens, title) {
- 
-  let t0 = ''
-  let t1 = ''
-  let t2 = ''
-  
-  for (let i = 0; i < tokens[0].length;i++) {
-    t0 = t0 + ' ' + BigNumber(tokens[0][i]).toNumber()
-  }
-
-  for (let i = 0; i < tokens[1].length;i++) {
-    t1 = t1 + ' ' + BigNumber(tokens[1][i]).toNumber()
-  }
-
-  for (let i = 0; i < tokens[2].length;i++) {
-    t2 = t2 + ' ' + BigNumber(tokens[2][i]).toNumber()
-  }
-
-
-  var t = [{'Not Approved Tokens' : t0,
-          'Approved Tokens' : t1, 
-          'Declined Tokens' : t2}
-          ]
-  console.log('')
-  console.log(`     ****** ${title} ******`)
-  console.table(t)
-}
 
 contract('SnarkBase', async accounts => {
   let instance_snarkbase = null;
@@ -237,14 +211,14 @@ contract('SnarkBase', async accounts => {
     const duration = 1;
     // function createLoan(uint256[] tokensIds, uint256 startDate, uint256 duration) public payable restrictedAccess {
       let tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
-      showLoanTokens(tokens, "Before Loan Creation")
+      testFunctions.showLoanTokens(tokens, "Before Loan Creation")
       let num = await instance_testFunctions.getNumberOfLoansInTokensLoanList(1)
       console.log('Loans for token 1: ', num.toNumber())
 
     await expect(instance_loan.createLoan([1,3], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
 
     tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
-    showLoanTokens(tokens, "After Loan Creation")
+    testFunctions.showLoanTokens(tokens, "After Loan Creation")
     let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1)
     console.log('List of Loans: ', listOfLoans)
 
@@ -256,7 +230,7 @@ contract('SnarkBase', async accounts => {
     
     await expect(instance_loan.startLoan(1,{from:accounts[0]}), "It should be possible to start a Loan").to.be.eventually.fulfilled;
     tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
-    showLoanTokens(tokens, "After Starting Loan")
+    testFunctions.showLoanTokens(tokens, "After Starting Loan")
     listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1)
     console.log('List of Loans: ', listOfLoans)
 
@@ -270,7 +244,7 @@ contract('SnarkBase', async accounts => {
     await expect(instance_offer.addOffer(1,web3.toWei(1,"ether"),{from:accounts[1]}),"Loan is started. Should not be possible to add Offer. ").to.be.eventually.rejected
  
     tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
-    showLoanTokens(tokens, "After Adding Offer.")
+    testFunctions.showLoanTokens(tokens, "After Adding Offer.")
 
     let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1)
     console.log('List of Loans: ', listOfLoans)
