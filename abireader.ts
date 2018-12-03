@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path_contractservice = '../snarkfrontend/src/app/services/contracts.service.ts';
+const path_contractservice = '../snarkfrontend/src/app/shared/contract/contract.service.ts';
 const dictionary = [
 	['private SnarkBaseABI =', './build/contracts/SnarkBase.json'], 
 	['private SnarkOfferBidABI =', './build/contracts/SnarkOfferBid.json'],
