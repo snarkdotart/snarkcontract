@@ -375,4 +375,18 @@ contract('SnarkBase', async (accounts) => {
 
     });
 
+    it('6. check saving auto LoanRequest from Snark and Others', async () => {
+        const tokenId = 1;
+
+        const isAgreeForSnarkAndOthers = await instance.isTokenAcceptOfLoanRequestFromSnarkAndOthers(tokenId);
+        await instance.setTokenAcceptOfLoanRequestFromSnarkAndOthers(
+            tokenId,
+            !isAgreeForSnarkAndOthers[0],
+            !isAgreeForSnarkAndOthers[1]
+        );
+        const retval = await instance.isTokenAcceptOfLoanRequestFromSnarkAndOthers(tokenId);
+        assert.notEqual(retval[0], isAgreeForSnarkAndOthers[0], 'error for Snark');
+        assert.notEqual(retval[1], isAgreeForSnarkAndOthers[1], 'error for Other');
+    });
+
 });

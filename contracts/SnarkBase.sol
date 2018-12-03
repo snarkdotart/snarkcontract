@@ -141,12 +141,16 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         if (isApproved) _storage.setTokenProfitShareFromSecondarySale(tokenId, 0);
     }
 
-    function setTokenAcceptOfLoanRequestFromSnark(uint256 tokenId, bool isAccept) public onlyOwnerOf(tokenId) {
-        _storage.setTokenAcceptOfLoanRequestFromSnark(tokenId, isAccept);
-    }
-
-    function setTokenAcceptOfLoanRequestFromOthers(uint256 tokenId, bool isAccept) public onlyOwnerOf(tokenId) {
-        _storage.setTokenAcceptOfLoanRequestFromOthers(tokenId, isAccept);
+    function setTokenAcceptOfLoanRequestFromSnarkAndOthers(
+        uint256 tokenId, 
+        bool isAcceptForSnark, 
+        bool isAcceptForOthers
+    ) 
+        public 
+    {
+        require(msg.sender == owner || msg.sender == _storage.getOwnerOfToken(tokenId));
+        _storage.setTokenAcceptOfLoanRequestFromSnark(tokenId, isAcceptForSnark);
+        _storage.setTokenAcceptOfLoanRequestFromOthers(tokenId, isAcceptForOthers);
     }
 
     function setTokenName(string tokenName) public onlyOwner {
@@ -326,14 +330,13 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         return _retarray;
     }
 
-    function isTokenAcceptOfLoanRequestFromSnark(uint256 tokenId) public view returns (bool) {
-        return _storage.isTokenAcceptOfLoanRequestFromSnark(tokenId);
+    function isTokenAcceptOfLoanRequestFromSnarkAndOthers(uint256 tokenId) public view returns (bool, bool) {
+        return (
+            _storage.isTokenAcceptOfLoanRequestFromSnark(tokenId),
+            _storage.isTokenAcceptOfLoanRequestFromOthers(tokenId)
+        );
     }
 
-    function isTokenAcceptOfLoanRequestFromOthers(uint256 tokenId) public view returns (bool) {
-        return _storage.isTokenAcceptOfLoanRequestFromOthers(tokenId);
-    }
-    
     // /// @dev Return details about token
     // /// @param tokenId Token Id of digital work
     function getTokenDetail(uint256 tokenId) 
