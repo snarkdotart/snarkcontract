@@ -202,7 +202,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
 
         _storage.buy(_tokenId, price, _from, _to);
 
-        emit Transfer(_from, _to, _tokenId);
+        // emit Transfer(_from, _to, _tokenId);
     }
 
     /// @notice Transfers the ownership of an NFT from one address to another address
@@ -258,7 +258,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         _clearApproval(_from, _tokenId);
         _storage.transferToken(_tokenId, _from, _to);
 
-        emit Transfer(_from, _to, _tokenId);
+        // emit Transfer(_from, _to, _tokenId);
     }
 
     function echoTransfer(address _from, address _to, uint256 _tokenId) public {

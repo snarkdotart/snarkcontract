@@ -213,4 +213,18 @@ contract('SnarkERC721', async (accounts) => {
         retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
         assert.equal(retval, _to, "error on step 2");
     });
+
+    it('15. freeTransfer - not owner can\'t call a function', async () => {
+        const tokenId = 1;
+        try {
+            await instance.freeTransfer(accounts[2], accounts[3], tokenId, { from: accounts[3] });
+        } catch(err) {
+            assert.equal(err.message, 'VM Exception while processing transaction: revert');
+        }
+    });
+
+    it('16. freeTransfer - snark can transfer token from other wallet', async () => {
+        const tokenId = 1;
+        await instance.freeTransfer(accounts[2], accounts[3], tokenId, { from: accounts[0] });
+    });
 });
