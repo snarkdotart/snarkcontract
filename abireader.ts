@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path_contractservice = '../snarkfrontend/src/app/shared/contract/contract.service.ts';
 const dictionary = [
-	['private SnarkBaseABI =', './build/contracts/SnarkBase.json'], 
-	['private SnarkOfferBidABI =', './build/contracts/SnarkOfferBid.json'],
-	['private SnarkLoanABI =', './build/contracts/SnarkLoan.json'],
-	['private SnarkERC721ABI =', './build/contracts/SnarkERC721.json']
+	['private SnarkBaseABI =', './build/contracts/SnarkBase.json', 'abiSnarkBase: process.env.CONTRACT_ABI_SNARK_BASE'], 
+	['private SnarkOfferBidABI =', './build/contracts/SnarkOfferBid.json', 'abiSnarkOfferBid: process.env.CONTRACT_ABI_SNARK_OFFER_BID'],
+	['private SnarkLoanABI =', './build/contracts/SnarkLoan.json', 'abiSnarkLoan: process.env.CONTRACT_ABI_SNARK_LOAN'],
+	['private SnarkERC721ABI =', './build/contracts/SnarkERC721.json', 'abiSnarkErc721: process.env.CONTRACT_ABI_SNARK_ERC721']
 ];
 
 if (fs.existsSync(path_contractservice)) {
