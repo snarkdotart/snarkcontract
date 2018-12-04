@@ -200,7 +200,7 @@ contract('SnarkERC721', async (accounts) => {
         assert.equal(retval.toNumber(), 0, "error on step 8");
     });
 
-    it("14. test freeTransfer function", async () => {
+    it("14. test freeTransfer function behalf of contract owner", async () => {
         const _from = accounts[1];
         const _to = accounts[2];
         const _tokenId = 1;
@@ -219,7 +219,7 @@ contract('SnarkERC721', async (accounts) => {
         try {
             await instance.freeTransfer(accounts[2], accounts[3], tokenId, { from: accounts[3] });
         } catch(err) {
-            assert.equal(err.message, 'VM Exception while processing transaction: revert');
+            assert.equal(err.message, 'VM Exception while processing transaction: revert You have to be either token owner or be approved by owner');
         }
     });
 

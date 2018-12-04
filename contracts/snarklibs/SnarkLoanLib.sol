@@ -320,18 +320,17 @@ library SnarkLoanLib {
         returns (bool) 
     {
         bool isBusy = false;
-        uint256 checkDay = startDate;
+        uint256 numberDays = startDate.div(86400000);
         for (uint256 i = 0; i < duration; i++) {
-            checkDay = startDate + 86400000 * i;
-            isBusy = isBusy || isTokenBusyOnDay(storageAddress, tokenId, checkDay);
+            isBusy = isBusy || isTokenBusyOnDay(storageAddress, tokenId, numberDays.add(i));
         }
         return isBusy;
     }
 
     /// @notice checks in the token calendar if it is busy on a specific date 
-    function isTokenBusyOnDay(address storageAddress, uint256 tokenId, uint256 date) public view returns (bool) {
+    function isTokenBusyOnDay(address storageAddress, uint256 tokenId, uint256 day) public view returns (bool) {
         return SnarkStorage(storageAddress).boolStorage(
-            keccak256(abi.encodePacked("tokenCalendar", tokenId, date))
+            keccak256(abi.encodePacked("tokenCalendar", tokenId, day))
         );
     }
 
@@ -341,8 +340,9 @@ library SnarkLoanLib {
         view 
         returns (uint256) 
     {
+        uint256 day = date.div(86400000);
         SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, date))
+            keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, day))
         );
     }
 
@@ -365,12 +365,13 @@ library SnarkLoanLib {
 
     /// @notice marks that the token is busy on a specific date and by which loan 
     function makeTokenBusyOnDay(address storageAddress, uint256 loanId, uint256 tokenId, uint256 date) public {
+        uint256 day = date.div(86400000);
         SnarkStorage(storageAddress).setBool(
-            keccak256(abi.encodePacked("tokenCalendar", tokenId, date)),
+            keccak256(abi.encodePacked("tokenCalendar", tokenId, day)),
             true
         );
         SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, date)),
+            keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, day)),
             loanId
         );
     }
@@ -384,21 +385,20 @@ library SnarkLoanLib {
     ) 
         public
     {
-        uint256 busyDay;
+        uint256 busyDay = startDate.div(86400000);
         for (uint256 i = 0; i < duration; i++) {
-            busyDay = startDate + 86400000 * i;
-            makeTokenFreeOnDay(storageAddress, tokenId, busyDay);
+            makeTokenFreeOnDay(storageAddress, tokenId, busyDay.add(i));
         }
     }
 
     /// @notice frees up in the calendar a specific token on a specific date 
-    function makeTokenFreeOnDay(address storageAddress, uint256 tokenId, uint256 date) public {
+    function makeTokenFreeOnDay(address storageAddress, uint256 tokenId, uint256 day) public {
         SnarkStorage(storageAddress).setBool(
-            keccak256(abi.encodePacked("tokenCalendar", tokenId, date)),
+            keccak256(abi.encodePacked("tokenCalendar", tokenId, day)),
             false
         );
         SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, date)),
+            keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, day)),
             0
         );
     }
