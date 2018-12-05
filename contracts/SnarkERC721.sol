@@ -26,12 +26,18 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @dev Checks msg.sender can transfer a token, by being owner, approved, or operator
     /// @param _tokenId uint256 ID of the token to validate
     modifier canTransfer(uint256 _tokenId) {
-        require(_isApprovedOrOwner(msg.sender, _tokenId) || msg.sender == owner);
+        require(
+            _isApprovedOrOwner(msg.sender, _tokenId) || msg.sender == owner,
+            "You have to be either token owner or be approved by owner"
+        );
         _;
     }
 
     modifier correctToken(uint256 _tokenId) {
-        require(_tokenId > 0 && _tokenId <= _storage.getTotalNumberOfTokens());
+        require(
+            _tokenId > 0 && _tokenId <= _storage.getTotalNumberOfTokens(),
+            "Token is not correct"
+        );
         _;
     }
 
@@ -187,22 +193,22 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
             _storage.getSaleTypeToToken(_tokenId) == uint256(SaleType.None), 
             "Token has to be free from different obligations on Snark platform"
         );
-        require(_from != address(0));
-        require(_to != address(0));
-        require(_from != _to);
+        require(_from != address(0), "Sender's address can't be equal zero");
+        require(_to != address(0), "Receiver's  address can't be equal zero");
+        require(_from != _to, "Sender's address can't be equal receiver's  address");
 
-        _storage.transfer(msg.value);
-        
         _clearApproval(_from, _tokenId);
 
-        uint256 profit;
-        uint256 price;
-        (profit, price) = _storage.calculatePlatformProfitShare(msg.value);
-        _storage.takePlatformProfitShare(price);
-
-        _storage.buy(_tokenId, price, _from, _to);
-
-        // emit Transfer(_from, _to, _tokenId);
+        if (msg.value > 0) {
+            _storage.transfer(msg.value);
+            uint256 profit;
+            uint256 price;
+            (profit, price) = _storage.calculatePlatformProfitShare(msg.value);
+            _storage.takePlatformProfitShare(price);
+            _storage.buy(_tokenId, price, _from, _to);
+        } else {
+            _storage.transferToken(_tokenId, _from, _to);
+        }
     }
 
     /// @notice Transfers the ownership of an NFT from one address to another address
@@ -239,26 +245,6 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     {
         transferFrom(_from, _to, _tokenId);
         require(_checkAndCallSafeTransfer(_from, _to, _tokenId, _data));
-    }
-
-    /// @dev Free transfer ownership of an NFT
-    /// @param _from The current owner of the NFT
-    /// @param _to The new owner
-    /// @param _tokenId The NFT to transfer
-    function freeTransfer(address _from, address _to, uint256 _tokenId) 
-        public 
-        canTransfer(_tokenId) 
-        correctToken(_tokenId) 
-    {
-        require(_from != address(0));
-        require(_to != address(0));
-        require(_from != _to);
-        require(SaleType(_storage.getSaleTypeToToken(_tokenId)) == SaleType.None);
-
-        _clearApproval(_from, _tokenId);
-        _storage.transferToken(_tokenId, _from, _to);
-
-        // emit Transfer(_from, _to, _tokenId);
     }
 
     function echoTransfer(address _from, address _to, uint256 _tokenId) public {

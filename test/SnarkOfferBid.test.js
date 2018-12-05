@@ -579,7 +579,7 @@ contract('SnarkOfferBid', async (accounts) => {
         const bidder = accounts[1];
         const bidCostRight = web3.toWei(0.2, "Ether");
         const bidCostWrong = web3.toWei(0.8, "Ether");
-        const offerCost = web3.toWei(0.3, "Ether");
+        // const offerCost = web3.toWei(0.3, "Ether");
 
         let retval = await instance.getTotalNumberOfOffers();
         const offerId = retval.toNumber();
@@ -611,9 +611,10 @@ contract('SnarkOfferBid', async (accounts) => {
         // issue #19
         const tokenOwner = await instance_snarkbase.getOwnerOfToken(tokenId);
         try {
-            await instance_erc721.freeTransfer(tokenOwner, accounts[5], tokenId);
+            // await instance_erc721.freeTransfer(tokenOwner, accounts[5], tokenId);
+            await instance_erc721.transferFrom(tokenOwner, accounts[5], tokenId);
         } catch(e) {
-            assert.equal(e.message, 'VM Exception while processing transaction: revert');
+            assert.equal(e.message, 'VM Exception while processing transaction: revert Token has to be free from different obligations on Snark platform');
         }
 
         // после cancelOffer бид должен удалиться и maxBid и Price должны обнулиться
