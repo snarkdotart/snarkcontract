@@ -12,7 +12,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/node": "^10.12.11"
+    "@types/node": "^10.12.12",
+    "dotenv": "^6.2.0",
+    "ethereumjs-wallet": "^0.6.2",
+    "truffle-hdwallet-provider": "0.0.6"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
