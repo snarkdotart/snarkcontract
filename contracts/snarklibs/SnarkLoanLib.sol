@@ -322,7 +322,10 @@ library SnarkLoanLib {
         bool isBusy = false;
         uint256 numberDays = startDate.div(86400000);
         for (uint256 i = 0; i < duration; i++) {
-            isBusy = isBusy || isTokenBusyOnDay(storageAddress, tokenId, numberDays.add(i));
+            if (isTokenBusyOnDay(storageAddress, tokenId, numberDays.add(i))) {
+                isBusy = true;
+                break;
+            }
         }
         return isBusy;
     }
