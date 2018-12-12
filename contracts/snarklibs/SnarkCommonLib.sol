@@ -40,7 +40,7 @@ library SnarkCommonLib {
         uint256 profitShareSchemaId = _storageAddress.getTokenProfitShareSchemeId(_tokenId);
         uint256 profitShareFromSecondarySale = _storageAddress.getTokenProfitShareFromSecondarySale(_tokenId);
         uint256 profit = 0;
-        if (_price > lastPrice) _price.sub(lastPrice);
+        if (_price > lastPrice) profit = _price.sub(lastPrice);
         if (profit >= 100) {
             if (lastPrice > 0) {
                 uint256 countToSeller = _price;

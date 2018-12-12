@@ -34,10 +34,10 @@ contract('SnarkOfferBid', async (accounts) => {
         const profitShareFromSecondarySale = 20;
         const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
         const participants = [
-            '0xC04691B99EB731536E35F375ffC85249Ec713597', 
-            '0xB94691B99EB731536E35F375ffC85249Ec717233'
+            accounts[0], 
+            accounts[2]
         ];
-        const profits = [ 20, 80 ];
+        const profits = [ 95, 5 ];
 
         let retval = await instance_snarkbase.getTokensCountByOwner(owner);
         assert.equal(retval.toNumber(), 0, "error on step getTokensCountByOwner before addSnark");
@@ -154,10 +154,12 @@ contract('SnarkOfferBid', async (accounts) => {
         const platformProfitShare = await instance_snarkbase.getPlatformProfitShare();
         
         const profit = price *  platformProfitShare / 100;
+        const distributionAmount = price - profit;
         
         console.log(`Price: ${price}`);
-        console.log(`getPlatformProfitShare = ${platformProfitShare}`);
-        console.log(`Profit 5%: ${profit}`);
+        console.log(`getPlatformProfitShare = ${platformProfitShare}%`);
+        console.log(`Profit ${platformProfitShare}%: ${profit}`);
+        console.log(`Distribution amount: ${distributionAmount}`);
 
         let retval = await instance.getOwnerOffersCount(owner);
         assert.equal(retval.toNumber(), 0, "error on step 1");
@@ -166,92 +168,107 @@ contract('SnarkOfferBid', async (accounts) => {
         assert.equal(retval.toNumber(), 1, "error on step 2");
 
         retval = await instance.getSaleStatusForOffer(offerId);
-        assert.equal(retval.toNumber(), 0, "error on step 3");
+        assert.equal(retval.toNumber(), 0, "error on step 3");        
+
+        retval = await instance_snarkbase.getNumberOfProfitShareSchemesForOwner(owner);
+        assert.equal(retval.toNumber(), 1, "error on step 4");
+
+        retval = await instance_snarkbase.getProfitShareSchemeIdForOwner(owner, 0);
+        const schemeId = retval.toNumber();
+        assert.equal(schemeId, 1, "error on step 5");
+
+        retval = await instance_snarkbase.getNumberOfParticipantsForProfitShareScheme(schemeId);
+        assert.equal(retval.toNumber(), 2, "error on step 6");
+
+        retval = await instance_snarkbase.getParticipantOfProfitShareScheme(schemeId, 0);
+        const amountForArtist =  distributionAmount * retval[1] / 100;
+        const artistAddress = retval[0];
+
+        retval = await instance_snarkbase.getParticipantOfProfitShareScheme(schemeId, 1);
+        const amountForSnark = distributionAmount * retval[1] / 100;
+        const snarkAddress = retval[0];
+
+        console.log(`For Artist: ${amountForArtist}`);
+        console.log(`For Snark: ${amountForSnark}`);
+        const sumSnarkAndArtist = amountForArtist + amountForSnark;
+        console.log(`Sum Artist and Snark amounts: ${sumSnarkAndArtist}`);
+        console.log(`It's equal distributionAmount = ForSnark + FroArtist: ${sumSnarkAndArtist == distributionAmount}`);
+
+        // TODO: надо запомнить текущее состояние счетов на контракте для каждого из участников
+        console.log(`Address of Artist: ${ artistAddress }`);
+        retval = await instance_snarkbase.getWithdrawBalance(artistAddress);
+        const artistBalance = retval.toNumber();
+        console.log(`Balance of artist: ${artistBalance}`);
+
+        console.log(`Address of Snark: ${ snarkAddress }`);
+        retval = await instance_snarkbase.getWithdrawBalance(snarkAddress);
+        const snarkBalance = retval.toNumber();
+        console.log(`Balance of artist: ${snarkBalance}`);
 
         retval = await instance.getTotalNumberOfBids();
-        assert.equal(retval.toNumber(), 0, "error on step 4");
+        assert.equal(retval.toNumber(), 0, "error on step 7");
 
         retval = await instance.getNumberBidsOfToken(tokenId);
-        assert.equal(retval.toNumber(), 0, "error on step 5");
+        assert.equal(retval.toNumber(), 0, "error on step 8");
 
         retval = await instance.getNumberBidsOfOwner(bidOwner);
-        assert.equal(retval.toNumber(), 0, "error on step 6");
+        assert.equal(retval.toNumber(), 0, "error on step 9");
 
         await instance.addOffer(tokenId, price);
 
         retval = await instance_snarkbase.getWithdrawBalance(SnarkStorage.address);
+        const storageBalance = retval.toNumber();
         console.log(`Storage Ether Balance befor addBid: ${ retval.toNumber() } `);
 
         await instance.addBid(tokenId, {from: bidOwner, value: bidPrice});
 
         retval = await instance_snarkbase.getWithdrawBalance(SnarkStorage.address);
         console.log(`Storage Ether Balance after addBid: ${ retval.toNumber() } `);
+        assert.equal(retval.toNumber(), storageBalance + bidPrice, "error on Storage balance");
 
         retval = await instance.getTotalNumberOfBids();
-        assert.equal(retval.toNumber(), 1, "error on step 5");
-
-        retval = await instance.getNumberBidsOfToken(tokenId);
-        assert.equal(retval.toNumber(), 1, "error on step 6");
-
-        retval = await instance.getNumberBidsOfOwner(bidOwner);
-        assert.equal(retval.toNumber(), 1, "error on step 7");
-
-        retval = await instance.getTotalNumberOfOffers();
-        assert.equal(retval.toNumber(), 2, "error on step 8");
-
-        retval = await instance.getSaleStatusForOffer(offerId);
-        assert.equal(retval.toNumber(), 2, "error on step 9");
-        
-        retval = await instance.getOwnerOffersCount(owner);
         assert.equal(retval.toNumber(), 1, "error on step 10");
 
+        retval = await instance.getNumberBidsOfToken(tokenId);
+        assert.equal(retval.toNumber(), 1, "error on step 11");
+
+        retval = await instance.getNumberBidsOfOwner(bidOwner);
+        assert.equal(retval.toNumber(), 1, "error on step 12");
+
+        retval = await instance.getTotalNumberOfOffers();
+        assert.equal(retval.toNumber(), 2, "error on step 13");
+
+        retval = await instance.getSaleStatusForOffer(offerId);
+        assert.equal(retval.toNumber(), 2, "error on step 14");
+        
+        retval = await instance.getOwnerOffersCount(owner);
+        assert.equal(retval.toNumber(), 1, "error on step 15");
+
         retval = await instance_snarkbase.getWithdrawBalance(owner);
-        assert.equal(retval.toNumber(), 0, "error on step 11");
+        assert.equal(retval.toNumber(), 0, "error on step 16");
 
         retval = await instance_snarkbase.getOwnerOfToken(tokenId);
-        assert.equal(retval, owner, "error on step 12");
+        assert.equal(retval, owner, "error on step 17");
 
         await instance.buyOffer([offerId], { from: buyer, value: web3.toWei(2, 'ether') });
 
         retval = await instance.getTotalNumberOfBids();
-        assert.equal(retval.toNumber(), 1, "error on step 13");
+        assert.equal(retval.toNumber(), 1, "error on step 18");
 
         retval = await instance.getNumberBidsOfToken(tokenId);
-        assert.equal(retval.toNumber(), 1, "error on step 14");
+        assert.equal(retval.toNumber(), 1, "error on step 19");
 
         retval = await instance.getNumberBidsOfOwner(bidOwner);
-        assert.equal(retval.toNumber(), 1, "error on step 15");
+        assert.equal(retval.toNumber(), 1, "error on step 20");
 
         retval = await instance_snarkbase.getOwnerOfToken(tokenId);
-        assert.equal(retval, buyer, "error on step 16");
+        assert.equal(retval, buyer, "error on step 21");
 
         retval = await instance_snarkbase.getWithdrawBalance(owner);
-        assert.equal(retval.toNumber(), price - profit, "error on step 17");
+        assert.equal(retval.toNumber(), artistBalance + amountForArtist, "error on step 22");
 
-        const withdraw_balance_before = retval.toNumber();
-        const wallet_balance_before = web3.eth.getBalance(owner).toNumber();
-
-        console.log(`Balance on wallet of owner before withdraw: ${ wallet_balance_before }`);
-        console.log(`Withdraw balance of owner before withdraw: ${ withdraw_balance_before }`);
-
-        let gasNeeded = await instance_snarkbase.withdrawFunds.estimateGas();
-        console.log('Estimate Gas: ', gasNeeded);
-
-        // let gasPrice = 2000000000;//await web3.eth.getGasPrice();
-        // console.log('Gas Price: ', gasPrice);
-
-        // let gasInWei = gasNeeded * gasPrice;
-        // console.log('Gas in Wei: ', gasInWei);
-
-        await instance_snarkbase.withdrawFunds({ from: owner });
-
-        const wallet_balance_after = web3.eth.getBalance(owner).toNumber();
-        console.log(`Balance on wallet of owner after withdraw: ${ wallet_balance_after }`);
-        // assert.notEqual(wallet_balance_after, wallet_balance_before, "Balance of wallet has to be different");
-        // alert.equal(wallet_balance_after, withdraw_balance_before + wallet_balance_before - gasInWei);
-
-        retval = await instance_snarkbase.getWithdrawBalance(owner);
-        console.log(`Withdraw balance of after after withdraw: ${ retval.toNumber() }`);
+        retval = await instance_snarkbase.getWithdrawBalance(snarkAddress);
+        assert.equal(retval.toNumber(), snarkBalance + amountForSnark, "error on step 23");
     });
 
     it("4. test addBid and deleteBid functions", async () => {
@@ -293,7 +310,7 @@ contract('SnarkOfferBid', async (accounts) => {
         assert.equal(retval.toNumber(), web3.toWei(1, 'ether'), "error on step 5");
 
         retval = await instance_snarkbase.getWithdrawBalance(bidOwner);
-        assert.equal(retval.toNumber(), 0, "error on step 6");
+        assert.equal(retval.toNumber(), 47500000000000000, "error on step 6");
 
         retval = await instance_snarkbase.getWithdrawBalance(SnarkStorage.address);
         assert.equal(retval.toNumber(), bidPrice, "error on step 7");
