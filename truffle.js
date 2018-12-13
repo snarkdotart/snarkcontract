@@ -49,7 +49,7 @@ module.exports = {
         },
         main: {
             // provider: mainNetProvider,
-            gas: 4700000,
+            gas: 7800000,
             gasPrice: web3.toWei("8", "gwei"),
             network_id: 1,
             host: "3.16.78.59",
@@ -58,7 +58,7 @@ module.exports = {
         },
         ropsten: {
             // provider: ropstenProvider,
-            gas: 4700000,
+            gas: 7800000,
             gasPrice: web3.toWei("8", "gwei"),
             network_id: 3,
             host: "13.58.178.26",
@@ -67,7 +67,7 @@ module.exports = {
         },
         rinkeby: {
             // provider: rinkebyProvider,
-            gas: 4700000,
+            gas: 7800000,
             gasPrice: web3.toWei("8", "gwei"),
             network_id: 4,
             host: "127.0.0.1",

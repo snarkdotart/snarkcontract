@@ -24,7 +24,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
     /*** EVENTS ***/
 
-    event OfferAdded(address _offerOwner, uint256 _offerId, uint _tokenId);
+    event OfferAdded(address indexed _offerOwner, uint256 _offerId, uint _tokenId);
     event OfferDeleted(uint256 _offerId);
     event BidAdded(address indexed _bidder, uint256 _bidId, uint256 _value);
     event BidAccepted(uint256 _bidId, uint256 _bidPrice);

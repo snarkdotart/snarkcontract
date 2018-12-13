@@ -27,11 +27,9 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev TokenCreatedEvent is executed when a new token is created.
     event TokenCreated(address indexed tokenOwner, string hashOfToken, uint256 tokenId);
     /// @dev Event occurs when profit share scheme is created.
-    event ProfitShareSchemeAdded(address schemeOwner, uint256 profitShareSchemeId);
+    event ProfitShareSchemeAdded(address indexed schemeOwner, uint256 profitShareSchemeId);
     /// @dev Event occurs when an artist wants to remove the profit share for secondary sale
-    event NeedApproveProfitShareRemoving(address participant, uint256 tokenId);
-    /// @dev Transfer event as defined in current draft of ERC721.
-    event Transfer(address indexed from, address indexed to, uint256 tokenId);
+    event NeedApproveProfitShareRemoving(address indexed participant, uint256 tokenId);
     
     modifier restrictedAccess() {
         if (_storage.isRestrictedAccess()) {
@@ -288,7 +286,6 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             emit TokenCreated(artistAddress, hashOfToken, tokenId);
             // emit transfer token event
             _erc721.echoTransfer(address(0), artistAddress, tokenId);
-            emit Transfer(address(0), artistAddress, tokenId);
         }
     }
 
