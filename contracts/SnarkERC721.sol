@@ -19,24 +19,6 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     using SnarkBaseLib for address;
     using SnarkCommonLib for address;
 
-    event Transfer(
-        address indexed _from,
-        address indexed _to,
-        uint256 _tokenId
-    );
-
-    event Approval(
-        address indexed _owner,
-        address indexed _approved,
-        uint256 _tokenId
-    );
-
-    event ApprovalForAll(
-        address indexed _owner,
-        address indexed _operator,
-        bool _approved
-    );
-
     address private _storage;
 
     bytes4 private constant ERC721_RECEIVED = 0x150b7a02;
