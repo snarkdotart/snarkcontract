@@ -407,6 +407,25 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         _storage.setPlatformProfitShare(profit);
     }
 
+    function changeTokenData(
+        uint256 tokenId,
+        string hashOfToken,
+        string tokenUrl,
+        string decorationUrl,
+        string decriptionKey
+    ) 
+        public 
+        onlyOwner 
+    {
+        SnarkStorage(_storage).setString(
+            keccak256(abi.encodePacked("token", "hashOfToken", tokenId)), hashOfToken);
+        SnarkStorage(_storage).setString(
+            keccak256(abi.encodePacked("token", "url", tokenId)), tokenUrl);
+
+        _storage.setDecorationUrl(tokenId, decorationUrl);
+        _storage.setTokenDecryptionKey(tokenId, decriptionKey);
+    }
+
     function getSnarkWalletAddressAndProfit() public view returns (address snarkWalletAddr, uint256 platformProfit) {
         snarkWalletAddr = _storage.getSnarkWalletAddress();
         platformProfit = _storage.getPlatformProfitShare();
