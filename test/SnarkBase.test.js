@@ -31,14 +31,14 @@ contract('SnarkBase', async (accounts) => {
         let retval = await instance.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 0, "error on step 1");
 
-        const event = instance.ProfitShareSchemeAdded({ fromBlock: 'latest' });
-        event.watch(function (error, result) {
-            if (!error) {
-                schemeId = result.args.profitShareSchemeId.toNumber();
-                // console.log("SchemeId = ", schemeId);
-                // assert.equal(schemeId, 1, "SchemeId is not equal 1");
+        instance.events.ProfitShareSchemeAdded(
+            { fromBlock: 'latest' }, 
+            (error, result) => {
+                if (!error) {
+                    schemeId = result.args.profitShareSchemeId.toNumber();
+                }
             }
-        });
+        );
 
         try { await instance.createProfitShareScheme(accounts[0], participants, badProfits1); } catch(e) {
             assert.equal(e.message, 'VM Exception while processing transaction: revert Percent value has to be greater than zero');
@@ -69,7 +69,7 @@ contract('SnarkBase', async (accounts) => {
 
     it("3. test addToken function", async () => {
         const artist = '0x7Af26b6056713AbB900f5dD6A6C45a38F1F70Bc5';
-        const tokenHash = web3.sha3("tokenHash");
+        const tokenHash = web3.utils.sha3("tokenHash");
         const limitedEdition = 10;
         const profitShareFromSecondarySale = 20;
         const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
@@ -235,9 +235,9 @@ contract('SnarkBase', async (accounts) => {
         const artist2 = accounts[1];
         const artist3 = accounts[2];
 
-        const tokenHash1 = web3.sha3("tokenHash1");
-        const tokenHash2 = web3.sha3("tokenHash2");
-        const tokenHash3 = web3.sha3("tokenHash3");
+        const tokenHash1 = web3.utils.sha3("tokenHash1");
+        const tokenHash2 = web3.utils.sha3("tokenHash2");
+        const tokenHash3 = web3.utils.sha3("tokenHash3");
 
         const tokenUrl1 = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7En1";
         const tokenUrl2 = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7En2";
