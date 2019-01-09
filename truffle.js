@@ -1,4 +1,4 @@
-// require('dotenv').config();
+require('dotenv').config();
 
 var Web3 = require("web3");
 var web3 = new Web3();
@@ -52,7 +52,7 @@ module.exports = {
             gas: 7800000,
             gasPrice: web3.toWei("8", "gwei"),
             network_id: 1,
-            host: "3.16.78.59",
+            host: "18.220.154.113",
             port: 8545,
             from: '0xc5a3d99e05c39a18d6342b5f27c08c64a486df00'
         },
