@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 import "./openzeppelin/Ownable.sol";
 import "./SnarkDefinitions.sol";
@@ -206,7 +206,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 // withdraw the sum from the contract balance 
                 _storage.subPendingWithdrawals(_storage, income);
                 // and add the amount to the balance of the token owner 
-                _storage.addPendingWithdrawals(tokenOwner, income);
+                // _storage.addPendingWithdrawals(tokenOwner, income);
+                SnarkStorage(_storage).transferFunds(tokenOwner, income);
             }
         }
         emit LoanStarted(loanId);
@@ -303,7 +304,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             // withdraw the amount from the contract balance
             _storage.subPendingWithdrawals(_storage, loanPrice);
             // and move it to the balance of loan owner
-            _storage.addPendingWithdrawals(loanOwner, loanPrice);
+            // _storage.addPendingWithdrawals(loanOwner, loanPrice);
+            SnarkStorage(_storage).transferFunds(loanOwner, loanPrice);
         }
 
         emit LoanDeleted(loanId);

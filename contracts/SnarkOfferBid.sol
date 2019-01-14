@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 import "./openzeppelin/Ownable.sol";
 import "./SnarkDefinitions.sol";
@@ -243,7 +243,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         if (_storage.getMaxBidForToken(tokenId) == _bidId) {
             _storage.updateMaxBidPriceForToken(tokenId);
         }
-        _storage.addPendingWithdrawals(bidder, price);
+        // _storage.addPendingWithdrawals(bidder, price);
+        SnarkStorage(_storage).transferFunds(bidder, price);
         emit BidCanceled(tokenId, _bidId);
     }
 
@@ -284,7 +285,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             _storage.cancelOffer(_offerIdArray[i]);
         }
         if (refunds > 0) {
-            _storage.addPendingWithdrawals(msg.sender, refunds);
+            // _storage.addPendingWithdrawals(msg.sender, refunds);
+            SnarkStorage(_storage).transferFunds(msg.sender, refunds);
         }
     }
 
@@ -386,7 +388,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             bidPrice = _storage.getBidPrice(bidsList[i]);
             // Move bid amount from contract to the bidder
             _storage.subPendingWithdrawals(_storage, bidPrice);
-            _storage.addPendingWithdrawals(bidder, bidPrice);
+            // _storage.addPendingWithdrawals(bidder, bidPrice);
+            SnarkStorage(_storage).transferFunds(bidder, bidPrice);
             // Delete the bid
             _storage.deleteBid(bidsList[i]);
         }

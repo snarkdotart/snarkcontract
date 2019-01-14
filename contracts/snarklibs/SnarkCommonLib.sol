@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 import "../openzeppelin/SafeMath.sol";
 import "../SnarkStorage.sol";
@@ -28,7 +28,8 @@ library SnarkCommonLib {
     /// @param _profit A price of selling
     function takePlatformProfitShare(address _storageAddress, uint256 _profit) internal {
         address snarkWallet = _storageAddress.getSnarkWalletAddress();
-        _storageAddress.addPendingWithdrawals(snarkWallet, _profit);
+        // _storageAddress.addPendingWithdrawals(snarkWallet, _profit);
+        SnarkStorage(_storageAddress).transferFunds(snarkWallet, _profit);
     }
 
     /// @dev Function to distribute the profits to participants
@@ -46,7 +47,8 @@ library SnarkCommonLib {
                 uint256 countToSeller = _price;
                 profit = profit.mul(profitShareFromSecondarySale).div(100);
                 countToSeller = countToSeller.sub(profit);
-                _storageAddress.addPendingWithdrawals(_from, countToSeller);
+                // _storageAddress.addPendingWithdrawals(_from, countToSeller);
+                SnarkStorage(_storageAddress).transferFunds(_from, countToSeller);
             }
             uint256 residue = profit;
             uint256 participantsCount = 
@@ -57,14 +59,16 @@ library SnarkCommonLib {
                 (currentParticipant, participantProfit) = 
                     _storageAddress.getParticipantOfProfitShareScheme(profitShareSchemaId, i);
                 uint256 payout = profit.mul(participantProfit).div(100);
-                _storageAddress.addPendingWithdrawals(currentParticipant, payout);
+                // _storageAddress.addPendingWithdrawals(currentParticipant, payout);
+                SnarkStorage(_storageAddress).transferFunds(currentParticipant, payout);
                 residue = residue.sub(payout);
             }
             lastPrice = residue;
         } else {
             lastPrice = _price;
         }
-        _storageAddress.addPendingWithdrawals(_from, lastPrice);
+        // _storageAddress.addPendingWithdrawals(_from, lastPrice);
+        SnarkStorage(_storageAddress).transferFunds(_from, lastPrice);
     }
 
     function calculatePlatformProfitShare(address _storageAddress, uint256 _income) 
