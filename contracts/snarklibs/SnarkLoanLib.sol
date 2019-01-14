@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 import "../openzeppelin/SafeMath.sol";
 import "../SnarkStorage.sol";

@@ -1,6 +1,6 @@
 /// @title Base contract for Snark. Holds all common structs, events and base variables.
 /// @dev See the Snark contract documentation to understand how the contract is structured.
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 import "./openzeppelin/Ownable.sol";
 import "./openzeppelin/SafeMath.sol";
