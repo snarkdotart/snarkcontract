@@ -50,7 +50,7 @@ module.exports = {
         main: {
             // provider: mainNetProvider,
             gas: 7800000,
-            gasPrice: web3.toWei("8", "gwei"),
+            gasPrice: web3.utils.toWei("8", "gwei"),
             network_id: 1,
             host: "18.220.154.113",
             port: 8545,
@@ -59,7 +59,7 @@ module.exports = {
         ropsten: {
             // provider: ropstenProvider,
             gas: 7800000,
-            gasPrice: web3.toWei("8", "gwei"),
+            gasPrice: web3.utils.toWei("20", "gwei"),
             network_id: 3,
             host: "13.58.178.26",
             port: 8545,
@@ -68,7 +68,7 @@ module.exports = {
         rinkeby: {
             // provider: rinkebyProvider,
             gas: 7800000,
-            gasPrice: web3.toWei("8", "gwei"),
+            gasPrice: web3.utils.toWei("8", "gwei"),
             network_id: 4,
             host: "127.0.0.1",
             port: 8545,
@@ -80,5 +80,10 @@ module.exports = {
 			enabled: true,
 			runs: 200
 		}
-	}    
+    },
+    compilers: {
+        solc: {
+          version: "0.4.25",
+        },
+    },
 };
