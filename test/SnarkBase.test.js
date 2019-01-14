@@ -21,7 +21,7 @@ contract('SnarkBase', async (accounts) => {
     it("2. test ProfitShareScheme's functions", async () => {
         const participants = [
             '0xC04691B99EB731536E35F375ffC85249Ec713597', 
-            '0xB94691B99EB731536E35F375ffC85249Ec717233'
+            '0xCB1C59F74C2ac63200c673B98449D8D00bb711BB'
         ];
         const profits = [ 20, 80 ];
         const badProfits1 = [ 0, 90 ];
@@ -31,25 +31,16 @@ contract('SnarkBase', async (accounts) => {
         let retval = await instance.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 0, "error on step 1");
 
-        instance.events.ProfitShareSchemeAdded(
-            { fromBlock: 'latest' }, 
-            (error, result) => {
-                if (!error) {
-                    schemeId = result.args.profitShareSchemeId.toNumber();
-                }
-            }
-        );
-
         try { await instance.createProfitShareScheme(accounts[0], participants, badProfits1); } catch(e) {
-            assert.equal(e.message, 'VM Exception while processing transaction: revert Percent value has to be greater than zero');
+            assert.equal(e.message, 'Returned error: VM Exception while processing transaction: revert Percent value has to be greater than zero -- Reason given: Percent value has to be greater than zero.');
         }
 
         try { await instance.createProfitShareScheme(accounts[0], participants, badProfits2); } catch(e) {
-            assert.equal(e.message, 'VM Exception while processing transaction: revert Sum of all percentages has to be equal 100');
+            assert.equal(e.message, 'Returned error: VM Exception while processing transaction: revert Sum of all percentages has to be equal 100 -- Reason given: Sum of all percentages has to be equal 100.');
         }
 
         try { await instance.createProfitShareScheme(accounts[0], participants, badProfits3); } catch(e) {
-            assert.equal(e.message, 'VM Exception while processing transaction: revert Sum of all percentages has to be equal 100');
+            assert.equal(e.message, 'Returned error: VM Exception while processing transaction: revert Sum of all percentages has to be equal 100 -- Reason given: Sum of all percentages has to be equal 100.');
         }
         
         await instance.createProfitShareScheme(accounts[0], participants, profits);
@@ -75,7 +66,7 @@ contract('SnarkBase', async (accounts) => {
         const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
         const participants = [
             '0xC04691B99EB731536E35F375ffC85249Ec713597', 
-            '0xB94691B99EB731536E35F375ffC85249Ec717233'
+            '0xCB1C59F74C2ac63200c673B98449D8D00bb711BB'
         ];
         const profits = [ 20, 80 ];
         let profitShareSchemeId = 1;
@@ -91,21 +82,6 @@ contract('SnarkBase', async (accounts) => {
 
         retval = await instance.getNumberOfProfitShareSchemesForOwner(artist);
         assert.equal(retval.toNumber(), 0, "error on step 4");
-
-        const event = instance.TokenCreated({ fromBlock: 'latest' });
-        event.watch(function (error, result) {
-            if (!error) {
-                tokenId = result.args.tokenId.toNumber();
-                console.log("event TokenCreatedEvent: tokenId = ", tokenId);
-                // assert.equal(tokenId, 1, "SchemeId is not equal 1");
-            }
-        });
-
-        // let limitedEditionProfitSFSSProfitSSID = [
-        //     limitedEdition,
-        //     profitShareFromSecondarySale,
-        //     profitShareSchemeId
-        // ];
 
         a = [
             limitedEdition,
@@ -127,7 +103,7 @@ contract('SnarkBase', async (accounts) => {
                 b
             );
         } catch(e) {
-            assert.equal(e.message, 'VM Exception while processing transaction: revert Artist has to have the profit share schemeId');
+            assert.equal(e.message, 'Returned error: VM Exception while processing transaction: revert Artist has to have the profit share schemeId -- Reason given: Artist has to have the profit share schemeId.');
         }
 
         await instance.createProfitShareScheme(artist, participants, profits);
@@ -160,17 +136,17 @@ contract('SnarkBase', async (accounts) => {
     it("4. test changeProfitShareSchemeForToken function", async () => {
         const participants_prev = [
             '0xC04691B99EB731536E35F375ffC85249Ec713597', 
-            '0xB94691B99EB731536E35F375ffC85249Ec717233'
+            '0xCB1C59F74C2ac63200c673B98449D8D00bb711BB'
         ];
         const participants = [
-            '0xC04691B99EB731536E35F375ffC85249Ec713222', 
-            '0xB94691B99EB731536E35F375ffC85249Ec717777',
-            '0xB94691B99EB731536E35F375ffC85249Ec717999'
+            '0x6b92C59de02aD4F8E9650101E9d890298A2D5A54', 
+            '0xCB1C59F74C2ac63200c673B98449D8D00bb711BB',
+            '0x3Dd34385A0D48eba7A7C8498dEC65f1B7fD1D195'
         ];
         const profits = [ 30, 60, 10 ];
         const participants_2 = [
-            '0xC04691B99EB731536E35F375ffC85249Ec713228', 
-            '0xB94691B99EB731536E35F375ffC85249Ec717779'
+            '0x6b92C59de02aD4F8E9650101E9d890298A2D5A54', 
+            '0x3Dd34385A0D48eba7A7C8498dEC65f1B7fD1D195'
         ];
         const profits_2 = [ 70, 30 ];
         const artist = '0x7Af26b6056713AbB900f5dD6A6C45a38F1F70Bc5';
@@ -194,7 +170,7 @@ contract('SnarkBase', async (accounts) => {
         try {
             await instance.changeProfitShareSchemeForToken(1, 0, { from: artist });
         } catch (e) {
-            assert.equal(e.message, 'VM Exception while processing transaction: revert id of scheme can\'t be zero');
+            assert.equal(e.message, 'Returned error: VM Exception while processing transaction: revert id of scheme can\'t be zero -- Reason given: id of scheme can\'t be zero.');
         }
 
         retval = await instance.getProfitShareSchemeCountByAddress(accounts[0]);
@@ -208,26 +184,23 @@ contract('SnarkBase', async (accounts) => {
         try {
             await instance.changeProfitShareSchemeForToken(1, accountZeroSchemeId, { from: artist });
         } catch(e) {
-            assert.equal(e.message, 'VM Exception while processing transaction: revert Profit share scheme is not your');
+            assert.equal(e.message, 'Returned error: VM Exception while processing transaction: revert Profit share scheme is not your -- Reason given: Profit share scheme is not your.');
         }
         
         await instance.changeProfitShareSchemeForToken(1, 3, { from: artist });
 
         retval = await instance.getProfitShareParticipantsCount(artist);
-        assert.equal(retval.toNumber(), 7, "error on step 5");
+        assert.equal(retval.toNumber(), 4, "error on step 5");
 
         retval = await instance.getTokenDetail(1);
         assert.equal(retval[6].toNumber(), 3, "error on step 6");
 
         retval = await instance.getProfitShareParticipantsList(artist);
-        assert.equal(retval.length, 7, "error on step 7");
+        assert.equal(retval.length, 4, "error on step 7");
         assert.equal(retval[0].toLowerCase(), participants_prev[0].toLowerCase(), "error on step 8");
         assert.equal(retval[1].toLowerCase(), participants_prev[1].toLowerCase(), "error on step 9");
         assert.equal(retval[2].toLowerCase(), participants[0].toLowerCase(), "error on step 10");
-        assert.equal(retval[3].toLowerCase(), participants[1].toLowerCase(), "error on step 11");
-        assert.equal(retval[4].toLowerCase(), participants[2].toLowerCase(), "error on step 12");
-        assert.equal(retval[5].toLowerCase(), participants_2[0].toLowerCase(), "error on step 13");
-        assert.equal(retval[6].toLowerCase(), participants_2[1].toLowerCase(), "error on step 14");
+        assert.equal(retval[3].toLowerCase(), participants[2].toLowerCase(), "error on step 11");
     });
 
     it("5. test of getListOfAllArtists function", async () => {
@@ -245,17 +218,17 @@ contract('SnarkBase', async (accounts) => {
         
         const participants1 = [
             '0xC04691B99EB731536E35F375ffC85249Ec713597', 
-            '0xB94691B99EB731536E35F375ffC85249Ec717233'
+            '0xCB1C59F74C2ac63200c673B98449D8D00bb711BB'
         ];
         const participants2 = [
-            '0xC04691B99EB731536E35F375ffC85249Ec713222', 
-            '0xB94691B99EB731536E35F375ffC85249Ec717777',
-            '0xB94691B99EB731536E35F375ffC85249Ec717999'
+            '0xC04691B99EB731536E35F375ffC85249Ec713597', 
+            '0x3Dd34385A0D48eba7A7C8498dEC65f1B7fD1D195',
+            '0x4B69b0a8868b83cC6274C4411129689dEf6E411d'
         ];
         const participants3 = [
-            '0xC04691B99EB731536E35F375ffC85249Ec713222', 
-            '0xB94691B99EB731536E35F375ffC85249Ec717744',
-            '0xB94691B99EB731536E35F375ffC85249Ec717911'
+            '0xC04691B99EB731536E35F375ffC85249Ec713597', 
+            '0x4B69b0a8868b83cC6274C4411129689dEf6E411d',
+            '0x587c904d99D90d4097CD03B3C9A602d479D42fd2'
         ];
         const profits2 = [ 70, 30 ];
         const profits3 = [ 30, 60, 10 ];
