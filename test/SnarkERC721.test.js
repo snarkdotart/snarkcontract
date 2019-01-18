@@ -1,5 +1,6 @@
 var SnarkERC721 = artifacts.require("SnarkERC721");
 var SnarkBase = artifacts.require("SnarkBase");
+var SnarkStorage = artifacts.require("SnarkStorage");
 
 contract('SnarkERC721', async (accounts) => {
 
@@ -13,28 +14,19 @@ contract('SnarkERC721', async (accounts) => {
     before(async () => {
         instance = await SnarkERC721.deployed();
         instance_snarkbase = await SnarkBase.deployed();
+        instance_storage = await SnarkStorage.deployed();
 
-        const event1 = instance.Transfer({ fromBlock: 'latest' });
-        event1.watch(function (error, result) {
-            if (!error) {
-                console.log(`${ result.event}`);
-            }
+        console.log(`SnarkStorage address: ${instance_storage.address}`);
+        var balance = await web3.eth.getBalance(instance_storage.address);
+        console.log(`Balance of SnarkStorage before: ${balance}`);
+        var send = await web3.eth.sendTransaction({
+            from:   accounts[0],
+            to:     instance_storage.address, 
+            value:  web3.utils.toWei('1', "ether")
         });
-        
-        const event2 = instance.ApprovalForAll({ fromBlock: 'latest' });
-        event2.watch(function (error, result) {
-            if (!error) {
-                console.log(`${ result.event}`);
-            }
-        });
-        
-        const event3 = instance.Approval({ fromBlock: 'latest' });
-        event3.watch(function (error, result) {
-            if (!error) {
-                console.log(`${ result.event}`);
-            }
-        });
-        
+        console.log(send);
+        balance = await web3.eth.getBalance(instance_storage.address);
+        console.log(`Balance of SnarkStorage after: ${balance}`);
     });
 
     it("1. get size of the SnarkERC721 library", async () => {
@@ -76,7 +68,7 @@ contract('SnarkERC721', async (accounts) => {
         assert.equal(retval.toNumber(), 1, "error on step 2");
 
         // add a number of new tokens
-        const tokenHash = web3.sha3("tokenHash");
+        const tokenHash = web3.utils.sha3("tokenHash");
         const limitedEdition = 10;
         const profitShareFromSecondarySale = 20;
         // const tokenUrl = "http://snark.art";
@@ -185,13 +177,47 @@ contract('SnarkERC721', async (accounts) => {
         retval = await instance_snarkbase.getWithdrawBalance(participants[1]);
         assert.equal(retval.toNumber(), 0, "error on step 4");
 
-        await instance.transferFrom(tokenOwner, _to, _tokenId, { value: 10 });
+        const _v = web3.utils.toWei('1', 'Ether');
+        console.log(`From: ${ tokenOwner }`);
+        console.log(`To: ${ _to }`);
+        console.log('value = ', _v);
+
+        const tokenDetail = await instance_snarkbase.getTokenDetail(_tokenId);
+        console.log(`TokenId: ${ _tokenId }`);
+        console.log(`Current owner: ${ tokenDetail.currentOwner }`);
+        console.log(`Artist: ${ tokenDetail.artist }`);
+        console.log(`Hash of token: ${ tokenDetail.hashOfToken }`);
+        console.log(`Last price: ${ tokenDetail.lastPrice }`);
+        console.log(`Profit share schemeId: ${ tokenDetail.profitShareSchemeId }`);
+        console.log(`Profit share from secondary sale: ${ tokenDetail.profitShareFromSecondarySale }`);
+        
+        const numberParticipants = await instance_snarkbase.getNumberOfParticipantsForProfitShareScheme(tokenDetail.profitShareSchemeId);
+        console.log(`Number participants: ${ numberParticipants }`);
+        for (let i = 0; i < numberParticipants; i++) {
+            const participant = await instance_snarkbase.getParticipantOfProfitShareScheme(tokenDetail.profitShareSchemeId, i);
+            console.log(`participant ${i + 1}: ${ participant[0] } - ${ participant[1] }%`);
+        }
+
+        await instance_snarkbase.setSnarkWalletAddress(accounts[0]);
+
+        const snarkwalletandprofit = await instance_snarkbase.getSnarkWalletAddressAndProfit();
+        console.log(`Snark: ${ snarkwalletandprofit.snarkWalletAddr } - ${ snarkwalletandprofit.platformProfit }%`);
+
+        await instance.transferFrom(
+            tokenOwner, 
+            _to, 
+            _tokenId, 
+            { 
+                from: accounts[0], 
+                value: _v, 
+            }
+        );
 
         retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
         assert.equal(retval, _to, "error on step 5");
 
         retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
-        assert.equal(retval.toNumber(), 10, "error on step 6");
+        assert.equal(retval.toNumber(), 0, "error on step 6");
 
         retval = await instance_snarkbase.getWithdrawBalance(participants[0]);
         assert.equal(retval.toNumber(), 0, "error on step 7");
@@ -208,7 +234,6 @@ contract('SnarkERC721', async (accounts) => {
         retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
         assert.equal(retval, _from, "error on step 1");
 
-        // await instance.freeTransfer(_from, _to, _tokenId, { from: accounts[0] });
         await instance.transferFrom(_from, _to, _tokenId, { from: accounts[0] });
 
         retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
@@ -218,16 +243,14 @@ contract('SnarkERC721', async (accounts) => {
     it('15. freeTransfer - not owner can\'t call a function', async () => {
         const tokenId = 1;
         try {
-            // await instance.freeTransfer(accounts[2], accounts[3], tokenId, { from: accounts[3] });
             await instance.transferFrom(accounts[2], accounts[3], tokenId, { from: accounts[3] });
         } catch(err) {
-            assert.equal(err.message, 'VM Exception while processing transaction: revert You have to be either token owner or be approved by owner');
+            assert.equal(err.message, 'Returned error: VM Exception while processing transaction: revert You have to be either token owner or be approved by owner -- Reason given: You have to be either token owner or be approved by owner.');
         }
     });
 
     it('16. freeTransfer - snark can transfer token from other wallet', async () => {
         const tokenId = 1;
-        // await instance.freeTransfer(accounts[2], accounts[3], tokenId, { from: accounts[0] });
         await instance.transferFrom(accounts[2], accounts[3], tokenId, { from: accounts[0] });
     });
 });

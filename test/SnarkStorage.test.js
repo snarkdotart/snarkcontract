@@ -20,7 +20,7 @@ contract('SnarkStorage', async (accounts) => {
     });
 
     it("2. test of boolStorage functions", async () => {
-        const key = web3.sha3(variableName, '0xC04691B99EB731536E35F375ffC85249Ec713597');
+        const key = web3.utils.sha3(variableName, '0xC04691B99EB731536E35F375ffC85249Ec713597');
 
         let result = await instance.getBool(key);
         assert.isFalse(result);
@@ -37,7 +37,7 @@ contract('SnarkStorage', async (accounts) => {
     });
 
     it("3. test of stringStorage functions", async () => {
-        const key = web3.sha3(variableName, '2');
+        const key = web3.utils.sha3(variableName, '2');
         const val = 'ku-ku';
 
         let result = await instance.getString(key);
@@ -53,7 +53,7 @@ contract('SnarkStorage', async (accounts) => {
     });
 
     it("4. test of addressStorage functions", async () => {
-        const key = web3.sha3(variableName, '2');
+        const key = web3.utils.sha3(variableName, '2');
         const val = '0xC04691B99EB731536E35F375ffC85249Ec713597';
 
         let result = await instance.getAddress(key);
@@ -69,7 +69,7 @@ contract('SnarkStorage', async (accounts) => {
     });
 
     it("5. test of uintStorage functions", async () => {
-        const key = web3.sha3(variableName, '2');
+        const key = web3.utils.sha3(variableName, '2');
         const val = 245;
 
         let result = await instance.getUint(key);
@@ -85,8 +85,8 @@ contract('SnarkStorage', async (accounts) => {
     });
 
     it("6. test of bytesStorage functions", async () => {
-        const key = web3.sha3(variableName, '2');
-        const val = web3.sha3("newkey");
+        const key = web3.utils.sha3(variableName, '2');
+        const val = web3.utils.sha3("newkey");
 
         let result = await instance.getBytes(key);
         assert.equal(result, 0);
