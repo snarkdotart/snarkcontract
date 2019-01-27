@@ -208,7 +208,7 @@ contract('SnarkERC721', async (accounts) => {
             _to, 
             _tokenId, 
             { 
-                from: accounts[0], 
+                from: tokenOwner, 
                 value: _v, 
             }
         );
