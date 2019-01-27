@@ -14,24 +14,6 @@ import "./SnarkDefinitions.sol";
 
 contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC721, SnarkDefinitions {
 
-    event Transfer(
-        address indexed _from,
-        address indexed _to,
-        uint256 _tokenId
-    );
-
-    event Approval(
-        address indexed _owner,
-        address indexed _approved,
-        uint256 _tokenId
-    );
-
-    event ApprovalForAll(
-        address indexed _owner,
-        address indexed _operator,
-        bool _approved
-    );
-
     using SafeMath for uint256;
     using AddressUtils for address;
     using SnarkBaseLib for address;
