@@ -290,16 +290,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     }
 
     function toGiftToken(uint256 tokenId, address to) public onlyOwnerOf(tokenId) {
-        // require(to != address(0), "Receiver's  address can't be equal zero");
-        uint256 typeOfSale = _storage.getSaleTypeToToken(tokenId);
-        if (typeOfSale == uint256(SaleType.Offer)) {
-            uint256 _offerId = _storage.getOfferByToken(tokenId);
-            cancelOffer(_offerId);
-        }
-        require(
-            typeOfSale == uint256(SaleType.None), 
-            "Token has to be free from different obligations on Snark platform"
-        );
+        require(to != address(0), "Receiver's  address can't be equal zero");
+        _storage.prepareTokenToGift(to, tokenId);
         _storage.transferToken(tokenId, msg.sender, to);
     }
 

@@ -561,4 +561,21 @@ library SnarkOfferBidLib {
             _bidId
         );
     }
+
+    function prepareTokenToGift(address _storageAddress, address _to, uint256 _tokenId) public {
+        uint256 saleStatus = SnarkStorage(_storageAddress)
+            .uintStorage(keccak256(abi.encodePacked("saleTypeToToken", _tokenId)));
+        if (saleStatus == uint256(1)) { // SaleType.Offer = 1
+            uint256 _offerId = getOfferByToken(_storageAddress, _tokenId);
+            cancelOffer(_storageAddress, _offerId);
+        }
+        require(
+            saleStatus == uint256(0), 
+            "Token has to be free from different obligations on Snark platform"
+        );
+        uint256 _bidId = getBidForTokenAndBidOwner(_storageAddress, _to, _tokenId);
+        if (_bidId != uint256(0)) {
+            deleteBid(_storageAddress, _bidId);
+        }
+    }
 }
