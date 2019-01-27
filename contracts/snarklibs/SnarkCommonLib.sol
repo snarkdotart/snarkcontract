@@ -12,11 +12,14 @@ library SnarkCommonLib {
     using SnarkBaseLib for address;
     using SnarkBaseExtraLib for address;
 
-    event Transfer(address indexed _from, address indexed _to, uint256 _tokenId);
+    event Transfer(address indexed _from, address indexed _to, uint256 indexed _tokenId);
 
     function transferToken(address _storageAddress, uint256 _tokenId, address _from, address _to) internal {
         require(_tokenId > 0 && _tokenId <= _storageAddress.getTotalNumberOfTokens(), "Token Id is wrong");
-        require(_from == _storageAddress.getOwnerOfToken(_tokenId), "");
+        require(
+            _from == _storageAddress.getOwnerOfToken(_tokenId), 
+            "You try to transfer token from wrong owner address."
+        );
         uint256 _index = _storageAddress.getIndexOfOwnerToken(_from, _tokenId);
         _storageAddress.deleteTokenFromOwner(_from, _index);
         _storageAddress.setOwnerOfToken(_tokenId, _to);
