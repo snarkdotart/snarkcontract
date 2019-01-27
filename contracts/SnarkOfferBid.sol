@@ -116,17 +116,12 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         emit OfferAdded(msg.sender, offerId, _tokenId);
     }
 
-    /// @dev cancel offer. This is also done during the sale of the last token in the offer.  
+    /// @dev cancel offer. This is also done during the sale of the last token in the offer. 
+    /// All bids we need to leave.
     /// @param _offerId Offer ID
     function cancelOffer(uint256 _offerId) public correctOffer(_offerId) onlyOfferOwner(_offerId) {
         require(_storage.getSaleStatusForOffer(_offerId) == uint256(SaleStatus.Active), 
             "It's not impossible delete when the offer status is 'finished'");
-        // clear all data in the token
-        uint256 tokenId = _storage.getTokenByOffer(_offerId);
-        // deleting all bids related to the token
-        // return bid amounts to bidders
-        _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
-
         _storage.cancelOffer(_offerId);
         // emit event that the offer has been deleted        
         emit OfferDeleted(_offerId);
@@ -292,6 +287,20 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
     function setLinkDropPrice(uint256 tokenId, uint256 price) public onlyOwner {
         _storage.setTokenLastPrice(tokenId, price);
+    }
+
+    function toGiftToken(uint256 tokenId, address to) public onlyOwnerOf(tokenId) {
+        // require(to != address(0), "Receiver's  address can't be equal zero");
+        uint256 typeOfSale = _storage.getSaleTypeToToken(tokenId);
+        if (typeOfSale == uint256(SaleType.Offer)) {
+            uint256 _offerId = _storage.getOfferByToken(tokenId);
+            cancelOffer(_offerId);
+        }
+        require(
+            typeOfSale == uint256(SaleType.None), 
+            "Token has to be free from different obligations on Snark platform"
+        );
+        _storage.transferToken(tokenId, msg.sender, to);
     }
 
     function getSaleStatusForOffer(uint256 _offerId) public view returns (uint256) {
