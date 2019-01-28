@@ -19,5 +19,6 @@ module.exports = function(deployer) {
         await snarkbase_instance.setTokenSymbol("SNP001");
         await snarkbase_instance.changeRestrictAccess(true);
         await snarkbase_instance.setPlatformProfitShare(5);
+        await snarkbase_instance.setSnarkWalletAddress('0xF2d515F3fC586B6C0dc083599b224372f9B3e53c');
     });
 };
