@@ -1,3 +1,5 @@
+const BigNumber = require('bignumber.js');
+
 var SnarkERC721 = artifacts.require("SnarkERC721");
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkStorage = artifacts.require("SnarkStorage");
@@ -168,15 +170,6 @@ contract('SnarkERC721', async (accounts) => {
         retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
         assert.equal(retval, tokenOwner, "error on step 1");
 
-        retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
-        assert.equal(retval.toNumber(), 0, "error on step 2");
-
-        retval = await instance_snarkbase.getWithdrawBalance(participants[0]);
-        assert.equal(retval.toNumber(), 0, "error on step 3");
-
-        retval = await instance_snarkbase.getWithdrawBalance(participants[1]);
-        assert.equal(retval.toNumber(), 0, "error on step 4");
-
         const _v = web3.utils.toWei('1', 'Ether');
         console.log(`From: ${ tokenOwner }`);
         console.log(`To: ${ _to }`);
@@ -191,17 +184,31 @@ contract('SnarkERC721', async (accounts) => {
         console.log(`Profit share schemeId: ${ tokenDetail.profitShareSchemeId }`);
         console.log(`Profit share from secondary sale: ${ tokenDetail.profitShareFromSecondarySale }`);
         
-        const numberParticipants = await instance_snarkbase.getNumberOfParticipantsForProfitShareScheme(tokenDetail.profitShareSchemeId);
-        console.log(`Number participants: ${ numberParticipants }`);
-        for (let i = 0; i < numberParticipants; i++) {
-            const participant = await instance_snarkbase.getParticipantOfProfitShareScheme(tokenDetail.profitShareSchemeId, i);
-            console.log(`participant ${i + 1}: ${ participant[0] } - ${ participant[1] }%`);
-        }
-
-        await instance_snarkbase.setSnarkWalletAddress(accounts[0]);
+        await instance_snarkbase.setSnarkWalletAddress(accounts[5]);
 
         const snarkwalletandprofit = await instance_snarkbase.getSnarkWalletAddressAndProfit();
         console.log(`Snark: ${ snarkwalletandprofit.snarkWalletAddr } - ${ snarkwalletandprofit.platformProfit }%`);
+
+        const numberParticipants = await instance_snarkbase.getNumberOfParticipantsForProfitShareScheme(tokenDetail.profitShareSchemeId);
+        console.log(`Number participants: ${ numberParticipants }`);
+        const balanceOfParticipantsBeforeTransfer = [];
+        for (let i = 0; i < numberParticipants; i++) {
+            const participant = await instance_snarkbase.getParticipantOfProfitShareScheme(tokenDetail.profitShareSchemeId, i);
+            console.log(`participant ${i + 1}: ${ participant[0] } - ${ participant[1] }%`);
+
+            retval = await web3.eth.getBalance(participant[0]);
+            console.log(`Wallet balance of participant ${i + 1} (${ participant[0] }) before transferFrom: ${ retval } Wei`);
+            balanceOfParticipantsBeforeTransfer.push(retval);
+        }
+        
+        balanceOfSnarkWalletBeforeTransfer = await web3.eth.getBalance(snarkwalletandprofit.snarkWalletAddr);
+        console.log(`Wallet balance of Snark (${ snarkwalletandprofit.snarkWalletAddr }) before transferFrom: ${ balanceOfSnarkWalletBeforeTransfer } Wei`);
+
+        balanceOfTokenOwnerBeforeTransfer = await web3.eth.getBalance(tokenOwner);
+        console.log(`Wallet balance of token owner (${ tokenOwner }) before transferFrom: ${ balanceOfTokenOwnerBeforeTransfer } Wei`);
+
+        balanceOfTokenReceiverBeforeTransfer = await web3.eth.getBalance(_to);
+        console.log(`Wallet balance of token receiver (${ _to }) before transferFrom: ${ balanceOfTokenReceiverBeforeTransfer } Wei`);
 
         await instance.transferFrom(
             tokenOwner, 
@@ -213,17 +220,29 @@ contract('SnarkERC721', async (accounts) => {
             }
         );
 
+        const profit = (tokenDetail.lastPrice == 0) ? new BigNumber(_v) : new BigNumber(_v).multipliedBy(tokenDetail.profitShareFromSecondarySale).dividedBy(100);
+        console.log(`Profit is: ${ profit.toNumber() }`);
+
+        // процент снарку составляет
+        const valueOfSnark = profit.multipliedBy(snarkwalletandprofit.platformProfit).dividedBy(100);
+        console.log(`Snark 5% = ${ valueOfSnark.toNumber() } `);
+
+        balanceOfSnarkWalletAfterTransfer = await web3.eth.getBalance(snarkwalletandprofit.snarkWalletAddr);
+        console.log(`Wallet balance of Snark (${ snarkwalletandprofit.snarkWalletAddr }) after transferFrom: ${ balanceOfSnarkWalletAfterTransfer } Wei`);
+        assert.equal(balanceOfSnarkWalletAfterTransfer, new BigNumber(balanceOfSnarkWalletBeforeTransfer).plus(valueOfSnark).toNumber(), "balance of Snark isn't correct");
+
+        for (let i = 0; i < numberParticipants; i++) {
+            const participant = await instance_snarkbase.getParticipantOfProfitShareScheme(tokenDetail.profitShareSchemeId, i);
+            const valueOfParticipant = profit.minus(valueOfSnark).multipliedBy(participant[1]).dividedBy(100);
+
+            retval = await web3.eth.getBalance(participant[0]);
+            console.log(`Wallet balance of participant ${i + 1} (${ participant[0] }) after transferFrom: ${ retval } Wei`);
+            
+            assert.equal(retval, new BigNumber(balanceOfParticipantsBeforeTransfer[i]).plus(valueOfParticipant), "balance of participant isn't correct");
+        }
+
         retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
         assert.equal(retval, _to, "error on step 5");
-
-        retval = await instance_snarkbase.getWithdrawBalance(tokenOwner);
-        assert.equal(retval.toNumber(), 0, "error on step 6");
-
-        retval = await instance_snarkbase.getWithdrawBalance(participants[0]);
-        assert.equal(retval.toNumber(), 0, "error on step 7");
-
-        retval = await instance_snarkbase.getWithdrawBalance(participants[1]);
-        assert.equal(retval.toNumber(), 0, "error on step 8");
     });
 
     it("14. test freeTransfer function behalf of contract owner", async () => {
