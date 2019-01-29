@@ -99,7 +99,11 @@ library SnarkCommonLib {
     )
         internal 
     {
-        incomeDistribution(_storageAddress, _value, _tokenId, _from);
+        uint256 profit;
+        uint256 price;
+        (profit, price) = calculatePlatformProfitShare(_storageAddress, _value);
+        takePlatformProfitShare(_storageAddress, profit);
+        incomeDistribution(_storageAddress, price, _tokenId, _from);
         _storageAddress.setTokenLastPrice(_tokenId, _value);
         _storageAddress.setSaleTypeToToken(_tokenId, 0);
         transferToken(_storageAddress, _tokenId, _from, _to);

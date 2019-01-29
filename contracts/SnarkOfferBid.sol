@@ -205,10 +205,6 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
         address bidOwner = _storage.getOwnerOfBid(_bidId);
         _storage.subPendingWithdrawals(_storage, price);
-        uint256 profit;
-        (profit, price) = _storage.calculatePlatformProfitShare(price);
-        _storage.takePlatformProfitShare(profit);
-
         _storage.buy(tokenId, price, tokenOwner, bidOwner);
         _erc721.echoTransfer(tokenOwner, bidOwner, tokenId);
         _storage.deleteBid(_bidId);
@@ -260,13 +256,10 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         uint256 refunds = msg.value.sub(sumPrice);
         _storage.transfer(msg.value);
 
-        uint256 profit;
         for (i = 0; i < _offerIdArray.length; i++) {
             tokenId = _storage.getTokenByOffer(_offerIdArray[i]);
             tokenOwner = _storage.getOwnerOfToken(tokenId);
             uint256 price = _storage.getOfferPrice(_offerIdArray[i]);
-            (profit, price) = _storage.calculatePlatformProfitShare(price);
-            _storage.takePlatformProfitShare(profit);
             _storage.buy(tokenId, price, tokenOwner, msg.sender);
             _erc721.echoTransfer(tokenOwner, msg.sender, tokenId);
             // delete own's bid for the token if it exists

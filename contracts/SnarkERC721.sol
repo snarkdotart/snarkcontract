@@ -201,11 +201,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
 
         if (msg.value > 0) {
             _storage.transfer(msg.value);
-            uint256 profit;
-            uint256 price;
-            (profit, price) = _storage.calculatePlatformProfitShare(msg.value);
-            _storage.takePlatformProfitShare(profit);
-            _storage.buy(_tokenId, price, _from, _to);
+            _storage.buy(_tokenId, msg.value, _from, _to);
         } else {
             _storage.transferToken(_tokenId, _from, _to);
         }
