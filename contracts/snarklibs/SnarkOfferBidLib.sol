@@ -569,6 +569,8 @@ library SnarkOfferBidLib {
             uint256 _offerId = getOfferByToken(_storageAddress, _tokenId);
             cancelOffer(_storageAddress, _offerId);
         }
+        saleStatus = SnarkStorage(_storageAddress)
+            .uintStorage(keccak256(abi.encodePacked("saleTypeToToken", _tokenId)));
         require(
             saleStatus == uint256(0), 
             "Token has to be free from different obligations on Snark platform"

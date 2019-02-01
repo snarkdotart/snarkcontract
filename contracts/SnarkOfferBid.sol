@@ -286,6 +286,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         require(to != address(0), "Receiver's  address can't be equal zero");
         _storage.prepareTokenToGift(to, tokenId);
         _storage.transferToken(tokenId, msg.sender, to);
+        _erc721.echoTransfer(msg.sender, to, tokenId);
     }
 
     function getSaleStatusForOffer(uint256 _offerId) public view returns (uint256) {
