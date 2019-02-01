@@ -577,7 +577,21 @@ library SnarkOfferBidLib {
         );
         uint256 _bidId = getBidForTokenAndBidOwner(_storageAddress, _to, _tokenId);
         if (_bidId != uint256(0)) {
-            deleteBid(_storageAddress, _bidId);
+            uint256 _saleStatus = getBidSaleStatus(_storageAddress, _bidId);
+            if (_saleStatus == 2) { // Active 
+                uint256 _bidPrice = getBidPrice(_storageAddress, _bidId);
+                uint256 currentBalance = SnarkStorage(_storageAddress).uintStorage(
+                    keccak256(abi.encodePacked("pendingWithdrawals", _storageAddress)));
+                SnarkStorage(_storageAddress).setUint(
+                    keccak256(abi.encodePacked("pendingWithdrawals", _storageAddress)),
+                    currentBalance.sub(_bidPrice)
+                );
+                deleteBid(_storageAddress, _bidId);
+                if (getMaxBidForToken(_storageAddress, _tokenId) == _bidId) {
+                    updateMaxBidPriceForToken(_storageAddress, _tokenId);
+                }
+                SnarkStorage(_storageAddress).transferFunds(_to, _bidPrice);
+            }
         }
     }
 }
