@@ -967,4 +967,33 @@ contract('SnarkOfferBid', async (accounts) => {
         }
 
     });
+
+    it("10. test toGiftToken function", async () => {
+        const tokenId = 1;
+        const token_price = web3.utils.toWei('3', "Ether");
+        let offerId = await instance.getOfferByToken(tokenId);
+        const owner_old = await instance_snarkbase.getOwnerOfToken(tokenId);
+        const owner_new = accounts[10];
+        
+        assert.notEqual(owner_old, owner_new, "error on step 1");
+        
+        let bidId = await instance.getBidOfOwnerForToken(tokenId, { from: owner_new });
+        
+        assert.equal(offerId, 0, "error on step 2");
+        assert.equal(bidId, 0, "error on step 3");
+
+        await instance.addOffer(tokenId, token_price, { from: owner_old });
+        await instance.addBid(tokenId, { from: owner_new, value: web3.utils.toWei('2.3', "Ether")});
+        
+        bidId = await instance.getBidOfOwnerForToken(tokenId, { from: owner_new });
+        assert.notEqual(bidId, 0, "error on step 4");
+        
+        await instance.toGiftToken(tokenId, owner_new, { from: owner_old });
+
+        const user = await instance_snarkbase.getOwnerOfToken(tokenId);
+        assert.equal(user, owner_new, "error on step 5");
+
+        bidId = await instance.getBidOfOwnerForToken(tokenId, { from: owner_new });
+        assert.equal(bidId, 0, "error on step 6");
+    });
 });
