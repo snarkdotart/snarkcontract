@@ -8,14 +8,14 @@ var SnarkERC721 = artifacts.require("SnarkERC721");
 
 module.exports = function(deployer) {
     deployer.then(async () => {
-        let storage_instance = await SnarkStorage.deployed();
-        let erc721_instance = await SnarkERC721.deployed();
+        const storage_instance = await SnarkStorage.deployed();
+        const erc721_instance = await SnarkERC721.deployed();
         await deployer.link(SafeMath, SnarkLoan);
         await deployer.link(SnarkCommonLib, SnarkLoan);
         await deployer.link(SnarkBaseLib, SnarkLoan);
         await deployer.link(SnarkLoanLib, SnarkLoan);
         await deployer.deploy(SnarkLoan, storage_instance.address, erc721_instance.address);
-        let snarkLoan_instance = await SnarkLoan.deployed();
+        const snarkLoan_instance = await SnarkLoan.deployed();
         await storage_instance.allowAccess(snarkLoan_instance.address);
         await snarkLoan_instance.setDefaultLoanDuration(30);
     });

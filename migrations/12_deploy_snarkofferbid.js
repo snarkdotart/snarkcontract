@@ -10,8 +10,8 @@ var SnarkERC721 = artifacts.require("SnarkERC721");
 
 module.exports = function(deployer) {
     deployer.then(async () => {
-        let storage_instance = await SnarkStorage.deployed();
-        let erc721_instance = await SnarkERC721.deployed();
+        const storage_instance = await SnarkStorage.deployed();
+        const erc721_instance = await SnarkERC721.deployed();
         await deployer.link(SafeMath, SnarkOfferBid);
         await deployer.link(SnarkCommonLib, SnarkOfferBid);
         await deployer.link(SnarkBaseLib, SnarkOfferBid);
@@ -19,7 +19,7 @@ module.exports = function(deployer) {
         await deployer.link(SnarkOfferBidLib, SnarkOfferBid);
         await deployer.link(SnarkLoanLib, SnarkOfferBid);
         await deployer.deploy(SnarkOfferBid, storage_instance.address, erc721_instance.address);
-        let snarkofferbid_instance = await SnarkOfferBid.deployed();
+        const snarkofferbid_instance = await SnarkOfferBid.deployed();
         await storage_instance.allowAccess(snarkofferbid_instance.address);
     });
 
