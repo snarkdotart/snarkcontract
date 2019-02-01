@@ -234,7 +234,6 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         if (_storage.getMaxBidForToken(tokenId) == _bidId) {
             _storage.updateMaxBidPriceForToken(tokenId);
         }
-        // _storage.addPendingWithdrawals(bidder, price);
         SnarkStorage(_storage).transferFunds(bidder, price);
         emit BidCanceled(tokenId, _bidId);
     }
