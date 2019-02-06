@@ -109,7 +109,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
                 "Offer amount must be higher than the bid price");
         }
         // delete all loans if they exist
-        _storage.cancelTokenInLoan(_tokenId);
+        _storage.cancelTokenFromAllLoans(_tokenId);
         // Offer creation and return of the offer ID
         uint256 offerId = _storage.addOffer(msg.sender, _tokenId, _price);
         // Emit an event that returns token id and offer id as well
@@ -201,7 +201,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         address tokenOwner = _storage.getOwnerOfToken(tokenId);
         require(msg.sender == tokenOwner, "Only owner can accept a bid for their token");
 
-        _storage.cancelTokenInLoan(tokenId);
+        _storage.cancelTokenFromAllLoans(tokenId);
 
         address bidOwner = _storage.getOwnerOfBid(_bidId);
         _storage.subPendingWithdrawals(_storage, price);

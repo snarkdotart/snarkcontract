@@ -32,7 +32,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     event TokensBorrowed(address indexed loanOwner, uint256[] tokens);
     event LoanFinished(uint256 loanId);
     event LoanDeleted(uint256 loanId);
-    event TokenCanceledInLoans(uint256 tokenId, uint256[] loanList);
+    event TokenCanceledInLoans(uint256 tokenId, uint256 loanId);
 
     modifier restrictedAccess() {
         if (_storage.isRestrictedAccess()) {
@@ -87,6 +87,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 _storage.getOwnerOfToken(tokensIds[i]) != msg.sender,
                 "Borrower can't request loan for their own tokens"
             );
+            // FIXME: возможно тут надо пропускать те токены, которые уже заняты. Т.е. не выкидывать
             // check that the token is not being sold 
             require(_storage.getSaleTypeToToken(
                 tokensIds[i]) != uint256(SaleType.Offer), 
@@ -114,6 +115,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                     _storage.isTokenAcceptOfLoanRequestFromOthers(tokensIds[i]);
                 if (isAgree) {
                     // storing the reserved period in the calendar and the loan that created the reserve 
+                    // FIXME: сделать расчеты не по дням, а по минутам
                     _storage.makeTokenBusyForPeriod(loanId, tokensIds[i], startDate, duration);
                     // token is moved to the Approved List - 1
                     _storage.addTokenToListOfLoan(loanId, tokensIds[i], 1);
@@ -183,6 +185,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     /// from 14th of the month for 3 days. So the start should occur on 14th at 0:01, because 13th must be over
     /// if there was a loan for that date and it should end on 14th at 0:00
     /// when the previous loan stops and the next loan begins at 0:01
+    // TODO: проверять дату - можно ли выполнить эту команду или нет
     function startLoan(uint256 loanId) public onlyOwner correctLoan(loanId) {
         // check that there was not an accidental double launch
         require(
@@ -213,6 +216,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         emit LoanStarted(loanId);
     }
 
+    // TODO: проверять дату - можно ли выполнить эту команду или нет
     /// @notice function initiates the transfer of tokens into the wallet of the loan requester,
     /// and the requester needs to pay gas for both transfer to and for transfer back of the tokens 
     function borrowLoanedTokens(uint256 loanId) public payable onlyLoanOwner(loanId) correctLoan(loanId) {
@@ -221,7 +225,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         /*************************************************************/
         // Check that the amount of money that arrived is correct
         uint256 price = _storage.getCostOfStopLoanOperationForLoan(loanId);
-        require(msg.value >= price, "");
+        require(msg.value >= price, "The amount of funds received is less than the required");
         // Move the funds to Snark wallet, because it will be used to call 
         // the return of the tokens to their rightful owners after loan ends 
         address snarkWallet = _storage.getSnarkWalletAddress();
@@ -258,12 +262,15 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         require(_storage.getLoanSaleStatus(loanId) == uint256(SaleStatus.Active), "Loan is not active");
         address loanOwner = _storage.getOwnerOfLoan(loanId);
         _storage.setLoanSaleStatus(loanId, uint256(SaleStatus.Finished));
+        uint256 startDate = _storage.getStartDateOfLoan(loanId);
+        uint256 duration = _storage.getDurationOfLoan(loanId);
         uint256[] memory approvedTokens = _storage.getTokensListOfLoanByType(loanId, 1);
         for (uint256 i = 0; i < approvedTokens.length; i++) {
             _storage.setSaleTypeToToken(approvedTokens[i], uint256(SaleType.None));
             address currentOwnerOfToken = _storage.getOwnerOfToken(approvedTokens[i]);
             // check just in case that the token still belongs to the borrower 
             require(loanOwner == currentOwnerOfToken, "Token owner is not a loan owner yet");
+            _storage.makeTokenFreeForPeriod(approvedTokens[i], startDate, duration);
             _storage.transferToken(
                 approvedTokens[i],
                 loanOwner,
@@ -276,7 +283,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         emit LoanFinished(loanId);
     }
 
-    /// @notice token owner can cancel their loan prior to start of loan 
+    /// @notice loan owner can cancel their loan prior to start of loan 
     function deleteLoan(uint256 loanId) public onlyLoanOwner(loanId) correctLoan(loanId) {
         // check loan status - it must not be Active or Finished
         require(
@@ -295,9 +302,10 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             _storage.makeTokenFreeForPeriod(approvedTokens[i], startDate, duration);
             // remove the loan request from the token owners 
             _storage.deleteLoanRequestFromTokenOwner(loanId, approvedTokens[i]);
-            // remove loan from the loan owner list 
-            _storage.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId);
+            _storage.setSaleTypeToToken(approvedTokens[i], uint256(SaleType.None));
         }
+        // remove loan from the loan owner list 
+        _storage.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId);
         // return any loan compensation from the token owner to the loan owner
         uint256 loanPrice = _storage.getPriceOfLoan(loanId);
         if (loanPrice > 0) {
@@ -312,13 +320,29 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     }
 
     /// @notice allow token owner to the remove their token from participation in a loan 
-    function cancelTokenInLoan(uint256 tokenId) public {
-        require(
-            msg.sender == _storage.getOwnerOfToken(tokenId), 
-            "Only owner of token can withdraw its token from participation in a loan"
-        );
-        _storage.setSaleTypeToToken(tokenId, uint256(SaleType.None));
-        _storage.cancelTokenInLoan(tokenId);
+    function cancelTokenInLoan(uint256[] tokenIds, uint256 loanId) public {
+        address tokenRealOwner;
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            uint256 saleStatus = _storage.getLoanSaleStatus(loanId);
+            if (saleStatus != uint256(SaleStatus.Active)) {
+                tokenRealOwner = _storage.getOwnerOfToken(tokenId);
+            } else {
+                tokenRealOwner = _storage.getActualTokenOwnerForLoan(loanId, tokenId);
+            }
+            require(
+                msg.sender == tokenRealOwner, 
+                "Only owner of token can withdraw its token from participation in a loan"
+            );
+            _storage.setSaleTypeToToken(tokenId, uint256(SaleType.None));
+            _storage.cancelTokenInLoan(tokenId, loanId);
+        }
+        uint256[] memory notApprovedTokensList;
+        uint256[] memory approvedTokensList;
+        (notApprovedTokensList, approvedTokensList,) = getTokenListsOfLoanByTypes(loanId);
+        if (notApprovedTokensList.length == 0 && approvedTokensList.length == 0) {
+            deleteLoan(loanId);
+        }
     }
 
     /// @notice return tokens in all 3 loan lists
@@ -367,4 +391,16 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         _storage.setCostOfStopLoanOperationForLoan(loanId, costOfStopOperation);
     }
 
+    /// @notice return a total number of loans
+    function getTotalNumberOfLoans() public view returns (uint256) {
+        return _storage.getTotalNumberOfLoans();
+    }
+
+    function getActualTokenOwnerForLoan(uint256 loanId, uint256 tokenId) public view returns (address) {
+        return _storage.getActualTokenOwnerForLoan(loanId, tokenId);
+    }
+
+    function getListOfLoansFromTokensLoanList(uint256 tokenId) public view returns (uint256[]) {
+        return _storage.getListOfLoansFromTokensLoanList(tokenId);
+    }
 }

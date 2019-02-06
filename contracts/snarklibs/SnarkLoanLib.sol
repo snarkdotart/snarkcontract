@@ -10,7 +10,7 @@ library SnarkLoanLib {
 
     using SafeMath for uint256;
     
-    event TokenCanceledInLoans(uint256 tokenId, uint256[] loanList);
+    event TokenCanceledInLoans(uint256 tokenId, uint256 loanId);
 
     function createLoan(
         address storageAddress, 
@@ -884,29 +884,43 @@ library SnarkLoanLib {
     }
 
     /// @notice removal of token from loan.  possible only prior to loan start.
-    function cancelTokenInLoan(address storageAddress, uint256 tokenId) public {
+    function cancelTokenInLoan(address storageAddress, uint256 tokenId, uint256 loanId) public {
+        require(
+            getLoanSaleStatus(storageAddress, loanId) != 3,
+            "Loan can't be in 'Finished' status"
+        );
+        // transfer token from Approved list into Declined list
+        addTokenToListOfLoan(storageAddress, loanId, tokenId, 2);
+        // remove from the token calendar the booked days 
+        uint256 startDate = getStartDateOfLoan(storageAddress, loanId);
+        uint256 duration = getDurationOfLoan(storageAddress, loanId);
+        makeTokenFreeForPeriod(storageAddress, tokenId, startDate, duration);
+        // remove loan request from the token owners 
+        deleteLoanRequestFromTokenOwner(storageAddress, loanId, tokenId);
+        removeLoanFromTokensLoanList(storageAddress, tokenId, loanId);
+        removeTokenFromListOfLoan(storageAddress, loanId, tokenId);
+        
+        emit TokenCanceledInLoans(tokenId, loanId);
+    }
+
+    function cancelTokenFromAllLoans(address storageAddress, uint256 tokenId) public {
         uint256[] memory loanList = getListOfLoansFromTokensLoanList(storageAddress, tokenId);
         for (uint256 i = 0; i < loanList.length; i++) {
             // check that the removal is not for loans with Finished status
-            require(
-                getLoanSaleStatus(storageAddress, loanList[i]) != 3,
-                "Loan can't be in 'Finished' status"
-            );
-            // transfer token from Approved list into Declined list
-            addTokenToListOfLoan(storageAddress, loanList[i], tokenId, 2);
-            // remove from the token calendar the booked days 
-            uint256 startDate = getStartDateOfLoan(storageAddress, loanList[i]);
-            uint256 duration = getDurationOfLoan(storageAddress, loanList[i]);
-            makeTokenFreeForPeriod(storageAddress, tokenId, startDate, duration);
-            // remove loan request from the token owners 
-            deleteLoanRequestFromTokenOwner(storageAddress, loanList[i], tokenId);
-            removeLoanFromTokensLoanList(storageAddress, tokenId, loanList[i]);
-            removeTokenFromListOfLoan(storageAddress, loanList[i], tokenId);
-
-        }
-        if (loanList.length > 0) {
-            emit TokenCanceledInLoans(tokenId, loanList);
+            if (getLoanSaleStatus(storageAddress, loanList[i]) != 3) {
+                // transfer token from Approved list into Declined list
+                addTokenToListOfLoan(storageAddress, loanList[i], tokenId, 2);
+                // remove from the token calendar the booked days 
+                uint256 startDate = getStartDateOfLoan(storageAddress, loanList[i]);
+                uint256 duration = getDurationOfLoan(storageAddress, loanList[i]);
+                makeTokenFreeForPeriod(storageAddress, tokenId, startDate, duration);
+                // remove loan request from the token owners 
+                deleteLoanRequestFromTokenOwner(storageAddress, loanList[i], tokenId);
+                removeLoanFromTokensLoanList(storageAddress, tokenId, loanList[i]);
+                removeTokenFromListOfLoan(storageAddress, loanList[i], tokenId);
+                
+                emit TokenCanceledInLoans(tokenId, loanList[i]);
+            }
         }
     }
-
 }
