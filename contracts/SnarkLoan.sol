@@ -33,6 +33,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     event LoanFinished(uint256 loanId);
     event LoanDeleted(uint256 loanId);
     event TokenCanceledInLoans(uint256 tokenId, uint256 loanId);
+    event TokenDeclinedInLoanCreation(uint256 tokenId);
 
     modifier restrictedAccess() {
         if (_storage.isRestrictedAccess()) {
@@ -80,6 +81,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     /// duration - simple number in days, example 10 (days)
     function createLoan(uint256[] tokensIds, uint256 startDate, uint256 duration) public payable restrictedAccess {
         require(duration <= getDefaultLoanDuration(), "Duration exceeds a max value");
+        uint256[] memory tokensList = new uint256[](tokensIds.length);
+        uint256 indexLength = 0;
         // check if the user requested their own tokens
         for (uint256 i = 0; i < tokensIds.length; i++) {
             require(tokensIds[i] <= _storage.getTotalNumberOfTokens(), "Token id has to be valid");
@@ -87,12 +90,13 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 _storage.getOwnerOfToken(tokensIds[i]) != msg.sender,
                 "Borrower can't request loan for their own tokens"
             );
-            // FIXME: возможно тут надо пропускать те токены, которые уже заняты. Т.е. не выкидывать
             // check that the token is not being sold 
-            require(_storage.getSaleTypeToToken(
-                tokensIds[i]) != uint256(SaleType.Offer), 
-                "Token's sale type cannot be 'Offer'"
-            );
+            if (_storage.getSaleTypeToToken(tokensIds[i]) != uint256(SaleType.Offer)) {
+                tokensList[indexLength] = tokensIds[i];
+                indexLength = indexLength + 1;
+            } else {
+                emit TokenDeclinedInLoanCreation(tokensIds[i]);
+            }
         }
          // Transfer money funds into the contract 
         if (msg.value > 0) { 
@@ -100,35 +104,38 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             _storage.addPendingWithdrawals(_storage, msg.value); 
         }
         // Create new entry for a Loan
-        uint256 loanId = _storage.createLoan(msg.sender, msg.value, tokensIds, startDate, duration);
-        bool isAgree = false;
-        for (i = 0; i < tokensIds.length; i++) {
-            address tokenOwner = _storage.getOwnerOfToken(tokensIds[i]);
-            // storing the token's owner so that the token can be returned to them 
-            _storage.setActualTokenOwnerForLoan(loanId, tokensIds[i], tokenOwner);
-            if (_storage.isTokenBusyForPeriod(tokensIds[i], startDate, duration)) {
-                // if there is a schedule conflict, token is moved to Declined List - 2
-                _storage.addTokenToListOfLoan(loanId, tokensIds[i], 2);
-            } else {
-                isAgree = (msg.sender == owner) ? 
-                    _storage.isTokenAcceptOfLoanRequestFromSnark(tokensIds[i]) :
-                    _storage.isTokenAcceptOfLoanRequestFromOthers(tokensIds[i]);
-                if (isAgree) {
-                    // storing the reserved period in the calendar and the loan that created the reserve 
-                    // FIXME: сделать расчеты не по дням, а по минутам
-                    _storage.makeTokenBusyForPeriod(loanId, tokensIds[i], startDate, duration);
-                    // token is moved to the Approved List - 1
-                    _storage.addTokenToListOfLoan(loanId, tokensIds[i], 1);
+        if (indexLength > 0) {
+            uint256 loanId = _storage.createLoan(msg.sender, msg.value, tokensList, startDate, duration);
+            bool isAgree = false;
+            for (i = 0; i < indexLength; i++) {
+                address tokenOwner = _storage.getOwnerOfToken(tokensList[i]);
+                // storing the token's owner so that the token can be returned to them 
+                _storage.setActualTokenOwnerForLoan(loanId, tokensList[i], tokenOwner);
+                if (_storage.isTokenBusyForPeriod(tokensList[i], startDate, duration)) {
+                    // if there is a schedule conflict, token is moved to Declined List - 2
+                    _storage.addTokenToListOfLoan(loanId, tokensList[i], 2);
                 } else {
-                    _storage.addLoanRequestToTokenOwner(
-                        tokenOwner,
-                        tokensIds[i],
-                        loanId
-                    );
+                    isAgree = (msg.sender == owner) ? 
+                        _storage.isTokenAcceptOfLoanRequestFromSnark(tokensList[i]) :
+                        _storage.isTokenAcceptOfLoanRequestFromOthers(tokensList[i]);
+                    if (isAgree) {
+                        // storing the reserved period in the calendar and the loan that created the reserve 
+                        // FIXME: сделать расчеты не по дням, а по минутам. 
+                        // Проблема - как проверять? Ибо прибавление по суткам делать менее накладно, чем по минутам
+                        _storage.makeTokenBusyForPeriod(loanId, tokensList[i], startDate, duration);
+                        // token is moved to the Approved List - 1
+                        _storage.addTokenToListOfLoan(loanId, tokensList[i], 1);
+                    } else {
+                        _storage.addLoanRequestToTokenOwner(
+                            tokenOwner,
+                            tokensList[i],
+                            loanId
+                        );
+                    }
                 }
             }
+            emit LoanCreated(msg.sender, loanId, _storage.getTokensListOfLoanByType(loanId, 0));
         }
-        emit LoanCreated(msg.sender, loanId, _storage.getTokensListOfLoanByType(loanId, 0));
     }
 
     /// @notice owner agrees with the loan request for their token 
