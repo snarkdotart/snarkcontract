@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path_env_prod = '../snarkfrontend/src/environments/environment.prod.ts';
 const path_env = '../snarkfrontend/src/environments/environment.ts';
-const path_api = '../snarkbackend/src/config.ts';
+// const path_api = '../snarkbackend/src/config.ts';
 
 const dictionary = [
 	['CONTRACT_SNARKBASE_ADDRESS', './build/contracts/SnarkBase.json', 'addressSnarkBase: process.env.CONTRACT_ADDRESS_SNARK_BASE'], 
@@ -70,23 +70,23 @@ if (fs.existsSync(path_env_prod)) {
 
 // BACKEND
 
-if (fs.existsSync(path_api)) {
-	let new_buf = '';
-	const buf = fs.readFileSync(path_api).toString();
-	buf.split(/\n/).forEach(function(line) {
-		let tmp_line = line;
-		for (let i = 0; i < dictionary.length; i++) {
-			let key_line = dictionary[i][2];
-			if (tmp_line.indexOf(key_line) != -1) {
-				let path_to_file = dictionary[i][1];
-				let contract = JSON.parse(fs.readFileSync(path_to_file));
-				let addr = JSON.stringify(contract.networks[network_number].address);
-				tmp_line = '  ' + key_line + ' || ' + addr + ',';
-			}
-		}
-		new_buf += tmp_line + '\n';
-	});
-	fs.writeFileSync(path_api, new_buf);
-} else {
-	console.log('Can\'t find file');
-}
+// if (fs.existsSync(path_api)) {
+// 	let new_buf = '';
+// 	const buf = fs.readFileSync(path_api).toString();
+// 	buf.split(/\n/).forEach(function(line) {
+// 		let tmp_line = line;
+// 		for (let i = 0; i < dictionary.length; i++) {
+// 			let key_line = dictionary[i][2];
+// 			if (tmp_line.indexOf(key_line) != -1) {
+// 				let path_to_file = dictionary[i][1];
+// 				let contract = JSON.parse(fs.readFileSync(path_to_file));
+// 				let addr = JSON.stringify(contract.networks[network_number].address);
+// 				tmp_line = '  ' + key_line + ' || ' + addr + ',';
+// 			}
+// 		}
+// 		new_buf += tmp_line + '\n';
+// 	});
+// 	fs.writeFileSync(path_api, new_buf);
+// } else {
+// 	console.log('Can\'t find file');
+// }
