@@ -98,6 +98,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @param _tokenId Token IDs included in the offer
     /// @param _price The price for all tokens included in the offer
     function addOffer(uint256 _tokenId, uint256 _price) public onlyOwnerOf(_tokenId) {
+        require(_price > 0, "Price has to be more than zero");
         require(
             _storage.getSaleTypeToToken(_tokenId) == uint256(SaleType.None),
             "Token should not be involved in sales"
@@ -130,17 +131,13 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
     /// @dev Function to set bid for an token
     /// @param _tokenId Token token ID
     function addBid(uint256 _tokenId) public payable {
-        // token has to be exist
         require(_tokenId > 0 && _tokenId <= _storage.getTotalNumberOfTokens());
-        // check an amount of bids for the token
         uint256 amountOfBids = _storage.getNumberBidsOfToken(_tokenId);
         require(amountOfBids < 10, "Token can't have more than 10 bids");
-        // check if we already have a bid for this token from the sender
         require(
             _storage.getBidForTokenAndBidOwner(msg.sender, _tokenId) == 0, 
             "You already have a bid for this token. Please cancel it before add a new one."
         );
-
         // it does not matter if the token is available for sale
         // it is possible to accept a bid unless
         // the token is part of a loan
@@ -157,11 +154,8 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
             offerId = _storage.getOfferByToken(_tokenId);
             currentOwner = _storage.getOwnerOfOffer(offerId);
             price = _storage.getOfferPrice(offerId);
-            // If an OFFER exists for an token, ANY collector can BID for the token at a price LOWER 
-            // than the OFFER price.  If a BID is made at the OFFER price or HIGHER, than the platform should 
-            // notify the bidder that they must BUY the token at an OFFER price or revise the BID to something 
-            // lower than the OFFER price.
-            require(msg.value < price, "Bid amount must be less than the offer price");
+            require(msg.value < price && msg.value > 0, 
+                "Bid amount must be less than the offer price but bigger than zero");
         } else {
             currentOwner = _storage.getOwnerOfToken(_tokenId);
         }
