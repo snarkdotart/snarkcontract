@@ -15,7 +15,7 @@
     "@types/node": "^10.12.23",
     "dotenv": "^6.2.0",
     "ethereumjs-wallet": "^0.6.3",
-    "truffle-hdwallet-provider": "1.0.3",
+    "truffle-hdwallet-provider": "^1.0.3",
     "web3": "^1.0.0-beta.43"
   },
   "devDependencies": {
