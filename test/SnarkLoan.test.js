@@ -1,6 +1,7 @@
 var SnarkLoan = artifacts.require("SnarkLoan");
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkStorage = artifacts.require("SnarkStorage");
+var SnarkLoanTest = artifacts.require("SnarkLoanTest");
 
 var datetime = require('node-datetime');
 const BigNumber = require('bignumber.js');
@@ -11,6 +12,7 @@ contract('SnarkLoan', async (accounts) => {
 
     before(async () => {
         instance = await SnarkLoan.deployed();
+        instance_test = await SnarkLoanTest.deployed();
         instance_snarkbase = await SnarkBase.deployed();
         instance_storage = await SnarkStorage.deployed();
         
@@ -89,10 +91,28 @@ contract('SnarkLoan', async (accounts) => {
         retval = await instance_snarkbase.getSaleTypeToToken(3);
         assert.equal(retval.toNumber(), 0, "error on step 4");
 
+        const balanceOfStorageBeforeCreateLoan = await web3.eth.getBalance(instance_storage.address);        
+        const withdrawBalanceOfStorageBeforeCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
+
         await instance_snarkbase.changeRestrictAccess(false);
         await instance.createLoan(
             tokensIds, startDateTimestamp, duration, 
             { from: borrower, value: loanCost }
+        );
+
+        const balanceOfStorageAfterCreateLoan = await web3.eth.getBalance(instance_storage.address);        
+        const withdrawBalanceOfStorageAfterCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
+
+        assert.equal(
+            new BigNumber(withdrawBalanceOfStorageBeforeCreateLoan).plus(loanCost).toNumber(),
+            new BigNumber(withdrawBalanceOfStorageAfterCreateLoan).toNumber(),
+            "Withdraw balance of storage is wrong after CreateLoan"
+        );
+
+        assert.equal(
+            new BigNumber(balanceOfStorageBeforeCreateLoan).plus(loanCost).toNumber(),
+            new BigNumber(balanceOfStorageAfterCreateLoan).toNumber(),
+            "Balance of storage wallet is wrong after CreateLoan"
         );
 
         retval = await instance.getTokenListsOfLoanByTypes(1);
@@ -375,7 +395,7 @@ contract('SnarkLoan', async (accounts) => {
 
     // TODO: проверить отмену всего одного токена.
     // TODO: позволить пользователю сделать cancel всех своих токенов из лоана
-    it("8. test cancelTokenInLoan function", async () => {
+    it("8. test cancelTokensInLoan function", async () => {
         const tokenOwner = accounts[0];
         const borrower = accounts[1];
         const loanCost = web3.utils.toWei('0.6', "ether");
@@ -386,9 +406,27 @@ contract('SnarkLoan', async (accounts) => {
         let countOfLoan = await instance.getLoansListOfLoanOwner(borrower);
         assert.equal(countOfLoan.length, 0, 'Wrong number of loans belong to borrower');
 
+        const balanceOfStorageBeforeCreateLoan = await web3.eth.getBalance(instance_storage.address);
+        const withdrawBalanceOfStorageBeforeCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
+
         await instance.createLoan(
             tokensIds, startDateTimestamp, duration, 
             { from: borrower, value: loanCost }
+        );
+
+        const balanceOfStorageAfterCreateLoan = await web3.eth.getBalance(instance_storage.address);
+        const withdrawBalanceOfStorageAfterCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
+        
+        assert.equal(
+            new BigNumber(withdrawBalanceOfStorageAfterCreateLoan).toNumber(),
+            new BigNumber(withdrawBalanceOfStorageBeforeCreateLoan).plus(loanCost).toNumber(),
+            "Balance of withdraw balance of storage after create loan is not match"
+        );
+
+        assert.equal(
+            new BigNumber(balanceOfStorageAfterCreateLoan).toNumber(),
+            new BigNumber(balanceOfStorageBeforeCreateLoan).plus(loanCost).toNumber(),
+            "Balance of storage is wrong after create laon"
         );
 
         const loanId = await instance.getTotalNumberOfLoans();
@@ -415,7 +453,41 @@ contract('SnarkLoan', async (accounts) => {
             assert.equal(retval[0], loanId, 'LoanId is wrong for current tokenId');
         }
 
-        await instance.cancelTokenInLoan([1], loanId);
+        tokenId = 1;
+        await instance.cancelTokensInLoan([tokenId], loanId);
+
+        const balanceOfStorageAfterCancelTokensInLoan = await web3.eth.getBalance(instance_storage.address);
+        const withdrawBalanceOfStorageAfterCancelTokensInLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
+
+        assert.equal(
+            new BigNumber(balanceOfStorageAfterCreateLoan).toNumber(),
+            new BigNumber(balanceOfStorageAfterCancelTokensInLoan).toNumber(),
+            "Balance of storage is wrong after cancel tokens in loan"
+        );
+
+        assert.equal(
+            new BigNumber(withdrawBalanceOfStorageAfterCreateLoan).toNumber(),
+            new BigNumber(withdrawBalanceOfStorageAfterCancelTokensInLoan).toNumber(),
+            "Withdraw balance of storage is wrong after cancel tokens in loan"
+        );
+
+        tokensList = await instance.getTokenListsOfLoanByTypes(loanId);
+        assert.equal(tokensList.notApprovedTokensList.length, 2, "notApprovedTokensList is wrong after creating new loan");
+        assert.equal(tokensList.approvedTokensList.length, 0, "approvedTokensList is wrong after creating new loan");
+        assert.equal(tokensList.declinedTokensList.length, 0, "declinedTokensList is wrong after creating new loan");
+
+        tokenId = 3;
+        t = await instance_test.getTypeOfTokenListForLoan(loanId, tokenId);
+
+        tokenId = await instance_test.getTokenForLoanListByTypeAndIndex(loanId, t, 0);
+        assert.equal(tokenId, 3, 'Returned a wrong token id');
+
+        retval = await instance_snarkbase.getOwnerOfToken(1);
+        assert.equal(retval, tokenOwner, 'Token owner of token 1 is not correct after cancelTokensInLoan');
+        retval = await instance_snarkbase.getOwnerOfToken(2);
+        assert.equal(retval, tokenOwner, 'Token owner of token 2 is not correct after cancelTokensInLoan');
+        retval = await instance_snarkbase.getOwnerOfToken(3);
+        assert.equal(retval, tokenOwner, 'Token owner of token 3 is not correct after cancelTokensInLoan');
 
         tokensList = await instance.getTokenListsOfLoanByTypes(loanId);
         assert.equal(tokensList.notApprovedTokensList.length, 2, "notApprovedTokensList is wrong after creating new loan");
@@ -429,18 +501,70 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(tokensList.approvedTokensList.length, 2, "approvedTokensList is wrong after acceptin loan");
         assert.equal(tokensList.declinedTokensList.length, 0, "declinedTokensList is wrong after acceptin loan");
 
+        retval = await instance_snarkbase.getOwnerOfToken(1);
+        assert.equal(retval, tokenOwner, 'Token owner of token 1 is not correct after acceptLoan');
         retval = await instance_snarkbase.getOwnerOfToken(2);
-        assert.equal(retval, tokenOwner, 'Token owner of token 2 is not correct');
+        assert.equal(retval, tokenOwner, 'Token owner of token 2 is not correct after acceptLoan');
         retval = await instance_snarkbase.getOwnerOfToken(3);
-        assert.equal(retval, tokenOwner, 'Token owner of token 3 is not correct');
+        assert.equal(retval, tokenOwner, 'Token owner of token 3 is not correct after acceptLoan');
+
+        const balanceOfStorageAfterAcceptLoan = await web3.eth.getBalance(instance_storage.address);
+        const withdrawBalanceOfStorageAfterAcceptLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
+
+        assert.equal(
+            new BigNumber(balanceOfStorageAfterCreateLoan).toNumber(),
+            new BigNumber(balanceOfStorageAfterAcceptLoan).toNumber(),
+            "Balance of storage is wrong after accept loan"
+        );
+
+        assert.equal(
+            new BigNumber(withdrawBalanceOfStorageAfterCreateLoan).toNumber(),
+            new BigNumber(withdrawBalanceOfStorageAfterAcceptLoan).toNumber(),
+            "Withdraw balance of storage is wrong after accept loan"
+        );
 
         await instance.startLoan(loanId);
         await instance.borrowLoanedTokens(loanId, { from: borrower, value: loanCost });
 
+        tokensList = await instance.getTokenListsOfLoanByTypes(loanId);
+        assert.equal(tokensList.notApprovedTokensList.length, 0, "notApprovedTokensList is wrong after acceptin loan");
+        assert.equal(tokensList.approvedTokensList.length, 2, "approvedTokensList is wrong after acceptin loan");
+        assert.equal(tokensList.declinedTokensList.length, 0, "declinedTokensList is wrong after acceptin loan");
+
+        retval = await instance_snarkbase.getOwnerOfToken(1);
+        assert.equal(retval, tokenOwner, 'Token owner of token 1 is not correct after startLoan');
         retval = await instance_snarkbase.getOwnerOfToken(2);
-        assert.equal(retval, borrower, 'Token owner of token 2 is not borrower');
+        assert.equal(retval, borrower, 'Token owner of token 2 is not correct after starttLoan');
         retval = await instance_snarkbase.getOwnerOfToken(3);
-        assert.equal(retval, borrower, 'Token owner of token 3 is not borrower');
+        assert.equal(retval, borrower, 'Token owner of token 3 is not correct after startLoan');
+
+        const balanceOfStorageAfterStartLoan = await web3.eth.getBalance(instance_storage.address);
+        const withdrawBalanceOfStorageAfterStartLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
+
+        assert.equal(
+            new BigNumber(balanceOfStorageAfterAcceptLoan).minus(loanCost).toNumber(),
+            new BigNumber(balanceOfStorageAfterStartLoan).toNumber(),
+            "Balance of storage is wrong after start loan"
+        );
+
+        assert.equal(
+            new BigNumber(withdrawBalanceOfStorageAfterAcceptLoan).minus(loanCost).toNumber(),
+            new BigNumber(withdrawBalanceOfStorageAfterStartLoan).toNumber(),
+            "Withdraw balance of storage is wrong after start loan"
+        );
+
+        await instance.cancelTokensInLoan([2,3], loanId);
+
+        retval = await instance_snarkbase.getOwnerOfToken(1);
+        assert.equal(retval, tokenOwner, 'Token owner of token 1 is not correct after cancelTokensInLoan');
+        retval = await instance_snarkbase.getOwnerOfToken(2);
+        assert.equal(retval, tokenOwner, 'Token owner of token 2 is not correct after cancelTokensInLoan');
+        retval = await instance_snarkbase.getOwnerOfToken(3);
+        assert.equal(retval, tokenOwner, 'Token owner of token 3 is not correct after cancelTokensInLoan');
+
+        // loan is in an active sale state and it's a reason why we can't run a deleteLoan function
+        loanDetail = await instance.getLoanDetail(loanId);
+        assert.equal(loanDetail.saleStatus, 2, "loan status is not correct after cancelTokensInLoan");
     });
 
 });

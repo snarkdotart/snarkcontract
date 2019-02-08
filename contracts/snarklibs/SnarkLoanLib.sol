@@ -90,16 +90,23 @@ library SnarkLoanLib {
 
     /// @notice remove token form the list in which it existed prior to calling this function 
     function removeTokenFromListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId) public {
-        // receive list type in which the token exists 
-        uint256 listType = getTypeOfTokenListForLoan(storageAddress, loanId, tokenId);
-        // remove token index from the token list
-        uint256 indexOfToken = getTokenIndexInListOfLoanByType(storageAddress, loanId, tokenId);
-        uint256 maxIndex = getNumberOfTokensInListByType(storageAddress, loanId, listType).sub(1);
-        if (indexOfToken < maxIndex) {
-            uint256 tokenIdOnLastIndex = getTokenForLoanListByTypeAndIndex(storageAddress, loanId, listType, maxIndex);
-            setTokenForLoanListByTypeAndIndex(storageAddress, loanId, listType, indexOfToken, tokenIdOnLastIndex);
+        if (isTokenIncludedInLoan(storageAddress, loanId, tokenId)) {
+            // receive list type in which the token exists 
+            uint256 listType = getTypeOfTokenListForLoan(storageAddress, loanId, tokenId);
+            // remove token index from the token list
+            uint256 indexOfToken = getTokenIndexInListOfLoanByType(storageAddress, loanId, tokenId);
+            uint256 maxIndex = getNumberOfTokensInListByType(storageAddress, loanId, listType);
+            if (maxIndex > 0) {
+                maxIndex = maxIndex.sub(1);
+                if (indexOfToken < maxIndex) {
+                    uint256 tokenIdOnLastIndex = 
+                        getTokenForLoanListByTypeAndIndex(storageAddress, loanId, listType, maxIndex);
+                    setTokenForLoanListByTypeAndIndex(storageAddress, 
+                        loanId, listType, indexOfToken, tokenIdOnLastIndex);
+                }
+                decreaseNumberOfTokensInListByType(storageAddress, loanId, listType);
+            }
         }
-        decreaseNumberOfTokensInListByType(storageAddress, loanId, listType);
     }
 
     /// @notice check is the token is participating in a loan or not 
@@ -424,6 +431,37 @@ library SnarkLoanLib {
         setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, tokenId);
         setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, loanId);
         saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId, index);
+        setExistingLoanRequestForTokenOwner(storageAddress, tokenOwner, tokenId, loanId, true);
+    }
+
+    function setExistingLoanRequestForTokenOwner(
+        address storageAddress, 
+        address tokenOwner, 
+        uint256 tokenId, 
+        uint256 loanId, 
+        bool isExist
+    )
+        public
+    {
+        SnarkStorage(storageAddress).setBool(
+            keccak256(abi.encodePacked("SignOfExistingLoanRequestForTokenOwner", tokenOwner, tokenId, loanId)),
+            isExist
+        );
+    }
+
+    function isExistLoanRequestForTokenOwner(
+        address storageAddress, 
+        address tokenOwner, 
+        uint256 tokenId, 
+        uint256 loanId
+    )
+        public
+        view
+        returns (bool)
+    {
+        return SnarkStorage(storageAddress).boolStorage(
+            keccak256(abi.encodePacked("SignOfExistingLoanRequestForTokenOwner", tokenOwner, tokenId, loanId))
+        );
     }
 
     /// @notice sets the token into request list for the token owner and index 
@@ -491,25 +529,34 @@ library SnarkLoanLib {
     /// @notice remove loan request from the list of token owner 
     function deleteLoanRequestFromTokenOwner(address storageAddress, uint256 loanId, uint256 tokenId) public {
         address tokenOwner = SnarkBaseLib.getOwnerOfToken(storageAddress, tokenId);
-        uint256 index = getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId);
-        uint256 maxIndex = getCountLoanRequestsForTokenOwner(storageAddress, tokenOwner).sub(1);
-        require(index <= maxIndex, "!!! deleteLoanRequestFromTokenOwner: index exceeds maxIndex of Loan requests");
-        if (index < maxIndex) {
-            (uint256 maxIndexTokenId, uint256 maxIndexLoanId) = 
-                getLoanRequestForTokenOwnerByIndex(storageAddress, tokenOwner, maxIndex);
-            setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, maxIndexTokenId);
-            setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, maxIndexLoanId);
-            saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(
-                storageAddress,
-                tokenOwner,
-                maxIndexTokenId,
-                maxIndexLoanId,
-                index
-            );
+        if (isExistLoanRequestForTokenOwner(storageAddress, tokenOwner, tokenId, loanId)) {
+            uint256 index = 
+                getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId);
+            uint256 maxIndex = getCountLoanRequestsForTokenOwner(storageAddress, tokenOwner);
+            if (maxIndex > 0) {
+                maxIndex = maxIndex.sub(1);
+                require(index <= maxIndex, 
+                    "!!! deleteLoanRequestFromTokenOwner: index exceeds maxIndex of Loan requests");
+                if (index < maxIndex) {
+                    (uint256 maxIndexTokenId, uint256 maxIndexLoanId) = 
+                        getLoanRequestForTokenOwnerByIndex(storageAddress, tokenOwner, maxIndex);
+                    setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, maxIndexTokenId);
+                    setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, maxIndexLoanId);
+                    saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(
+                        storageAddress,
+                        tokenOwner,
+                        maxIndexTokenId,
+                        maxIndexLoanId,
+                        index
+                    );
+                }
+                setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
+                setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
+                decreaseCountLoanRequestsForTokenOwner(storageAddress, tokenOwner);
+                setExistingLoanRequestForTokenOwner(storageAddress, tokenOwner, tokenId, loanId, false);
+            }
         }
-        setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
-        setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
-        decreaseCountLoanRequestsForTokenOwner(storageAddress, tokenOwner);
+        
     }
 
     /// @notice Returns loan request information by index 
@@ -625,18 +672,53 @@ library SnarkLoanLib {
         uint256 index = increaseCountOfLoansForLoanOwner(storageAddress, loanOwner).sub(1);
         setLoanToLoanListOfLoanOwnerByIndex(storageAddress, loanOwner, index, loanId);
         saveIndexOfLoanInLoanListOfLoanOwner(storageAddress, loanOwner, loanId, index);
+        setExistingLoanInLoanListOfLoanOwner(storageAddress, loanOwner, loanId, true);
     }
 
     /// @notice remove loan from the loan list of the loan owner 
     function deleteLoanFromLoanListOfLoanOwner(address storageAddress, address loanOwner, uint256 loanId) public {
-        uint256 index = getIndexOfLoanInLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
-        uint256 maxIndex = getCountOfLoansForLoanOwner(storageAddress, loanOwner).sub(1);
-        if (index < maxIndex) {
-            uint256 lastLoan = getLoanFromLoanListOfLoanOwnerByIndex(storageAddress, loanOwner, maxIndex);
-            setLoanToLoanListOfLoanOwnerByIndex(storageAddress, loanOwner, index, lastLoan);
+        if (isExistLoanInLoanListOfLoanOwner(storageAddress, loanOwner, loanId)) {
+            uint256 index = getIndexOfLoanInLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
+            uint256 maxIndex = getCountOfLoansForLoanOwner(storageAddress, loanOwner);
+            if (maxIndex > 0) {
+                maxIndex = maxIndex.sub(1);
+                if (index < maxIndex) {
+                    uint256 lastLoan = getLoanFromLoanListOfLoanOwnerByIndex(storageAddress, loanOwner, maxIndex);
+                    setLoanToLoanListOfLoanOwnerByIndex(storageAddress, loanOwner, index, lastLoan);
+                }
+                setLoanToLoanListOfLoanOwnerByIndex(storageAddress, loanOwner, maxIndex, 0);
+                decreaseCountOfLoansForLoanOwner(storageAddress, loanOwner);
+                setExistingLoanInLoanListOfLoanOwner(storageAddress, loanOwner, loanId, false);
+            }
         }
-        setLoanToLoanListOfLoanOwnerByIndex(storageAddress, loanOwner, maxIndex, 0);
-        decreaseCountOfLoansForLoanOwner(storageAddress, loanOwner);
+    }
+
+    function setExistingLoanInLoanListOfLoanOwner(
+        address storageAddress, 
+        address loanOwner, 
+        uint256 loanId, 
+        bool isExist
+    ) 
+        public 
+    {
+        SnarkStorage(storageAddress).setBool(
+            keccak256(abi.encodePacked("SignOfExistingLoanInLoanListOfLoanOwner", loanOwner, loanId)),
+            isExist
+        );
+    }
+
+    function isExistLoanInLoanListOfLoanOwner(
+        address storageAddress, 
+        address loanOwner, 
+        uint256 loanId
+    ) 
+        public 
+        view 
+        returns (bool) 
+    {
+        return SnarkStorage(storageAddress).boolStorage(
+            keccak256(abi.encodePacked("SignOfExistingLoanInLoanListOfLoanOwner", loanOwner, loanId))
+        );
     }
 
     /// @notice return loan from the list of loan owners by index 
@@ -889,17 +971,17 @@ library SnarkLoanLib {
             getLoanSaleStatus(storageAddress, loanId) != 3,
             "Loan can't be in 'Finished' status"
         );
-        // transfer token from Approved list into Declined list
-        addTokenToListOfLoan(storageAddress, loanId, tokenId, 2);
         // remove from the token calendar the booked days 
         uint256 startDate = getStartDateOfLoan(storageAddress, loanId);
         uint256 duration = getDurationOfLoan(storageAddress, loanId);
         makeTokenFreeForPeriod(storageAddress, tokenId, startDate, duration);
         // remove loan request from the token owners 
         deleteLoanRequestFromTokenOwner(storageAddress, loanId, tokenId);
-        removeLoanFromTokensLoanList(storageAddress, tokenId, loanId);
         removeTokenFromListOfLoan(storageAddress, loanId, tokenId);
-        
+        removeLoanFromTokensLoanList(storageAddress, tokenId, loanId);
+        markLoanInTokensLoanListAsInUse(storageAddress, tokenId, loanId, false);
+        SnarkBaseLib.setSaleTypeToToken(storageAddress, tokenId, 0);
+
         emit TokenCanceledInLoans(tokenId, loanId);
     }
 
@@ -908,19 +990,33 @@ library SnarkLoanLib {
         for (uint256 i = 0; i < loanList.length; i++) {
             // check that the removal is not for loans with Finished status
             if (getLoanSaleStatus(storageAddress, loanList[i]) != 3) {
-                // transfer token from Approved list into Declined list
-                addTokenToListOfLoan(storageAddress, loanList[i], tokenId, 2);
                 // remove from the token calendar the booked days 
                 uint256 startDate = getStartDateOfLoan(storageAddress, loanList[i]);
                 uint256 duration = getDurationOfLoan(storageAddress, loanList[i]);
                 makeTokenFreeForPeriod(storageAddress, tokenId, startDate, duration);
                 // remove loan request from the token owners 
                 deleteLoanRequestFromTokenOwner(storageAddress, loanList[i], tokenId);
-                removeLoanFromTokensLoanList(storageAddress, tokenId, loanList[i]);
                 removeTokenFromListOfLoan(storageAddress, loanList[i], tokenId);
-                
+                removeLoanFromTokensLoanList(storageAddress, tokenId, loanList[i]);
+                markLoanInTokensLoanListAsInUse(storageAddress, tokenId, loanList[i], false);
+                SnarkBaseLib.setSaleTypeToToken(storageAddress, tokenId, 0);
+
                 emit TokenCanceledInLoans(tokenId, loanList[i]);
             }
         }
+    }
+
+    function cancelLoan(address storageAddress, uint256 loanId) public {
+        setLoanSaleStatus(storageAddress, loanId, 3); // 3 - Finished
+        address loanOwner = getOwnerOfLoan(storageAddress, loanId);
+        uint256 startDate = getStartDateOfLoan(storageAddress, loanId);
+        uint256 duration = getDurationOfLoan(storageAddress, loanId);
+        uint256[] memory approvedTokens = getTokensListOfLoanByType(storageAddress, loanId, 1);
+        for (uint256 i = 0; i < approvedTokens.length; i++) {
+            makeTokenFreeForPeriod(storageAddress, approvedTokens[i], startDate, duration);
+            deleteLoanRequestFromTokenOwner(storageAddress, loanId, approvedTokens[i]);
+            SnarkBaseLib.setSaleTypeToToken(storageAddress, approvedTokens[i], 0);
+        }
+        deleteLoanFromLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
     }
 }
