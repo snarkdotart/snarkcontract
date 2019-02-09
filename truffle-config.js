@@ -9,8 +9,6 @@ var mainNetProvider = new HDWalletProvider(process.env.SECRET_KEY, "https://main
 var ropstenProvider = new HDWalletProvider(process.env.SECRET_KEY, "https://ropsten.infura.io/v3/" + process.env.PROJECT_ID);
 var rinkebyProvider = new HDWalletProvider(process.env.SECRET_KEY, "https://rinkeby.infura.io/v3/" + process.env.PROJECT_ID);
 
-console.log('Provider is: ', ropstenProvider);
-
 module.exports = {
     networks: {
         development: {
