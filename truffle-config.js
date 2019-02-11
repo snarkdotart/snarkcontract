@@ -22,6 +22,8 @@ module.exports = {
             gas: 7800000,
             gasPrice: web3.utils.toWei("8", "gwei"),
             network_id: 1,
+            confirmations: 2,
+            skipDryRun: true,
             // host: "18.220.154.113",
             // port: 8545,
             // from: '0xc5a3d99e05c39a18d6342b5f27c08c64a486df00'
@@ -31,6 +33,8 @@ module.exports = {
             gas: 7800000,
             gasPrice: web3.utils.toWei("8", "gwei"),
             network_id: 3,
+            confirmations: 2,
+            skipDryRun: true,
             // host: "13.58.178.26",
             // port: 8545,
             // from: '0xc5a3d99e05c39a18d6342b5f27c08c64a486df00'
@@ -40,6 +44,8 @@ module.exports = {
             gas: 7800000,
             gasPrice: web3.utils.toWei("8", "gwei"),
             network_id: 4,
+            confirmations: 2,
+            skipDryRun: true,
             // host: "127.0.0.1",
             // port: 8545,
             // from: '0xc5a3d99e05c39a18d6342b5f27c08c64a486df00'
