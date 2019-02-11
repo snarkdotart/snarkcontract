@@ -96,31 +96,35 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 indexLength = indexLength + 1;
             } else { emit TokenDeclinedInLoanCreation(tokensIds[i]); }
         }
+        uint256[] memory tokensListFinal = new uint256[](indexLength);
+        for (i = 0; i < indexLength; i++) {
+            tokensListFinal[i] = tokensList[i];
+        }
         if (msg.value > 0) { 
             _storage.transfer(msg.value);
             _storage.addPendingWithdrawals(_storage, msg.value); 
         }
         if (indexLength > 0) {
-            uint256 loanId = _storage.createLoan(msg.sender, msg.value, tokensList, startDate, duration);
+            uint256 loanId = _storage.createLoan(msg.sender, msg.value, tokensListFinal, startDate, duration);
             bool isAgree = false;
             for (i = 0; i < indexLength; i++) {
-                address tokenOwner = _storage.getOwnerOfToken(tokensList[i]);
-                _storage.setActualTokenOwnerForLoan(loanId, tokensList[i], tokenOwner);
-                if (_storage.isTokenBusyForPeriod(tokensList[i], startDate, duration)) {
+                address tokenOwner = _storage.getOwnerOfToken(tokensListFinal[i]);
+                _storage.setActualTokenOwnerForLoan(loanId, tokensListFinal[i], tokenOwner);
+                if (_storage.isTokenBusyForPeriod(tokensListFinal[i], startDate, duration)) {
                     // if there is a schedule conflict, token is moved to Declined List - 2
-                    _storage.addTokenToListOfLoan(loanId, tokensList[i], 2);
+                    _storage.addTokenToListOfLoan(loanId, tokensListFinal[i], 2);
                 } else {
                     isAgree = (msg.sender == owner) ? 
-                        _storage.isTokenAcceptOfLoanRequestFromSnark(tokensList[i]) :
-                        _storage.isTokenAcceptOfLoanRequestFromOthers(tokensList[i]);
+                        _storage.isTokenAcceptOfLoanRequestFromSnark(tokensListFinal[i]) :
+                        _storage.isTokenAcceptOfLoanRequestFromOthers(tokensListFinal[i]);
                     if (isAgree) {
                         // storing the reserved period in the calendar and the loan that created the reserve 
                         // FIXME: сделать расчеты не по дням, а по минутам. 
-                        _storage.makeTokenBusyForPeriod(loanId, tokensList[i], startDate, duration);
+                        _storage.makeTokenBusyForPeriod(loanId, tokensListFinal[i], startDate, duration);
                         // token is moved to the Approved List - 1
-                        _storage.addTokenToListOfLoan(loanId, tokensList[i], 1);
+                        _storage.addTokenToListOfLoan(loanId, tokensListFinal[i], 1);
                     } else {
-                        _storage.addLoanRequestToTokenOwner(tokenOwner, tokensList[i], loanId);
+                        _storage.addLoanRequestToTokenOwner(tokenOwner, tokensListFinal[i], loanId);
                     }
                 }
             }

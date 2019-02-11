@@ -1017,6 +1017,11 @@ library SnarkLoanLib {
             deleteLoanRequestFromTokenOwner(storageAddress, loanId, approvedTokens[i]);
             SnarkBaseLib.setSaleTypeToToken(storageAddress, approvedTokens[i], 0);
         }
+        uint256[] memory notApprovedTokens = getTokensListOfLoanByType(storageAddress, loanId, 0);
+        for (i = 0; i < notApprovedTokens.length; i++) {
+            deleteLoanRequestFromTokenOwner(storageAddress, loanId, notApprovedTokens[i]);
+        }
+
         deleteLoanFromLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
     }
 }

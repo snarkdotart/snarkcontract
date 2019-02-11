@@ -2,19 +2,19 @@ var SnarkLoan = artifacts.require("SnarkLoan");
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkStorage = artifacts.require("SnarkStorage");
 var SnarkLoanTest = artifacts.require("SnarkLoanTest");
+var SnarkOfferBid = artifacts.require("SnarkOfferBid");
 
 var datetime = require('node-datetime');
 const BigNumber = require('bignumber.js');
 
 contract('SnarkLoan', async (accounts) => {
 
-    let instance = null;
-
     before(async () => {
         instance = await SnarkLoan.deployed();
         instance_test = await SnarkLoanTest.deployed();
         instance_snarkbase = await SnarkBase.deployed();
         instance_storage = await SnarkStorage.deployed();
+        instance_offerbid = await SnarkOfferBid.deployed();
         
         await web3.eth.sendTransaction({
             from:   accounts[0],
@@ -393,8 +393,6 @@ contract('SnarkLoan', async (accounts) => {
 
     });
 
-    // TODO: проверить отмену всего одного токена.
-    // TODO: позволить пользователю сделать cancel всех своих токенов из лоана
     it("8. test cancelTokensInLoan function", async () => {
         const tokenOwner = accounts[0];
         const borrower = accounts[1];
@@ -565,6 +563,130 @@ contract('SnarkLoan', async (accounts) => {
         // loan is in an active sale state and it's a reason why we can't run a deleteLoan function
         loanDetail = await instance.getLoanDetail(loanId);
         assert.equal(loanDetail.saleStatus, 2, "loan status is not correct after cancelTokensInLoan");
+
+        tokensList = await instance.getTokenListsOfLoanByTypes(loanId);
+        assert.equal(tokensList.notApprovedTokensList.length, 0, "notApprovedTokensList is wrong after cancelTokensInLoan");
+        assert.equal(tokensList.approvedTokensList.length, 0, "approvedTokensList is wrong after cancelTokensInLoan");
+        assert.equal(tokensList.declinedTokensList.length, 0, "declinedTokensList is wrong after cancelTokensInLoan");
+
+        await instance.stopLoan(loanId);
+
+        loanDetail = await instance.getLoanDetail(loanId);
+        assert.equal(loanDetail.saleStatus, 3, "loan status is not correct after cancelTokensInLoan");
+    });
+
+    it("9. test situation when there is offer to the token", async () => {
+        // Я распределил атомы на 4 кошелька
+        // Если на один атом в каком-то из кошельков стоит Offer, то функция Request Loan запускается.
+        // Но если поставить Offer на 2 атома (в одном кошельке или разных), то Request Loan уже не запускается.
+        let arr_tokens = await instance_snarkbase.getTokenListForOwner(accounts[0]);
+        assert.equal(arr_tokens.length, 3, "Tokens amount of accounts[0] is wrong");
+
+        // убеждаемся, что у первых 3-х токенов статус продажи None и отключены autoaccept
+        for (let i = 0; i < arr_tokens.length; i++) {
+            let status = await instance_snarkbase.getSaleTypeToToken(arr_tokens[i]);
+            assert.equal(status, 0, `Status of token #${arr_tokens[i]} is not None - ${status}`);
+         
+            let accepts = await instance_snarkbase.isTokenAcceptOfLoanRequestFromSnarkAndOthers(arr_tokens[i]);
+            assert.equal(accepts[0], false, "accept of loan request from snark is wrong");
+            assert.equal(accepts[1], false, "accept of loan request from others is wrong");
+        }
+
+        await instance_snarkbase.createProfitShareScheme(
+            accounts[3], 
+            [accounts[3], accounts[7]], 
+            [60, 40]
+        );
+
+        let retval = await instance_snarkbase.getNumberOfProfitShareSchemesForOwner(accounts[3]);
+        assert.equal(retval.toNumber(), 1, "number of profit share schemes is wrong");
+
+        const profitShareSchemeId = await instance_snarkbase.getProfitShareSchemeIdForOwner(accounts[3], 0);
+
+        // создаем 4-й токен
+        await instance_snarkbase.addToken(
+            accounts[3],
+            web3.utils.sha3("tokenHash_of_accounts[3]"),
+            "QmXDeiDv96osHCBdgJdwK2sRD77CfPYmVo4KzS9e9E7Eni",
+            "QmXDeiDv98osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Enr",
+            '',
+            [1, 20, profitShareSchemeId],
+            [true, true],
+            { from: accounts[3] }
+        );
+
+        // убеждаемся, что у нас 4 токена
+        retval = await instance_snarkbase.getTokensCount();
+        assert.equal(retval, 4, "Common amount of tokens is wrong");
+
+        // перекидываем 2-й и 3-й токены в другие кошельки
+        await instance_offerbid.toGiftToken(2, accounts[1]);
+        await instance_offerbid.toGiftToken(3, accounts[2]);
+
+        // убеждаемся, что все токены лежат в разных кошельках
+        retval = await instance_snarkbase.getOwnerOfToken(1);
+        assert.equal(retval, accounts[0], "wrong owner of token 1");
+
+        retval = await instance_snarkbase.getOwnerOfToken(2);
+        assert.equal(retval, accounts[1], "wrong owner of token 2");
+
+        retval = await instance_snarkbase.getOwnerOfToken(3);
+        assert.equal(retval, accounts[2], "wrong owner of token 3");
+
+        retval = await instance_snarkbase.getOwnerOfToken(4);
+        assert.equal(retval, accounts[3], "wrong owner of token 4");
+
+        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[0]);
+        assert.equal(retval.length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
+
+        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[1]);
+        assert.equal(retval.length, 0, `list of requests for account ${accounts[1]} is wrong (token 2)`);
+
+        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[2]);
+        assert.equal(retval.length, 0, `list of requests for account ${accounts[2]} is wrong (token 3)`);
+
+        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[3]);
+        assert.equal(retval.length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
+
+        // ставим Offer на один из первых трех токенов, у которых отключен autoaccept, например на первый токен
+        const priceOffer = web3.utils.toWei('0.2', 'ether');
+        await instance_offerbid.addOffer(1, priceOffer, { from: accounts[0] });
+        status = await instance_snarkbase.getSaleTypeToToken(1);
+        assert.equal(status, 1, `Status of token #1 is not Offer - ${status}`);
+
+        // создаем лоан на все 4 токена, которые лежат в разных кошельках
+        const startDateTimestamp = datetime.create(new Date(2019, 3, 1)).getTime();
+        const duration = 3;
+        const priceLoan = web3.utils.toWei('0.5', 'ether');
+        await instance.createLoan([1,2,3,4], startDateTimestamp, duration, { from: accounts[4], value: priceLoan } );
+
+        let loanId = await instance.getTotalNumberOfLoans();
+
+        // по идее должны получить следующее поведение:
+        // - первый токен должен исключиться из лоана автоматически, т.к. у него стоит Offer
+        // - ожидаем 2 реквеста на 2-й и 3-й токены, т.е. токены в notApproved list
+        // - 4-й токен попадает в approved list автоматически
+        retval = await instance.getTokenListsOfLoanByTypes(loanId);
+        assert.equal(retval.notApprovedTokensList.length, 2, "length of not approved tokens list is wrong");
+        assert.equal(retval.approvedTokensList.length, 1, "length of approved tokens list is wrong");
+        assert.equal(retval.declinedTokensList.length, 0, "length of declined tokens list is wrong");
+        assert.equal(retval.notApprovedTokensList[0], 2, "token number is wrong into not approved tokens list");
+        assert.equal(retval.notApprovedTokensList[1], 3, "token number is wrong into not approved tokens list");
+        assert.equal(retval.approvedTokensList[0], 4, "token number is wrong into not approved tokens list");
+
+        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[0]);
+        assert.equal(retval.length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
+
+        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[1]);
+        assert.equal(retval.length, 1, `list of requests for account ${accounts[1]} is wrong (token 2)`);
+        assert.equal(retval[0], 2, "request is not for token #2");
+
+        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[2]);
+        assert.equal(retval.length, 1, `list of requests for account ${accounts[2]} is wrong (token 3)`);
+        assert.equal(retval[0], 3, "request is not for token #2");
+
+        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[3]);
+        assert.equal(retval.length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
     });
 
 });
