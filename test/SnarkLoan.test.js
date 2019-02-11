@@ -689,4 +689,29 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval.length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
     });
 
+    it("10. test join token to the loan", async () => {
+        let loanId = await instance.getTotalNumberOfLoans();
+
+        let retval = await instance.getTokenListsOfLoanByTypes(loanId);
+        assert.equal(retval.notApprovedTokensList.length, 2, "length of not approved tokens list is wrong");
+        assert.equal(retval.approvedTokensList.length, 1, "length of approved tokens list is wrong");
+        assert.equal(retval.declinedTokensList.length, 0, "length of declined tokens list is wrong");
+        assert.equal(retval.notApprovedTokensList[0], 2, "token number is wrong into not approved tokens list");
+        assert.equal(retval.notApprovedTokensList[1], 3, "token number is wrong into not approved tokens list");
+        assert.equal(retval.approvedTokensList[0], 4, "token number is wrong into not approved tokens list");
+
+        const offerId = await instance_offerbid.getOfferByToken(1);
+        await instance_offerbid.cancelOffer(offerId, { from: accounts[0] });
+        await instance.acceptLoan(loanId, [1], { from: accounts[0] });
+
+        retval = await instance.getTokenListsOfLoanByTypes(loanId);
+        assert.equal(retval.notApprovedTokensList.length, 2, "length of not approved tokens list is wrong");
+        assert.equal(retval.approvedTokensList.length, 2, "length of approved tokens list is wrong");
+        assert.equal(retval.declinedTokensList.length, 0, "length of declined tokens list is wrong");
+        assert.equal(retval.notApprovedTokensList[0], 2, "token number is wrong into not approved tokens list");
+        assert.equal(retval.notApprovedTokensList[1], 3, "token number is wrong into not approved tokens list");
+        assert.equal(retval.approvedTokensList[0], 4, "token number is wrong into not approved tokens list");
+        assert.equal(retval.approvedTokensList[1], 1, "token number is wrong into not approved tokens list");
+});
+
 });
