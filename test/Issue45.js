@@ -7,6 +7,7 @@ var SnarkTestFunctions = artifacts.require('SnarkTestFunctions');
 
 var schemeId;
 var BigNumber = require('bignumber.js');
+var datetime = require('node-datetime');
 
 var chai = require('chai');
 var chaiAsPromised = require('chai-as-promised');
@@ -28,8 +29,8 @@ contract('SnarkBase', async accounts => {
 
   it('1. Add two participant profile scheme. Total equal 100%. Should be accepted.', async () => {
     const participants = [
-      '0xC04691B99EB731536E35F375ffC85249Ec713597',
-      '0xB94691B99EB731536E35F375ffC85249Ec717233'
+      accounts[0],
+      accounts[1]
     ];
     const profits = [88, 12];
 
@@ -40,18 +41,15 @@ contract('SnarkBase', async accounts => {
       participants,
       profits
     );
-    const event = instance_snarkbase.ProfitShareSchemeAdded({
-      fromBlock: 'latest'
-    });
-    event.watch(function(error, result) {
+    
+    instance_snarkbase.ProfitShareSchemeAdded({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         schemeId = result.args.profitShareSchemeId.toNumber();
         console.log(`       Scheme ID: ${schemeId}`);
       }
     });
 
-    var bidevent = instance_offer.BidAdded({ fromBlock: 'latest' });
-    bidevent.watch(function(error, result) {
+    instance_offer.BidAdded({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var bidder = result.args._bidder;
         var bidId = result.args._bidId;
@@ -62,8 +60,7 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    var offerevent = instance_offer.OfferAdded({ fromBlock: 'latest' });
-    offerevent.watch(function(error, result) {
+    instance_offer.OfferAdded({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var owner = result.args._offerOwner;
         var offerId = result.args._offerId;
@@ -73,19 +70,15 @@ contract('SnarkBase', async accounts => {
         );
       }
     });
-    // event LoanDeleted(uint256 loanId);
 
-    loandelete = instance_loan.LoanDeleted({ fromBlock: 'latest' });
-    loandelete.watch(function(error, result) {
+    instance_loan.LoanDeleted({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var id = result.args.loanId;
         console.log(`       Loan deleted !!! Id: ${id}`);
       }
     });
-    // event TokenCanceledInLoans(uint256 tokenId, uint256[] loanList);
 
-    tokencancel = instance_loanlib.TokenCanceledInLoans({ fromBlock: 'latest' });
-    tokencancel.watch(function(error, result) {
+    instance_loanlib.TokenCanceledInLoans({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var id = result.args.tokenId;
         var loans = result.args.loanList;
@@ -93,16 +86,14 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    loanfinished = instance_loan.LoanFinished({ fromBlock: 'latest' });
-    loanfinished.watch(function(error, result) {
+    loanfinished = instance_loan.LoanFinished({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var id = result.args.loanId;
         console.log(`       Loan finished !!! Id: ${id}`);
       }
     });
 
-    tokenevent = instance_snarkbase.TokenCreated({ fromBlock: 'latest' });
-    tokenevent.watch(function(error, result) {
+    instance_snarkbase.TokenCreated({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var owner = result.args.tokenOwner;
         var id = result.args.tokenId;
@@ -110,8 +101,7 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    loanevent = instance_loan.LoanCreated({ fromBlock: 'latest' });
-    loanevent.watch(function(error, result) {
+    instance_loan.LoanCreated({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var owner = result.args.loanBidOwner;
         var id = result.args.loanId;
@@ -125,8 +115,7 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    loanaccepted = instance_loan.LoanAccepted({ fromBlock: 'latest' });
-    loanaccepted.watch(function(error, result) {
+    instance_loan.LoanAccepted({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var loanId = result.args.loanId;
         var tokenId = result.args.tokenId;
@@ -137,16 +126,15 @@ contract('SnarkBase', async accounts => {
         );
       }
     });
-    let loanstarted = instance_loan.LoanStarted({ fromBlock: 'latest' });
-    loanstarted.watch(function(error, result) {
+
+    instance_loan.LoanStarted({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var loanId = result.args.loanId;
         console.log(`       Loan Started. Id: ${loanId}`);
       }
     });
 
-    loandeclined = instance_loan.LoanDeclined({ fromBlock: 'latest' });
-    loandeclined.watch(function(error, result) {
+    instance_loan.LoanDeclined({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var loanId = result.args.loanId;
         var tokenId = result.args.tokenId;
@@ -157,6 +145,7 @@ contract('SnarkBase', async accounts => {
         );
       }
     });
+
   });
 
   it('2. Add new token.', async () => {
@@ -164,12 +153,12 @@ contract('SnarkBase', async accounts => {
     const profitShareFromSecondarySale = 0;
     const tokenUrl = 'http://snark2.art';
     const profitShareSchemeId = 1;
-    const decriptionUrl = 'big-secret'
-    const decorationUrl = 'ipfs://decorator.io'
-    var tokenHash = web3.sha3('test');
+    const decriptionUrl = 'big-secret';
+    const decorationUrl = 'ipfs://decorator.io';
+    var tokenHash = web3.utils.sha3('test');
 
-    var a = [limitedEdition, profitShareFromSecondarySale, profitShareSchemeId]
-    var b = [true, true]
+    var a = [limitedEdition, profitShareFromSecondarySale, profitShareSchemeId];
+    var b = [true, true];
 
     await instance_snarkbase.addToken(
       accounts[1],
@@ -207,7 +196,7 @@ contract('SnarkBase', async accounts => {
   });
 
   it('3. Create and start loan. Should be accepted. Loan is auto accepted.', async () => {
-    const startDateTimestamp1 = new Date().getTime() / 1000 + 0 *24 * 3600;
+    const startDateTimestamp1 = datetime.create(new Date()).getTime();
     const duration = 1;
     // function createLoan(uint256[] tokensIds, uint256 startDate, uint256 duration) public payable restrictedAccess {
       let tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
@@ -241,7 +230,7 @@ contract('SnarkBase', async accounts => {
   });
   
   it('4. Create one offer. Should be rejected because there is active loan.', async () => {
-    await expect(instance_offer.addOffer(1,web3.toWei(1,"ether"),{from:accounts[1]}),"Loan is started. Should not be possible to add Offer. ").to.be.eventually.rejected
+    await expect(instance_offer.addOffer(1,web3.utils.toWei('1',"ether"),{from:accounts[1]}),"Loan is started. Should not be possible to add Offer. ").to.be.eventually.rejected
  
     tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
     testFunctions.showLoanTokens(tokens, "After Adding Offer.")

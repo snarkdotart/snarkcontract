@@ -522,7 +522,7 @@ contract('SnarkOfferBid', async (accounts) => {
         try {
             await instance.addBid(tokenId, {from: bidder, value: bidCostWrong });
         } catch(e) {
-            assert.equal(e.message, 'Returned error: VM Exception while processing transaction: revert Bid amount must be less than the offer price -- Reason given: Bid amount must be less than the offer price.');
+            assert.equal(e.message, 'Returned error: VM Exception while processing transaction: revert Bid amount must be less than the offer price but bigger than zero -- Reason given: Bid amount must be less than the offer price but bigger than zero.');
         }
 
         await instance.addBid(tokenId, {from: bidder, value: bidCostRight });

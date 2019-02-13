@@ -178,8 +178,6 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getProfitShareSchemeIdByIndex(accounts[0],0);
         const accountZeroSchemeId = retval.toNumber();
 
-        console.log(`${accounts[0]} contain ${accountZeroSchemeId} scheme`);
-
         // check if it's possible to set other's profit share scheme id
         try {
             await instance.changeProfitShareSchemeForToken(1, accountZeroSchemeId, { from: artist });
@@ -344,7 +342,6 @@ contract('SnarkBase', async (accounts) => {
 
         retval = await instance.getListOfAllArtists();
         assert.equal(retval.length, numberOfArtists + 3, "error on step 9");
-        console.log(retval);
 
     });
 

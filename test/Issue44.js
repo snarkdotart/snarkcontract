@@ -7,6 +7,7 @@ var SnarkTestFunctions = artifacts.require('SnarkTestFunctions');
 
 var schemeId;
 var BigNumber = require('bignumber.js');
+var datetime = require('node-datetime');
 
 var chai = require('chai');
 var chaiAsPromised = require('chai-as-promised');
@@ -27,8 +28,8 @@ contract('SnarkBase', async accounts => {
 
   it('1. Add two participant profile scheme. Total equal 100%. Should be accepted.', async () => {
     const participants = [
-      '0xC04691B99EB731536E35F375ffC85249Ec713597',
-      '0xB94691B99EB731536E35F375ffC85249Ec717233'
+      accounts[0],
+      accounts[1]
     ];
     const profits = [88, 12];
 
@@ -39,18 +40,15 @@ contract('SnarkBase', async accounts => {
       participants,
       profits
     );
-    const event = instance_snarkbase.ProfitShareSchemeAdded({
-      fromBlock: 'latest'
-    });
-    event.watch(function(error, result) {
+    
+    instance_snarkbase.ProfitShareSchemeAdded({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         schemeId = result.args.profitShareSchemeId.toNumber();
         console.log(`       Scheme ID: ${schemeId}`);
       }
     });
 
-    var bidevent = instance_offer.BidAdded({ fromBlock: 'latest' });
-    bidevent.watch(function(error, result) {
+    instance_offer.BidAdded({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var bidder = result.args._bidder;
         var bidId = result.args._bidId;
@@ -61,8 +59,7 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    var offerevent = instance_offer.OfferAdded({ fromBlock: 'latest' });
-    offerevent.watch(function(error, result) {
+    instance_offer.OfferAdded({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var owner = result.args._offerOwner;
         var offerId = result.args._offerId;
@@ -72,19 +69,15 @@ contract('SnarkBase', async accounts => {
         );
       }
     });
-    // event LoanDeleted(uint256 loanId);
 
-    loandelete = instance_loan.LoanDeleted({ fromBlock: 'latest' });
-    loandelete.watch(function(error, result) {
+    instance_loan.LoanDeleted({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var id = result.args.loanId;
         console.log(`       Loan deleted !!! Id: ${id}`);
       }
     });
-    // event TokenCanceledInLoans(uint256 tokenId, uint256[] loanList);
 
-    tokencancel = instance_loanlib.TokenCanceledInLoans({ fromBlock: 'latest' });
-    tokencancel.watch(function(error, result) {
+    instance_loanlib.TokenCanceledInLoans({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var id = result.args.tokenId;
         var loans = result.args.loanList;
@@ -92,16 +85,14 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    loanfinished = instance_loan.LoanFinished({ fromBlock: 'latest' });
-    loanfinished.watch(function(error, result) {
+    instance_loan.LoanFinished({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var id = result.args.loanId;
         console.log(`       Loan finished !!! Id: ${id}`);
       }
     });
 
-    tokenevent = instance_snarkbase.TokenCreated({ fromBlock: 'latest' });
-    tokenevent.watch(function(error, result) {
+    instance_snarkbase.TokenCreated({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var owner = result.args.tokenOwner;
         var id = result.args.tokenId;
@@ -109,8 +100,7 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    loanevent = instance_loan.LoanCreated({ fromBlock: 'latest' });
-    loanevent.watch(function(error, result) {
+    instance_loan.LoanCreated({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var owner = result.args.loanBidOwner;
         var id = result.args.loanId;
@@ -124,8 +114,7 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    loanaccepted = instance_loan.LoanAccepted({ fromBlock: 'latest' });
-    loanaccepted.watch(function(error, result) {
+    instance_loan.LoanAccepted({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var loanId = result.args.loanId;
         var tokenId = result.args.tokenId;
@@ -137,8 +126,7 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    loandeclined = instance_loan.LoanDeclined({ fromBlock: 'latest' });
-    loandeclined.watch(function(error, result) {
+    instance_loan.LoanDeclined({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var loanId = result.args.loanId;
         var tokenId = result.args.tokenId;
@@ -149,6 +137,7 @@ contract('SnarkBase', async accounts => {
         );
       }
     });
+
   });
 
   it('2. Add new token.', async () => {
@@ -156,12 +145,12 @@ contract('SnarkBase', async accounts => {
     const profitShareFromSecondarySale = 0;
     const tokenUrl = 'http://snark2.art';
     const profitShareSchemeId = 1;
-    const decriptionUrl = 'big-secret'
-    const decorationUrl = 'ipfs://decorator.io'
-    var tokenHash = web3.sha3('test');
+    const decriptionUrl = 'big-secret';
+    const decorationUrl = 'ipfs://decorator.io';
+    var tokenHash = web3.utils.sha3('test');
 
-    var a = [limitedEdition, profitShareFromSecondarySale, profitShareSchemeId]
-    var b = [false, false]
+    var a = [limitedEdition, profitShareFromSecondarySale, profitShareSchemeId];
+    var b = [false, false];
 
     await instance_snarkbase.addToken(
       accounts[1],
@@ -179,9 +168,9 @@ contract('SnarkBase', async accounts => {
   });
 
   it('3. Create loan for token with offer. Should be rejected.', async () => {
-    const startDateTimestamp1 = new Date().getTime() / 1000 + 0 *24 * 3600;
+    const startDateTimestamp1 = datetime.create(new Date()).getTime();
     const duration = 1;
-    // function createLoan(uint256[] tokensIds, uint256 startDate, uint256 duration) public payable restrictedAccess {
+
     await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
     let loans = await instance_loan.getLoanRequestsListOfTokenOwner(accounts[1])
     console.log('Loans: ', loans)
@@ -200,29 +189,28 @@ contract('SnarkBase', async accounts => {
   
   it('4. Create one offer. Should be accepted. Loans should be removed.', async () => {
 
-    await expect(instance_offer.addOffer(1,web3.toWei(1,"ether"),{from:accounts[1]}),"Should be able to create offer for token 1").to.be.eventually.fulfilled
-    let offer1 = await instance_offer.getOfferByToken(1)
-    console.log('Offer token #1', offer1.toString())
+    await expect(
+      instance_offer.addOffer(1, web3.utils.toWei('1',"ether"),{from:accounts[1]}),
+      "Should be able to create offer for token 1"
+    ).to.be.eventually.fulfilled;
 
-    loans = await instance_loan.getLoanRequestsListOfTokenOwner(accounts[1])
-    console.log('Loans: ', loans)
+    let offer1 = await instance_offer.getOfferByToken(1);
+    console.log('Offer token #1', offer1.toString());
 
-    details = await instance_loan.getLoanDetail(1)
-    console.log('Loan #1 Details: ', details)
+    loans = await instance_loan.getLoanRequestsListOfTokenOwner(accounts[1]);
+    console.log('Loans: ', loans);
 
-    let tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
-    console.log('Tokens: ', tokens[0], tokens[1], tokens[2])
-    expect(tokens[0].length,"Loan 1 should not have any tokens").to.be.equal(0)
+    details = await instance_loan.getLoanDetail(1);
+    console.log('Loan #1 Details: ', details);
 
-    let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1)
-    console.log('List of Loans: ', listOfLoans)
-    expect(listOfLoans.length,"Token #1 shoult not have any related loans").to.be.equal(0)
-    
+    let tokens = await instance_loan.getTokenListsOfLoanByTypes(1);
+    console.log('Tokens: ', tokens[0], tokens[1], tokens[2]);
+    expect(tokens[0].length,"Loan 1 should not have any tokens").to.be.equal(0);
+
+    let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1);
+    console.log('List of Loans: ', listOfLoans);
+    expect(listOfLoans.length,"Token #1 shoult not have any related loans").to.be.equal(0);
 
   });
-
-  
-
-
 
 });
