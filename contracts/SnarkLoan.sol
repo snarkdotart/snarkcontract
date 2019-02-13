@@ -355,7 +355,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     }
 
     /// @notice return list of loan request by token owner 
-    function getLoanRequestsListOfTokenOwner(address tokenOwner) public view returns (uint256[]) {
+    function getLoanRequestsListOfTokenOwner(address tokenOwner) public view returns (uint256[], uint256[]) {
         return _storage.getLoanRequestsListForTokenOwner(tokenOwner);
     }
 

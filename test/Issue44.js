@@ -172,19 +172,18 @@ contract('SnarkBase', async accounts => {
     const duration = 1;
 
     await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
-    let loans = await instance_loan.getLoanRequestsListOfTokenOwner(accounts[1])
-    console.log('Loans: ', loans)
+    let loans = await instance_loan.getLoanRequestsListOfTokenOwner(accounts[1]);
+    console.log('Tokens: ', loans[0]);
+    console.log('Loans: ', loans[1]);
 
-    let details = await instance_loan.getLoanDetail(1)
-    console.log('Loan #1 Details: ', details)
+    let details = await instance_loan.getLoanDetail(1);
+    console.log('Loan #1 Details: ', details);
 
-    let tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
-    console.log('Tokens: ', tokens[0], tokens[1], tokens[2])
+    let tokens = await instance_loan.getTokenListsOfLoanByTypes(1);
+    console.log('Tokens: ', tokens[0], tokens[1], tokens[2]);
 
-    let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1)
-    console.log('List of Loans: ', listOfLoans)
-
-
+    let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1);
+    console.log('List of Loans: ', listOfLoans);
   });
   
   it('4. Create one offer. Should be accepted. Loans should be removed.', async () => {

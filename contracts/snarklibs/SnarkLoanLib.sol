@@ -617,14 +617,15 @@ library SnarkLoanLib {
     function getLoanRequestsListForTokenOwner(address storageAddress, address tokenOwner)
         public
         view
-        returns (uint256[])
+        returns (uint256[], uint256[])
     {
         uint256 count = getCountLoanRequestsForTokenOwner(storageAddress, tokenOwner);
-        uint256[] memory list = new uint256[](count);
+        uint256[] memory listOfTokens = new uint256[](count);
+        uint256[] memory listOfLoans = new uint256[](count);
         for (uint256 i = 0; i < count; i++) {
-            (list[i],) = getLoanRequestForTokenOwnerByIndex(storageAddress, tokenOwner, i);
+            (listOfTokens[i], listOfLoans[i]) = getLoanRequestForTokenOwnerByIndex(storageAddress, tokenOwner, i);
         }
-        return list;
+        return (listOfTokens, listOfLoans);
     }
     
     /// @notice returns the address of the current token owner for the loan

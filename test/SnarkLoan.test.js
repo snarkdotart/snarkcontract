@@ -637,16 +637,20 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval, accounts[3], "wrong owner of token 4");
 
         retval = await instance.getLoanRequestsListOfTokenOwner(accounts[0]);
-        assert.equal(retval.length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
+        assert.equal(retval[0].length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
+        assert.equal(retval[1].length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
 
         retval = await instance.getLoanRequestsListOfTokenOwner(accounts[1]);
-        assert.equal(retval.length, 0, `list of requests for account ${accounts[1]} is wrong (token 2)`);
+        assert.equal(retval[0].length, 0, `list of requests for account ${accounts[1]} is wrong (token 2)`);
+        assert.equal(retval[1].length, 0, `list of requests for account ${accounts[1]} is wrong (token 2)`);
 
         retval = await instance.getLoanRequestsListOfTokenOwner(accounts[2]);
-        assert.equal(retval.length, 0, `list of requests for account ${accounts[2]} is wrong (token 3)`);
+        assert.equal(retval[0].length, 0, `list of requests for account ${accounts[2]} is wrong (token 3)`);
+        assert.equal(retval[1].length, 0, `list of requests for account ${accounts[2]} is wrong (token 3)`);
 
         retval = await instance.getLoanRequestsListOfTokenOwner(accounts[3]);
-        assert.equal(retval.length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
+        assert.equal(retval[0].length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
+        assert.equal(retval[1].length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
 
         // ставим Offer на один из первых трех токенов, у которых отключен autoaccept, например на первый токен
         const priceOffer = web3.utils.toWei('0.2', 'ether');
@@ -661,7 +665,6 @@ contract('SnarkLoan', async (accounts) => {
         await instance.createLoan([1,2,3,4], startDateTimestamp, duration, { from: accounts[4], value: priceLoan } );
 
         let loanId = await instance.getTotalNumberOfLoans();
-
         // по идее должны получить следующее поведение:
         // - первый токен должен исключиться из лоана автоматически, т.к. у него стоит Offer
         // - ожидаем 2 реквеста на 2-й и 3-й токены, т.е. токены в notApproved list
@@ -675,18 +678,24 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval.approvedTokensList[0], 4, "token number is wrong into not approved tokens list");
 
         retval = await instance.getLoanRequestsListOfTokenOwner(accounts[0]);
-        assert.equal(retval.length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
+        assert.equal(retval[0].length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
+        assert.equal(retval[1].length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
 
         retval = await instance.getLoanRequestsListOfTokenOwner(accounts[1]);
-        assert.equal(retval.length, 1, `list of requests for account ${accounts[1]} is wrong (token 2)`);
-        assert.equal(retval[0], 2, "request is not for token #2");
+        assert.equal(retval[0].length, 1, `list of requests for account ${accounts[1]} is wrong (token 2)`);
+        assert.equal(retval[1].length, 1, `list of requests for account ${accounts[1]} is wrong (token 2)`);
+        assert.equal(retval[0][0].toNumber(), 2, "request is not for token #2");
+        assert.equal(retval[1][0].toNumber(), loanId, "request is not for token #2");
 
         retval = await instance.getLoanRequestsListOfTokenOwner(accounts[2]);
-        assert.equal(retval.length, 1, `list of requests for account ${accounts[2]} is wrong (token 3)`);
-        assert.equal(retval[0], 3, "request is not for token #2");
+        assert.equal(retval[0].length, 1, `list of requests for account ${accounts[2]} is wrong (token 3)`);
+        assert.equal(retval[1].length, 1, `list of requests for account ${accounts[2]} is wrong (token 3)`);
+        assert.equal(retval[0][0].toNumber(), 3, "request is not for token #3");
+        assert.equal(retval[1][0].toNumber(), loanId, "request is not for token #3");
 
         retval = await instance.getLoanRequestsListOfTokenOwner(accounts[3]);
-        assert.equal(retval.length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
+        assert.equal(retval[0].length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
+        assert.equal(retval[1].length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
     });
 
     it("10. test join token to the loan", async () => {
