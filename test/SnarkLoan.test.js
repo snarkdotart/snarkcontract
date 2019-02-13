@@ -1,7 +1,7 @@
 var SnarkLoan = artifacts.require("SnarkLoan");
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkStorage = artifacts.require("SnarkStorage");
-var SnarkLoanTest = artifacts.require("SnarkLoanTest");
+var SnarkTestFunctions = artifacts.require("SnarkTestFunctions");
 var SnarkOfferBid = artifacts.require("SnarkOfferBid");
 
 var datetime = require('node-datetime');
@@ -11,7 +11,7 @@ contract('SnarkLoan', async (accounts) => {
 
     before(async () => {
         instance = await SnarkLoan.deployed();
-        instance_test = await SnarkLoanTest.deployed();
+        instance_test = await SnarkTestFunctions.deployed();
         instance_snarkbase = await SnarkBase.deployed();
         instance_storage = await SnarkStorage.deployed();
         instance_offerbid = await SnarkOfferBid.deployed();
