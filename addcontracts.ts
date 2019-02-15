@@ -7,6 +7,7 @@ const dictionary = [
 	['CONTRACT_SNARKBASE_ADDRESS', './build/contracts/SnarkBase.json', 'addressSnarkBase: process.env.CONTRACT_ADDRESS_SNARK_BASE'], 
 	['CONTRACT_SNARKOFFERBID_ADDRESS', './build/contracts/SnarkOfferBid.json', 'addressSnarkOfferBid: process.env.CONTRACT_ADDRESS_SNARK_OFFER_BID'],
 	['CONTRACT_SNARKLOAN_ADDRESS', './build/contracts/SnarkLoan.json', 'addressSnarkLoan: process.env.CONTRACT_ADDRESS_SNARK_LOAN'],
+	['CONTRACT_SNARKLOANEXT_ADDRESS', './build/contracts/SnarkLoanExt.json', 'addressSnarkLoan: process.env.CONTRACT_ADDRESS_SNARK_LOAN_EXT'],
 	['CONTRACT_SNARKERC721_ADDRESS', './build/contracts/SnarkERC721.json', 'addressSnarkErc721: process.env.CONTRACT_ADDRESS_SNARK_ERC721']
 ];
 

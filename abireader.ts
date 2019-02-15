@@ -6,6 +6,7 @@ const dictionary = [
 	['private SnarkBaseABI =', './build/contracts/SnarkBase.json', 'abiSnarkBase: process.env.CONTRACT_ABI_SNARK_BASE'], 
 	['private SnarkOfferBidABI =', './build/contracts/SnarkOfferBid.json', 'abiSnarkOfferBid: process.env.CONTRACT_ABI_SNARK_OFFER_BID'],
 	['private SnarkLoanABI =', './build/contracts/SnarkLoan.json', 'abiSnarkLoan: process.env.CONTRACT_ABI_SNARK_LOAN'],
+	['private SnarkLoanExtABI =', './build/contracts/SnarkLoanExt.json', 'abiSnarkLoan: process.env.CONTRACT_ABI_SNARK_LOAN_EXT'],
 	['private SnarkERC721ABI =', './build/contracts/SnarkERC721.json', 'abiSnarkErc721: process.env.CONTRACT_ABI_SNARK_ERC721']
 ];
 
