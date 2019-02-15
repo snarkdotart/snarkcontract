@@ -115,6 +115,11 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         }
     }
 
+    // function attachTokenToLoan(uint256 loanId, uint256 tokenId, uint256 typeOfList) public {
+    //     // Type of List: 0 - NotApproved, 1 - Approved, 2 - Declined
+    //     _storage.attachTokenToLoan(loanId, tokenId, typeOfList);
+    //     emit TokenAttachedToLoan(tokenId, loanId);
+    // }
     /// @dev attributes of startDate input should be in the format datetime
     /// without consideration for time, for example: 1298851200000 => 2011-02-28T00:00:00.000Z
     /// duration - simple number in days, example 10 (days)
