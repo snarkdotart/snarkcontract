@@ -204,11 +204,12 @@ contract('SnarkBase', async accounts => {
       let num = await instance_testFunctions.getNumberOfLoansInTokensLoanList(1)
       console.log('Loans for token 1: ', num.toNumber())
 
-    await expect(instance_loan.createLoan([1,3], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
+    await expect(instance_loan.createLoanForAllTokens(startDateTimestamp1, duration)).to.be.eventually.fulfilled;
+    // await expect(instance_loan.createLoan([1,3], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
 
     tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
     testFunctions.showLoanTokens(tokens, "After Loan Creation")
-    let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1)
+    let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1)
     console.log('List of Loans: ', listOfLoans)
 
     num = await instance_testFunctions.getNumberOfLoansInTokensLoanList(1)
@@ -220,7 +221,7 @@ contract('SnarkBase', async accounts => {
     await expect(instance_loan.startLoan(1,{from:accounts[0]}), "It should be possible to start a Loan").to.be.eventually.fulfilled;
     tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
     testFunctions.showLoanTokens(tokens, "After Starting Loan")
-    listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1)
+    listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1)
     console.log('List of Loans: ', listOfLoans)
 
     saleType = await instance_testFunctions.getSaleTypeToToken(1)
@@ -235,7 +236,7 @@ contract('SnarkBase', async accounts => {
     tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
     testFunctions.showLoanTokens(tokens, "After Adding Offer.")
 
-    let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1)
+    let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1)
     console.log('List of Loans: ', listOfLoans)
   });
 

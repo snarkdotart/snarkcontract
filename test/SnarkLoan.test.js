@@ -1,4 +1,5 @@
 var SnarkLoan = artifacts.require("SnarkLoan");
+var SnarkLoanExt = artifacts.require("SnarkLoanExt");
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkStorage = artifacts.require("SnarkStorage");
 var SnarkTestFunctions = artifacts.require("SnarkTestFunctions");
@@ -15,7 +16,8 @@ contract('SnarkLoan', async (accounts) => {
         instance_snarkbase = await SnarkBase.deployed();
         instance_storage = await SnarkStorage.deployed();
         instance_offerbid = await SnarkOfferBid.deployed();
-        
+        instance_loanext = await SnarkLoanExt.deployed();
+
         await web3.eth.sendTransaction({
             from:   accounts[0],
             to:     instance_storage.address, 
@@ -95,10 +97,12 @@ contract('SnarkLoan', async (accounts) => {
         const withdrawBalanceOfStorageBeforeCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
 
         await instance_snarkbase.changeRestrictAccess(false);
-        await instance.createLoan(
-            tokensIds, startDateTimestamp, duration, 
-            { from: borrower, value: loanCost }
-        );
+        await instance.createLoanForAllTokens(startDateTimestamp, duration, { from: borrower, value: loanCost });
+        
+        // await instance.createLoan(
+        //     tokensIds, startDateTimestamp, duration, 
+        //     { from: borrower, value: loanCost }
+        // );
 
         const balanceOfStorageAfterCreateLoan = await web3.eth.getBalance(instance_storage.address);        
         const withdrawBalanceOfStorageAfterCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
@@ -240,7 +244,7 @@ contract('SnarkLoan', async (accounts) => {
             );
         }
 
-        await instance.setCostOfStopLoanOperationForLoan(loanId, costOfStop);
+        await instance_loanext.setCostOfStopLoanOperationForLoan(loanId, costOfStop);
 
         try {
             await instance.borrowLoanedTokens(loanId, { from: borrower, value: web3.utils.toWei('0.001', 'ether') });
@@ -296,7 +300,7 @@ contract('SnarkLoan', async (accounts) => {
         let loanDetail = await instance.getLoanDetail(loanId);
         assert.equal(loanDetail.saleStatus, 2, "loan status is not correct before stopLoan");
 
-        let loanListOfBorrower = await instance.getLoansListOfLoanOwner(loanDetail.loanOwner);
+        let loanListOfBorrower = await instance_loanext.getLoansListOfLoanOwner(loanDetail.loanOwner);
         assert.equal(loanListOfBorrower.length, 1, 'length of loans list is not correct before stopLoan');
 
         await instance.stopLoan(loanId);
@@ -304,7 +308,7 @@ contract('SnarkLoan', async (accounts) => {
         loanDetail = await instance.getLoanDetail(loanId);
         assert.equal(loanDetail.saleStatus, 3, "loan status is not correct after stopLoan");
 
-        loanListOfBorrower = await instance.getLoansListOfLoanOwner(loanDetail.loanOwner);
+        loanListOfBorrower = await instance_loanext.getLoansListOfLoanOwner(loanDetail.loanOwner);
         assert.equal(loanListOfBorrower.length, 0, 'length of loans list is not correct after stopLoan');
 
         const tokensList = await instance.getTokenListsOfLoanByTypes(loanId);
@@ -350,18 +354,20 @@ contract('SnarkLoan', async (accounts) => {
             assert.equal(detail.isAcceptOfLoanRequestFromOthers, false, `isAcceptOfLoanRequestFromOthers is wrong for token ${i+1}`);
         }
 
-        let countOfLoan = await instance.getLoansListOfLoanOwner(borrower);
+        let countOfLoan = await instance_loanext.getLoansListOfLoanOwner(borrower);
         assert.equal(countOfLoan.length, 0, 'Wrong number of loans belong to borrower');
 
-        await instance.createLoan(
-            tokensIds, startDateTimestamp, duration, 
-            { from: borrower, value: loanCost }
-        );
+        await instance.createLoanForAllTokens(startDateTimestamp, duration, { from: borrower, value: loanCost });
 
-        const idOfNewLoan = await instance.getTotalNumberOfLoans();
+        // await instance.createLoan(
+        //     tokensIds, startDateTimestamp, duration, 
+        //     { from: borrower, value: loanCost }
+        // );
+
+        const idOfNewLoan = await instance_loanext.getTotalNumberOfLoans();
         assert.equal(idOfNewLoan, 2, 'Amount of loans is wrong after createLoan function');
 
-        countOfLoan = await instance.getLoansListOfLoanOwner(borrower);
+        countOfLoan = await instance_loanext.getLoansListOfLoanOwner(borrower);
         assert.equal(countOfLoan.length, 1, 'Wrong number of loans belong to borrower after createLoan function');
 
         loanDetail = await instance.getLoanDetail(idOfNewLoan);
@@ -385,7 +391,7 @@ contract('SnarkLoan', async (accounts) => {
             'Balance of borrower is wrong after delete loan'
         );
 
-        countOfLoan = await instance.getLoansListOfLoanOwner(borrower);
+        countOfLoan = await instance_loanext.getLoansListOfLoanOwner(borrower);
         assert.equal(countOfLoan.length, 0, 'Wrong number of loans belong to borrower after deleteLoan function');
 
         loanDetail = await instance.getLoanDetail(idOfNewLoan);
@@ -401,16 +407,17 @@ contract('SnarkLoan', async (accounts) => {
         const duration = 3;
         const tokensIds = [1, 2, 3];
 
-        let countOfLoan = await instance.getLoansListOfLoanOwner(borrower);
+        let countOfLoan = await instance_loanext.getLoansListOfLoanOwner(borrower);
         assert.equal(countOfLoan.length, 0, 'Wrong number of loans belong to borrower');
 
         const balanceOfStorageBeforeCreateLoan = await web3.eth.getBalance(instance_storage.address);
         const withdrawBalanceOfStorageBeforeCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
 
-        await instance.createLoan(
-            tokensIds, startDateTimestamp, duration, 
-            { from: borrower, value: loanCost }
-        );
+        await instance.createLoanForAllTokens(startDateTimestamp, duration, { from: borrower, value: loanCost });
+        // await instance.createLoan(
+        //     tokensIds, startDateTimestamp, duration, 
+        //     { from: borrower, value: loanCost }
+        // );
 
         const balanceOfStorageAfterCreateLoan = await web3.eth.getBalance(instance_storage.address);
         const withdrawBalanceOfStorageAfterCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
@@ -427,7 +434,7 @@ contract('SnarkLoan', async (accounts) => {
             "Balance of storage is wrong after create laon"
         );
 
-        const loanId = await instance.getTotalNumberOfLoans();
+        const loanId = await instance_loanext.getTotalNumberOfLoans();
         assert.equal(loanId, 3, 'Amount of loans is wrong after createLoan function');
 
         loanDetail = await instance.getLoanDetail(loanId);
@@ -446,7 +453,7 @@ contract('SnarkLoan', async (accounts) => {
             retval = await instance_snarkbase.getSaleTypeToToken(tokensList.approvedTokensList[i]);
             assert.equal(retval, 0, `sale status is not correct for token ${tokensList.approvedTokensList[i]}`);
             
-            retval = await instance.getListOfLoansFromTokensLoanList(tokensList.approvedTokensList[i]);
+            retval = await instance.getListOfNotFinishedLoansForToken(tokensList.approvedTokensList[i]);
             assert.equal(retval.length, 1, 'list of loans for token id is not correct');
             assert.equal(retval[0], loanId, 'LoanId is wrong for current tokenId');
         }
@@ -636,19 +643,19 @@ contract('SnarkLoan', async (accounts) => {
         retval = await instance_snarkbase.getOwnerOfToken(4);
         assert.equal(retval, accounts[3], "wrong owner of token 4");
 
-        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[0]);
+        retval = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[0]);
         assert.equal(retval[0].length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
         assert.equal(retval[1].length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
 
-        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[1]);
+        retval = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[1]);
         assert.equal(retval[0].length, 0, `list of requests for account ${accounts[1]} is wrong (token 2)`);
         assert.equal(retval[1].length, 0, `list of requests for account ${accounts[1]} is wrong (token 2)`);
 
-        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[2]);
+        retval = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[2]);
         assert.equal(retval[0].length, 0, `list of requests for account ${accounts[2]} is wrong (token 3)`);
         assert.equal(retval[1].length, 0, `list of requests for account ${accounts[2]} is wrong (token 3)`);
 
-        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[3]);
+        retval = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[3]);
         assert.equal(retval[0].length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
         assert.equal(retval[1].length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
 
@@ -662,9 +669,10 @@ contract('SnarkLoan', async (accounts) => {
         const startDateTimestamp = datetime.create(new Date(2019, 3, 1)).getTime();
         const duration = 3;
         const priceLoan = web3.utils.toWei('0.5', 'ether');
-        await instance.createLoan([1,2,3,4], startDateTimestamp, duration, { from: accounts[4], value: priceLoan } );
+        await instance.createLoanForAllTokens(startDateTimestamp, duration, { from: accounts[4], value: priceLoan } );
+        // await instance.createLoan([1,2,3,4], startDateTimestamp, duration, { from: accounts[4], value: priceLoan } );
 
-        let loanId = await instance.getTotalNumberOfLoans();
+        let loanId = await instance_loanext.getTotalNumberOfLoans();
         // по идее должны получить следующее поведение:
         // - первый токен должен исключиться из лоана автоматически, т.к. у него стоит Offer
         // - ожидаем 2 реквеста на 2-й и 3-й токены, т.е. токены в notApproved list
@@ -677,29 +685,29 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval.notApprovedTokensList[1], 3, "token number is wrong into not approved tokens list");
         assert.equal(retval.approvedTokensList[0], 4, "token number is wrong into not approved tokens list");
 
-        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[0]);
+        retval = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[0]);
         assert.equal(retval[0].length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
         assert.equal(retval[1].length, 0, `list of requests for account ${accounts[0]} is wrong (token 1)`);
 
-        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[1]);
+        retval = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[1]);
         assert.equal(retval[0].length, 1, `list of requests for account ${accounts[1]} is wrong (token 2)`);
         assert.equal(retval[1].length, 1, `list of requests for account ${accounts[1]} is wrong (token 2)`);
         assert.equal(retval[0][0].toNumber(), 2, "request is not for token #2");
         assert.equal(retval[1][0].toNumber(), loanId, "request is not for token #2");
 
-        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[2]);
+        retval = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[2]);
         assert.equal(retval[0].length, 1, `list of requests for account ${accounts[2]} is wrong (token 3)`);
         assert.equal(retval[1].length, 1, `list of requests for account ${accounts[2]} is wrong (token 3)`);
         assert.equal(retval[0][0].toNumber(), 3, "request is not for token #3");
         assert.equal(retval[1][0].toNumber(), loanId, "request is not for token #3");
 
-        retval = await instance.getLoanRequestsListOfTokenOwner(accounts[3]);
+        retval = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[3]);
         assert.equal(retval[0].length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
         assert.equal(retval[1].length, 0, `list of requests for account ${accounts[3]} is wrong (token 4)`);
     });
 
     it("10. test join token to the loan", async () => {
-        let loanId = await instance.getTotalNumberOfLoans();
+        let loanId = await instance_loanext.getTotalNumberOfLoans();
 
         let retval = await instance.getTokenListsOfLoanByTypes(loanId);
         assert.equal(retval.notApprovedTokensList.length, 2, "length of not approved tokens list is wrong");
@@ -721,6 +729,76 @@ contract('SnarkLoan', async (accounts) => {
         assert.equal(retval.notApprovedTokensList[1], 3, "token number is wrong into not approved tokens list");
         assert.equal(retval.approvedTokensList[0], 4, "token number is wrong into not approved tokens list");
         assert.equal(retval.approvedTokensList[1], 1, "token number is wrong into not approved tokens list");
-});
+    });
+
+    it("11. test an ability to acceptBid when loan is started", async () => {
+        // Github issue #40
+        // Scenario
+        // 1. Create Token with auto loan accept.
+        // 2. Create a loan startig today
+        // 3. Create an offer for this token.
+        // 4. Start this loan (2 cases: до вызова borrowedTokens и после)
+        // 5. Add a bid for an offer from point  3
+        // 6. Accept Bid
+        // It should be not accepted but it accepted now
+
+        // const priceOffer = web3.utils.toWei('0.4', 'ether');
+        // const priceBid = web3.utils.toWei('0.2', 'ether');
+        // const tokenId = 2;
+        // const tokenOwner = accounts[1];
+        // const bidOwner = accounts[5];
+
+        // let loansList = await instance_loanext.getListOfNotFinishedLoansForToken(tokenId);
+        // console.log(`Count of loans for token #${tokenId}: ${loansList.length}`);
+        // for (let i = 0; i < loansList.length; i++) {
+        //     const loanDetails = await instance.getLoanDetail(loansList[i]);
+        //     console.log('');
+        //     console.log(`Loan Id: ${ loansList[i] }`);
+        //     console.log(`Start date: ${ loanDetail.startDate }`);
+        //     console.log(`Duration date: ${ loanDetail.duration }`);
+        //     console.log(`Sale status: ${ loanDetail.saleStatus }`);
+        //     console.log(`Loan price: ${ loanDetail.loanPrice }`);
+        //     console.log(`Loan owner: ${ loanDetail.loanOwner }`);
+        // }
+        // console.log('------');
+
+        // let loanId = await instance.getTotalNumberOfLoans();
+        // loanDetail = await instance.getLoanDetail(loanId);
+        // assert.isBelow(loanDetail.saleStatus.toNumber(), 2, "Loan has not to be in an active status");
+
+        // console.log(`current loanid: ${loanId}`);
+        // console.log(`current sale status: ${loanDetail.saleStatus}`);
+
+        // await instance_offerbid.addOffer(tokenId, priceOffer, { from: tokenOwner });
+        // const offerId = await instance_offerbid.getTotalNumberOfOffers();
+
+        // status = await instance_snarkbase.getSaleTypeToToken(tokenId);
+        // assert.equal(status, 1, `Status of token #1 is not Offer - ${status}`);
+
+        // await instance.startLoan(loanId);
+        // loanDetail = await instance.getLoanDetail(loanId);
+        // assert.equal(loanDetail.saleStatus.toNumber(), 2, "Loan has to be in an active status");
+
+        // await instance_offerbid.addBid(tokenId, { from: bidOwner, value: priceBid });
+        // const bidId = await instance_offerbid.getTotalNumberOfBids();
+
+        // loansList = await instance.getListOfNotFinishedLoansForToken(tokenId);
+        // for (let i = 0; i < loansList.length; i++) {
+        //     loanDetails = await instance.getLoanDetail(loansList[i]);
+        //     console.log('');
+        //     console.log(`Loan Id: ${loansList[i]}`);
+        //     console.log(`Start date: ${loanDetail.startDate}`);
+        //     console.log(`Duration date: ${loanDetail.duration}`);
+        //     console.log(`Sale status: ${loanDetail.saleStatus}`);
+        //     console.log(`Loan price: ${loanDetail.loanPrice}`);
+        //     console.log(`Loan owner: ${loanDetail.loanOwner}`);
+        // }
+
+        // assert.equal(loansList.length, 1, "lenght of loans list is wrong");
+        // assert.equal(loansList[0].toNumber(), loanId, "loan id is wrong in the list");
+
+        // await instance_offerbid.acceptBid(bidId, { from: tokenOwner });
+
+    });
 
 });

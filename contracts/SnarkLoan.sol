@@ -4,6 +4,7 @@ import "./openzeppelin/Ownable.sol";
 import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 import "./snarklibs/SnarkCommonLib.sol";
+import "./snarklibs/SnarkLoanLibExt.sol";
 import "./snarklibs/SnarkLoanLib.sol";
 import "./openzeppelin/SafeMath.sol";
 
@@ -15,17 +16,13 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     using SnarkBaseLib for address;
     using SnarkCommonLib for address;
     using SnarkLoanLib for address;
+    using SnarkLoanLibExt for address;
     using SafeMath for uint256;
 
     address private _storage;
     address private _erc721;
 
-    event LoanCreated(
-        address indexed loanBidOwner, 
-        uint256 loanId, 
-        uint256[] unacceptedTokens
-    );
-
+    event LoanCreated(address indexed loanBidOwner, uint256 loanId);
     event LoanAccepted(address indexed tokenOwner, uint256 loanId, uint256 tokenId);
     event LoanDeclined(address indexed tokenOwner, uint256 loanId, uint256 tokenId);
     event LoanStarted(uint256 loanId);
@@ -34,6 +31,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     event LoanDeleted(uint256 loanId);
     event TokenCanceledInLoans(uint256 tokenId, uint256 loanId);
     event TokenDeclinedInLoanCreation(uint256 tokenId);
+    event TokenAttachedToLoan(uint256 tokenId, uint256 loanId);
 
     modifier restrictedAccess() {
         if (_storage.isRestrictedAccess()) {
@@ -76,62 +74,102 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         return _storage.getDefaultLoanDuration();
     }
 
-    /// @dev attributes of startDate input should be in the format datetime
-    /// without consideration for time, for example: 1298851200000 => 2011-02-28T00:00:00.000Z
-    /// duration - simple number in days, example 10 (days)
-    function createLoan(uint256[] tokensIds, uint256 startDate, uint256 duration) public payable restrictedAccess {
+    function createLoanForAllTokens(uint256 startDate, uint256 duration) public payable restrictedAccess {
         require(duration <= getDefaultLoanDuration(), "Duration exceeds a max value");
-        uint256[] memory tokensList = new uint256[](tokensIds.length);
-        uint256 indexLength = 0;
-        // check if the user requested their own tokens
-        for (uint256 i = 0; i < tokensIds.length; i++) {
-            require(tokensIds[i] <= _storage.getTotalNumberOfTokens(), "Token id has to be valid");
-            require(
-                _storage.getOwnerOfToken(tokensIds[i]) != msg.sender,
-                "Borrower can't request loan for their own tokens"
-            );
-            // check that the token is not being sold 
-            if (_storage.getSaleTypeToToken(tokensIds[i]) != uint256(SaleType.Offer)) {
-                tokensList[indexLength] = tokensIds[i];
-                indexLength = indexLength + 1;
-            } else { emit TokenDeclinedInLoanCreation(tokensIds[i]); }
-        }
-        uint256[] memory tokensListFinal = new uint256[](indexLength);
-        for (i = 0; i < indexLength; i++) {
-            tokensListFinal[i] = tokensList[i];
-        }
         if (msg.value > 0) { 
             _storage.transfer(msg.value);
             _storage.addPendingWithdrawals(_storage, msg.value); 
         }
-        if (indexLength > 0) {
-            uint256 loanId = _storage.createLoan(msg.sender, msg.value, tokensListFinal, startDate, duration);
-            bool isAgree = false;
-            for (i = 0; i < indexLength; i++) {
-                address tokenOwner = _storage.getOwnerOfToken(tokensListFinal[i]);
-                _storage.setActualTokenOwnerForLoan(loanId, tokensListFinal[i], tokenOwner);
-                if (_storage.isTokenBusyForPeriod(tokensListFinal[i], startDate, duration)) {
-                    // if there is a schedule conflict, token is moved to Declined List - 2
-                    _storage.addTokenToListOfLoan(loanId, tokensListFinal[i], 2);
-                } else {
-                    isAgree = (msg.sender == owner) ? 
-                        _storage.isTokenAcceptOfLoanRequestFromSnark(tokensListFinal[i]) :
-                        _storage.isTokenAcceptOfLoanRequestFromOthers(tokensListFinal[i]);
-                    if (isAgree) {
-                        // storing the reserved period in the calendar and the loan that created the reserve 
-                        // FIXME: сделать расчеты не по дням, а по минутам. 
-                        _storage.makeTokenBusyForPeriod(loanId, tokensListFinal[i], startDate, duration);
-                        // token is moved to the Approved List - 1
-                        _storage.addTokenToListOfLoan(loanId, tokensListFinal[i], 1);
-                    } else {
-                        _storage.addLoanRequestToTokenOwner(tokenOwner, tokensListFinal[i], loanId);
-                    }
-                }
+        uint256[3] memory loanPriceStartDateDuration = [msg.value, startDate, duration];
+        uint256 loanId = _storage.createEmptyLoan(msg.sender, loanPriceStartDateDuration);
+        emit LoanCreated(msg.sender, loanId);
+        address artist;
+        address currentOwner;
+        bool isAcceptOfLoanRequestFromSnark;
+        bool isAcceptOfLoanRequestFromOthers;
+        bool isBusy;
+        bool isAgree;
+        uint256 saleTypeOfToken;
+        uint256 tokensCount = _storage.getTotalNumberOfTokens();
+        for (uint256 tokenId = 1; tokenId < (tokensCount + 1); tokenId++) {
+            (currentOwner, artist, , , , , , , , , isAcceptOfLoanRequestFromSnark, isAcceptOfLoanRequestFromOthers) = 
+                _storage.getTokenDetail(tokenId);
+            if (msg.sender == currentOwner || msg.sender == artist) continue;
+            saleTypeOfToken = _storage.getSaleTypeToToken(tokenId);
+            loanPriceStartDateDuration[0] = tokenId;
+            isBusy = _storage.isTokenBusyForPeriod(loanPriceStartDateDuration); // tokenId, startDate, duration
+            if (saleTypeOfToken == uint256(SaleType.Offer) || isBusy) {
+                emit TokenDeclinedInLoanCreation(tokenId);
+                continue;
             }
-            emit LoanCreated(msg.sender, loanId, _storage.getTokensListOfLoanByType(loanId, 0));
+            isAgree = (msg.sender == owner) ? isAcceptOfLoanRequestFromSnark : isAcceptOfLoanRequestFromOthers;
+            if (isAgree) {
+                _storage.attachTokenToLoan(loanId, tokenId, uint256(1)); // 1 - Approved
+                _storage.makeTokenBusyForPeriod(loanId, loanPriceStartDateDuration); // tokenId, startDate, duration
+            } else {
+                _storage.attachTokenToLoan(loanId, tokenId, uint256(0)); // 0 - Not Approved
+                _storage.addLoanRequestToTokenOwner(currentOwner, tokenId, loanId);
+            }
+            _storage.setActualTokenOwnerForLoan(loanId, tokenId, currentOwner);
+            emit TokenAttachedToLoan(tokenId, loanId);
         }
     }
 
+    /// @dev attributes of startDate input should be in the format datetime
+    /// without consideration for time, for example: 1298851200000 => 2011-02-28T00:00:00.000Z
+    /// duration - simple number in days, example 10 (days)
+    /// FIXME: проверить входящий токен на участие уже в другом лоане
+    // function createLoan(uint256[] tokensIds, uint256 startDate, uint256 duration) public payable restrictedAccess {
+    //     require(duration <= getDefaultLoanDuration(), "Duration exceeds a max value");
+    //     uint256[] memory tokensList = new uint256[](tokensIds.length);
+    //     uint256 indexLength = 0;
+    //     uint256[3] memory tokenIdStartDateDuration = [tokensIds[0], startDate, duration];
+    //     // check if the user requested their own tokens
+    //     for (uint256 i = 0; i < tokensIds.length; i++) {
+    //         require(tokensIds[i] <= _storage.getTotalNumberOfTokens(), "Token id has to be valid");
+    //         require(
+    //             _storage.getOwnerOfToken(tokensIds[i]) != msg.sender,
+    //             "Borrower can't request loan for their own tokens"
+    //         );
+    //         // check that the token is not being sold 
+    //         tokenIdStartDateDuration[0] = tokensIds[i];
+    //         if (_storage.getSaleTypeToToken(tokensIds[i]) != uint256(SaleType.Offer) &&
+    //             !_storage.isTokenBusyForPeriod(tokenIdStartDateDuration)) {
+    //             tokensList[indexLength] = tokensIds[i];
+    //             indexLength = indexLength + 1;
+    //         } else { emit TokenDeclinedInLoanCreation(tokensIds[i]); }
+    //     }
+    //     uint256[] memory tokensListFinal = new uint256[](indexLength);
+    //     for (i = 0; i < indexLength; i++) {
+    //         tokensListFinal[i] = tokensList[i];
+    //     }
+    //     if (msg.value > 0) { 
+    //         _storage.transfer(msg.value);
+    //         _storage.addPendingWithdrawals(_storage, msg.value); 
+    //     }
+    //     if (indexLength > 0) {
+    //         uint256 loanId = _storage.createLoan(msg.sender, msg.value, tokensListFinal, startDate, duration);
+    //         bool isAgree = false;
+    //         for (i = 0; i < indexLength; i++) {
+    //             address tokenOwner = _storage.getOwnerOfToken(tokensListFinal[i]);
+    //             _storage.setActualTokenOwnerForLoan(loanId, tokensListFinal[i], tokenOwner);
+    //             isAgree = (msg.sender == owner) ? 
+    //                 _storage.isTokenAcceptOfLoanRequestFromSnark(tokensListFinal[i]) :
+    //                 _storage.isTokenAcceptOfLoanRequestFromOthers(tokensListFinal[i]);
+    //             if (isAgree) {
+    //                 // storing the reserved period in the calendar and the loan that created the reserve 
+    //                 // FIXME: сделать расчеты не по дням, а по минутам. 
+    //                 tokenIdStartDateDuration[0] = tokensIds[i];
+    //                 _storage.makeTokenBusyForPeriod(loanId, tokenIdStartDateDuration);
+    //                 // token is moved to the Approved List - 1
+    //                 _storage.addTokenToListOfLoan(loanId, tokensListFinal[i], 1);
+    //             } else {
+    //                 _storage.addLoanRequestToTokenOwner(tokenOwner, tokensListFinal[i], loanId);
+    //             }
+    //         }
+    //         emit LoanCreated(msg.sender, loanId);
+    //     }
+    // }
     /// @notice owner agrees with the loan request for their token 
     function acceptLoan(uint256 loanId, uint256[] tokenIds) public {
         require(tokenIds.length > 0, "Array of tokens can't be empty");
@@ -144,6 +182,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         uint256 startDate = _storage.getStartDateOfLoan(loanId);
         uint256 duration = _storage.getDurationOfLoan(loanId);
         uint256 numberOfTokens = _storage.getOwnedTokensCount(msg.sender);
+        uint256[3] memory tokenIdStartDateDuration = [0, startDate, duration];
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             require(tokenIds[i] > 0 && tokenIds[i] <= numberOfTokens, "Token doesnt exist or you are not an owner.");
@@ -155,7 +194,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             require(_saleType != uint256(SaleType.Offer), "Token's sale type cannot be 'Offer'");
 
             // check if the token is available for the requested dates 
-            if (_storage.isTokenBusyForPeriod(tokenIds[i], startDate, duration)) {
+            tokenIdStartDateDuration[0] = tokenIds[i];
+            if (_storage.isTokenBusyForPeriod(tokenIdStartDateDuration)) {
                 // tokens with date conflicts are moved to Declined list
                 _storage.addTokenToListOfLoan(loanId, tokenIds[i], 2);
                 // Create notification that loan request is declined
@@ -164,7 +204,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 // available token is moved to Approved list
                 _storage.addTokenToListOfLoan(loanId, tokenIds[i], 1);
                 // mark the requested loan dates in the calendar 
-                _storage.makeTokenBusyForPeriod(loanId, tokenIds[i], startDate, duration);
+                _storage.makeTokenBusyForPeriod(loanId, tokenIdStartDateDuration);
                 // Create notification that loan request is Approved
                 emit LoanAccepted(msg.sender, loanId, tokenIds[i]);
             }
@@ -354,16 +394,6 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         declinedTokensList = _storage.getTokensListOfLoanByType(loanId, 2);
     }
 
-    /// @notice return list of loan request by token owner 
-    function getLoanRequestsListOfTokenOwner(address tokenOwner) public view returns (uint256[], uint256[]) {
-        return _storage.getLoanRequestsListForTokenOwner(tokenOwner);
-    }
-
-    /// @notice return list of loan borrowers 
-    function getLoansListOfLoanOwner(address loanOwner) public view returns (uint256[]) {
-        return _storage.getLoansListOfLoanOwner(loanOwner);
-    }
-
     /// @notice Return loan detail
     function getLoanDetail(uint256 loanId) public view returns (
         uint256 amountOfNonApprovedTokens,
@@ -376,24 +406,6 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         address loanOwner) 
     {
         return _storage.getLoanDetail(loanId);
-    }
-
-    /// @notice store the gas cost of calling function StopLoan
-    function setCostOfStopLoanOperationForLoan(uint256 loanId, uint256 costOfStopOperation) public onlyOwner {
-        _storage.setCostOfStopLoanOperationForLoan(loanId, costOfStopOperation);
-    }
-
-    /// @notice return a total number of loans
-    function getTotalNumberOfLoans() public view returns (uint256) {
-        return _storage.getTotalNumberOfLoans();
-    }
-
-    function getActualTokenOwnerForLoan(uint256 loanId, uint256 tokenId) public view returns (address) {
-        return _storage.getActualTokenOwnerForLoan(loanId, tokenId);
-    }
-
-    function getListOfLoansFromTokensLoanList(uint256 tokenId) public view returns (uint256[]) {
-        return _storage.getListOfLoansFromTokensLoanList(tokenId);
     }
 
 }

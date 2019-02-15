@@ -1,13 +1,18 @@
 pragma solidity ^0.4.24;
 
 import "./snarklibs/SnarkLoanLib.sol";
+import "./snarklibs/SnarkLoanLibExt.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 
+
 contract SnarkTestFunctions {
+
     using SnarkLoanLib for address;
+    using SnarkLoanLibExt for address;
     using SnarkBaseLib for address;
 
     address _storage;
+
     constructor(address storageAddress) public {
         _storage = storageAddress;
     }
@@ -16,13 +21,15 @@ contract SnarkTestFunctions {
         return _storage.getCountLoanRequestsForTokenOwner(_tokenOwner);
     }
 
-    function getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(address tokenOwner, uint tokenId, uint loanId) public view returns (uint256) {
-        return _storage.getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(tokenOwner,tokenId,loanId);
+    function getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(address tokenOwner, uint tokenId, uint loanId) 
+        public view returns (uint256) 
+    {
+        return _storage.getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(tokenOwner, tokenId, loanId);
     }
 
-    function getListOfLoansFromTokensLoanList(uint256 tokenId) public view returns (uint256[]) 
+    function getListOfNotFinishedLoansForToken(uint256 tokenId) public view returns (uint256[]) 
     {
-        return _storage.getListOfLoansFromTokensLoanList(tokenId);
+        return _storage.getListOfNotFinishedLoansForToken(tokenId);
     }
 
     function getNumberOfLoansInTokensLoanList(uint256 tokenId) public view returns (uint256) 

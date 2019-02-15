@@ -3,6 +3,7 @@ pragma solidity ^0.4.25;
 import "../openzeppelin/SafeMath.sol";
 import "../SnarkStorage.sol";
 import "./SnarkBaseLib.sol";
+import "./SnarkLoanLibExt.sol";
 
 
 /// @author Vitali Hurski
@@ -11,6 +12,33 @@ library SnarkLoanLib {
     using SafeMath for uint256;
     
     event TokenCanceledInLoans(uint256 tokenId, uint256 loanId);
+
+    function createEmptyLoan(
+        address storageAddress, 
+        address loanOwner,
+        uint256[3] loanPriceStartDateDuration
+    ) 
+        public
+        returns (uint256)
+    {
+        uint256 loanPrice = loanPriceStartDateDuration[0];
+        uint256 startDate = loanPriceStartDateDuration[1];
+        uint256 duration = loanPriceStartDateDuration[2];
+        uint256 loanId = SnarkLoanLibExt.increaseNumberOfLoans(storageAddress);
+        SnarkLoanLibExt.setOwnerOfLoan(storageAddress, loanOwner, loanId);
+        setPriceOfLoan(storageAddress, loanId, loanPrice);
+        addLoanToLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
+        SnarkLoanLibExt.setStartDateOfLoan(storageAddress, loanId, startDate);
+        SnarkLoanLibExt.setDurationOfLoan(storageAddress, loanId, duration);
+        SnarkLoanLibExt.setLoanSaleStatus(storageAddress, loanId, 0);
+        return loanId;
+    }
+
+    function attachTokenToLoan(address storageAddress, uint256 loanId, uint256 tokenId, uint256 typeOfList) public {
+        // Type of List: 0 - NotApproved, 1 - Approved, 2 - Declined
+        addTokenToListOfLoan(storageAddress, loanId, tokenId, typeOfList);
+        addLoanToTokensLoanList(storageAddress, tokenId, loanId);
+    }
 
     function createLoan(
         address storageAddress, 
@@ -23,8 +51,8 @@ library SnarkLoanLib {
         public
         returns (uint256)
     {
-        uint256 loanId = increaseNumberOfLoans(storageAddress);
-        setOwnerOfLoan(storageAddress, loanOwner, loanId);
+        uint256 loanId = SnarkLoanLibExt.increaseNumberOfLoans(storageAddress);
+        SnarkLoanLibExt.setOwnerOfLoan(storageAddress, loanOwner, loanId);
         setPriceOfLoan(storageAddress, loanId, loanPrice);
         addLoanToLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
         for (uint256 index = 0; index < tokensIds.length; index++) {
@@ -32,262 +60,56 @@ library SnarkLoanLib {
             addTokenToListOfLoan(storageAddress, loanId, tokensIds[index], 0); // 0 - NotApproved
             addLoanToTokensLoanList(storageAddress, tokensIds[index], loanId);
         }
-        setStartDateOfLoan(storageAddress, loanId, startDate);
-        setDurationOfLoan(storageAddress, loanId, duration);
-        setLoanSaleStatus(storageAddress, loanId, 0); // 0 - Prepairing
+        SnarkLoanLibExt.setStartDateOfLoan(storageAddress, loanId, startDate);
+        SnarkLoanLibExt.setDurationOfLoan(storageAddress, loanId, duration);
+        SnarkLoanLibExt.setLoanSaleStatus(storageAddress, loanId, 0); // 0 - Prepairing
 
         return loanId;
-    }
-
-    /// @notice increase the number of loans in the system 
-    function increaseNumberOfLoans(address storageAddress) public returns (uint256) {
-        uint256 totalNumber = getTotalNumberOfLoans(storageAddress).add(1);
-        SnarkStorage(storageAddress).setUint(keccak256("totalNumberOfLoans"), totalNumber);
-        return totalNumber;
-    }
-
-    /// @notice returns total number of loans in the system 
-    function getTotalNumberOfLoans(address storageAddress) public view returns (uint256) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfLoans"));
-    }
-
-    /// @notice returns loan owner 
-    function getOwnerOfLoan(address storageAddress, uint256 loanId) public view returns (address) {
-        return SnarkStorage(storageAddress).addressStorage(keccak256(abi.encodePacked("loanOwner", loanId)));
-    }
-
-    /// @notice sets the loan owner
-    function setOwnerOfLoan(address storageAddress, address loanOwner, uint256 loanId) public {
-        SnarkStorage(storageAddress).setAddress(
-            keccak256(abi.encodePacked("loanOwner", loanId)),
-            loanOwner
-        );
     }
 
     /// @notice Adds token to the list of a specific type 
     function addTokenToListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId, uint256 listType) public {
         // check if the token was included in the loan previously or if it is the first time 
-        if (isTokenIncludedInLoan(storageAddress, loanId, tokenId)) {
+        if (SnarkLoanLibExt.isTokenIncludedInLoan(storageAddress, loanId, tokenId)) {
             // if it is not the first time, it means that the token transfer is happening from one list to another 
             // and that means that it needs to be removed from the previous list 
             // but before this is done we need to check if we are trying to move the token into the same list
             // in which it is already located. If yes, create exception, or we risk duplicating the token in the list.
             require(
-                getTypeOfTokenListForLoan(storageAddress, loanId, tokenId) != listType, 
+                SnarkLoanLibExt.getTypeOfTokenListForLoan(storageAddress, loanId, tokenId) != listType, 
                 "Token already belongs to selected type"
             );
             removeTokenFromListOfLoan(storageAddress, loanId, tokenId);
         } else {
             // if token addition is happing for the first time, mark it as added to the loan
-            setTokenAsIncludedInLoan(storageAddress, loanId, tokenId, true);
+            SnarkLoanLibExt.setTokenAsIncludedInLoan(storageAddress, loanId, tokenId, true);
         }
         // set the list type in which we added token
-        setTypeOfTokenListForLoan(storageAddress, loanId, tokenId, listType);
+        SnarkLoanLibExt.setTypeOfTokenListForLoan(storageAddress, loanId, tokenId, listType);
         // add token to the end of the list 
-        uint256 index = increaseNumberOfTokensInListByType(storageAddress, loanId, listType).sub(1);
-        setTokenForLoanListByTypeAndIndex(storageAddress, loanId, listType, index, tokenId);
+        uint256 index = SnarkLoanLibExt.increaseNumberOfTokensInListByType(storageAddress, loanId, listType).sub(1);
+        SnarkLoanLibExt.setTokenForLoanListByTypeAndIndex(storageAddress, loanId, listType, index, tokenId);
     }
 
     /// @notice remove token form the list in which it existed prior to calling this function 
     function removeTokenFromListOfLoan(address storageAddress, uint256 loanId, uint256 tokenId) public {
-        if (isTokenIncludedInLoan(storageAddress, loanId, tokenId)) {
+        if (SnarkLoanLibExt.isTokenIncludedInLoan(storageAddress, loanId, tokenId)) {
             // receive list type in which the token exists 
-            uint256 listType = getTypeOfTokenListForLoan(storageAddress, loanId, tokenId);
+            uint256 listType = SnarkLoanLibExt.getTypeOfTokenListForLoan(storageAddress, loanId, tokenId);
             // remove token index from the token list
-            uint256 indexOfToken = getTokenIndexInListOfLoanByType(storageAddress, loanId, tokenId);
-            uint256 maxIndex = getNumberOfTokensInListByType(storageAddress, loanId, listType);
+            uint256 indexOfToken = SnarkLoanLibExt.getTokenIndexInListOfLoanByType(storageAddress, loanId, tokenId);
+            uint256 maxIndex = SnarkLoanLibExt.getNumberOfTokensInListByType(storageAddress, loanId, listType);
             if (maxIndex > 0) {
                 maxIndex = maxIndex.sub(1);
                 if (indexOfToken < maxIndex) {
                     uint256 tokenIdOnLastIndex = 
-                        getTokenForLoanListByTypeAndIndex(storageAddress, loanId, listType, maxIndex);
-                    setTokenForLoanListByTypeAndIndex(storageAddress, 
+                        SnarkLoanLibExt.getTokenForLoanListByTypeAndIndex(storageAddress, loanId, listType, maxIndex);
+                    SnarkLoanLibExt.setTokenForLoanListByTypeAndIndex(storageAddress, 
                         loanId, listType, indexOfToken, tokenIdOnLastIndex);
                 }
-                decreaseNumberOfTokensInListByType(storageAddress, loanId, listType);
+                SnarkLoanLibExt.decreaseNumberOfTokensInListByType(storageAddress, loanId, listType);
             }
         }
-    }
-
-    /// @notice check is the token is participating in a loan or not 
-    function isTokenIncludedInLoan(address storageAddress, uint256 loanId, uint256 tokenId)
-        public 
-        view 
-        returns (bool)
-    {
-        return SnarkStorage(storageAddress).boolStorage(
-            keccak256(abi.encodePacked("isTokenIncludedInLoan", loanId, tokenId))
-        );
-    }
-
-    /// @notice set that the token is participating in the selected loan 
-    function setTokenAsIncludedInLoan(address storageAddress, uint256 loanId, uint256 tokenId, bool isIncluded) 
-        public 
-    {
-        SnarkStorage(storageAddress).setBool(
-            keccak256(abi.encodePacked("isTokenIncludedInLoan", loanId, tokenId)),
-            isIncluded
-        );
-    }
-
-    /// @notice return the list type the token belongs to
-    function getTypeOfTokenListForLoan(address storageAddress, uint256 loanId, uint256 tokenId) 
-        public 
-        view 
-        returns (uint256) 
-    {
-        return SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("typeOfTokenListForLoan", loanId, tokenId))
-        );
-    }
-
-    /// @notice set to which list type the token belongs to 
-    function setTypeOfTokenListForLoan(address storageAddress, uint256 loanId, uint256 tokenId, uint256 listType) 
-        public
-    {
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("typeOfTokenListForLoan", loanId, tokenId)),
-            listType
-        );
-    }
-
-    /// @notice returns the number of tokens in the specific list
-    function getNumberOfTokensInListByType(address storageAddress, uint256 loanId, uint256 listType) 
-        public 
-        view 
-        returns (uint256) 
-    {
-        return SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("numberOfTokensInListByType", loanId, listType))
-        );
-    }
-
-    /// @notice increase the number of tokens in the specific list
-    function increaseNumberOfTokensInListByType(address storageAddress, uint256 loanId, uint256 listType) 
-        public 
-        returns (uint256) 
-    {
-        uint256 numberOfTokens = getNumberOfTokensInListByType(storageAddress, loanId, listType).add(1);
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("numberOfTokensInListByType", loanId, listType)), 
-            numberOfTokens
-        );
-        return numberOfTokens;
-    }
-
-    /// @notice decrease the number of tokens in the specific list 
-    function decreaseNumberOfTokensInListByType(address storageAddress, uint256 loanId, uint256 listType) 
-        public 
-        returns (uint256) 
-    {
-        uint256 numberOfTokens = getNumberOfTokensInListByType(storageAddress, loanId, listType).sub(1);
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("numberOfTokensInListByType", loanId, listType)), 
-            numberOfTokens
-        );
-        return numberOfTokens;
-    }
-
-    /// @notice receive token id from the list of specific type in a specific index
-    function getTokenForLoanListByTypeAndIndex(address storageAddress, uint256 loanId, uint256 listType, uint256 index) 
-        public
-        view
-        returns (uint256)
-    {
-        return SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("tokensListOfLoanByType", loanId, listType, index))
-        );
-    }
-
-    /// @notice set token into the list of specific type and a specific index 
-    function setTokenForLoanListByTypeAndIndex(
-        address storageAddress, 
-        uint256 loanId, 
-        uint256 listType, 
-        uint256 index, 
-        uint256 tokenId
-    ) 
-        public
-    {
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("tokensListOfLoanByType", loanId, listType, index)), 
-            tokenId
-        );
-        setTokenIndexInListOfLoanByType(storageAddress, loanId, tokenId, index);
-    }
-
-    /// @notice return tokens in a specific list (NotApproved, Approved, Declined)
-    function getTokensListOfLoanByType(address storageAddress, uint256 loanId, uint256 listType) 
-        public 
-        view 
-        returns (uint256[]) 
-    {
-        uint256 amount = getNumberOfTokensInListByType(storageAddress, loanId, listType);
-        uint256[] memory list = new uint256[](amount);
-        for (uint256 i = 0; i < amount; i++) {
-            list[i] = getTokenForLoanListByTypeAndIndex(storageAddress, loanId, listType, i);
-        }
-        return list;
-    }
-
-    /// @notice return token index in the list, doesnt matter in which one since the token can only exist in only 1 of 3
-    function getTokenIndexInListOfLoanByType(
-        address storageAddress,
-        uint256 loanId,
-        uint256 tokenId
-    ) 
-        public 
-        view 
-        returns (uint256) 
-    {
-        return SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("tokenIndexInsideListOfLoan", loanId, tokenId))
-        );
-    }
-
-    /// @notice set under which index the token is in the list
-    function setTokenIndexInListOfLoanByType(
-        address storageAddress,
-        uint256 loanId,
-        uint256 tokenId,
-        uint256 index
-    )
-        public 
-    {
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("tokenIndexInsideListOfLoan", loanId, tokenId)),
-            index
-        );
-    }
-
-    /// @notice return date of the loan start 
-    function getStartDateOfLoan(address storageAddress, uint256 loanId) public view returns (uint256) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToStartDate", loanId)));
-    }
-
-    /// @notice set date of the loan start 
-    function setStartDateOfLoan(address storageAddress, uint256 loanId, uint256 startDate) public {
-        SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("loanToStartDate", loanId)), startDate);
-    }
-
-    /// @notice return loan duration 
-    function getDurationOfLoan(address storageAddress, uint256 loanId) public view returns (uint256) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToDuration", loanId)));
-    }
-
-    /// @notice set loan duration 
-    function setDurationOfLoan(address storageAddress, uint256 loanId, uint256 duration) public {
-        SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("loanToDuration", loanId)), duration);
-    }
-
-    /// @notice return loan status
-    function getLoanSaleStatus(address storageAddress, uint256 loanId) public view returns (uint256) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToSaleStatus", loanId)));
-    }
-
-    /// @notice set loan status
-    function setLoanSaleStatus(address storageAddress, uint256 loanId, uint256 saleStatus) public {
-        SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("loanToSaleStatus", loanId)), saleStatus);
     }
 
     /// @notice return loan terms
@@ -305,31 +127,32 @@ library SnarkLoanLib {
         uint256 loanPrice,
         address loanOwner)
     {
-        amountOfNonApprovedTokens = getNumberOfTokensInListByType(storageAddress, loanId, 0);
-        amountOfApprovedTokens = getNumberOfTokensInListByType(storageAddress, loanId, 1);
-        amountOfDeclinedTokens = getNumberOfTokensInListByType(storageAddress, loanId, 2);
-        startDate = getStartDateOfLoan(storageAddress, loanId);
-        duration = getDurationOfLoan(storageAddress, loanId);
-        saleStatus = getLoanSaleStatus(storageAddress, loanId);
+        amountOfNonApprovedTokens = SnarkLoanLibExt.getNumberOfTokensInListByType(storageAddress, loanId, 0);
+        amountOfApprovedTokens = SnarkLoanLibExt.getNumberOfTokensInListByType(storageAddress, loanId, 1);
+        amountOfDeclinedTokens = SnarkLoanLibExt.getNumberOfTokensInListByType(storageAddress, loanId, 2);
+        startDate = SnarkLoanLibExt.getStartDateOfLoan(storageAddress, loanId);
+        duration = SnarkLoanLibExt.getDurationOfLoan(storageAddress, loanId);
+        saleStatus = SnarkLoanLibExt.getLoanSaleStatus(storageAddress, loanId);
         loanPrice = getPriceOfLoan(storageAddress, loanId);
-        loanOwner = getOwnerOfLoan(storageAddress, loanId);
+        loanOwner = SnarkLoanLibExt.getOwnerOfLoan(storageAddress, loanId);
     }
 
     /// @notice check is there is a schedule conflict for a specific token and specific period request
     function isTokenBusyForPeriod(
         address storageAddress, 
-        uint256 tokenId, 
-        uint256 startDate, 
-        uint256 duration
+        uint256[3] tokenIdStartDateDuration 
     ) 
         public 
         view 
         returns (bool) 
     {
+        uint256 tokenId = tokenIdStartDateDuration[0];
+        uint256 startDate = tokenIdStartDateDuration[1];
+        uint256 duration = tokenIdStartDateDuration[2];
         bool isBusy = false;
         uint256 numberDays = startDate.div(86400000);
         for (uint256 i = 0; i < duration; i++) {
-            if (isTokenBusyOnDay(storageAddress, tokenId, numberDays.add(i))) {
+            if (SnarkLoanLibExt.isTokenBusyOnDay(storageAddress, tokenId, numberDays.add(i))) {
                 isBusy = true;
                 break;
             }
@@ -337,53 +160,22 @@ library SnarkLoanLib {
         return isBusy;
     }
 
-    /// @notice checks in the token calendar if it is busy on a specific date 
-    function isTokenBusyOnDay(address storageAddress, uint256 tokenId, uint256 day) public view returns (bool) {
-        return SnarkStorage(storageAddress).boolStorage(
-            keccak256(abi.encodePacked("tokenCalendar", tokenId, day))
-        );
-    }
-
-    /// @notice returns loan id from the token calendar on a specific date 
-    function getEventIdOnDayForToken(address storageAddress, uint256 tokenId, uint256 date) 
-        public 
-        view 
-        returns (uint256) 
-    {
-        uint256 day = date.div(86400000);
-        SnarkStorage(storageAddress).uintStorage(
-            keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, day))
-        );
-    }
-
     /// @notice marks the busy period for the token 
     function makeTokenBusyForPeriod(
         address storageAddress, 
         uint256 loanId, 
-        uint256 tokenId, 
-        uint256 startDate, 
-        uint256 duration
+        uint256[3] tokenIdStartDateDuration
     ) 
         public 
     {
+        uint256 tokenId = tokenIdStartDateDuration[0];
+        uint256 startDate = tokenIdStartDateDuration[1];
+        uint256 duration = tokenIdStartDateDuration[2];
         uint256 busyDay;
         for (uint256 i = 0; i < duration; i++) {
             busyDay = startDate + 86400000 * i;
-            makeTokenBusyOnDay(storageAddress, loanId, tokenId, busyDay);
+            SnarkLoanLibExt.makeTokenBusyOnDay(storageAddress, loanId, tokenId, busyDay);
         }
-    }
-
-    /// @notice marks that the token is busy on a specific date and by which loan 
-    function makeTokenBusyOnDay(address storageAddress, uint256 loanId, uint256 tokenId, uint256 date) public {
-        uint256 day = date.div(86400000);
-        SnarkStorage(storageAddress).setBool(
-            keccak256(abi.encodePacked("tokenCalendar", tokenId, day)),
-            true
-        );
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, day)),
-            loanId
-        );
     }
 
     /// @notice frees up the busy period for the token 
@@ -397,40 +189,23 @@ library SnarkLoanLib {
     {
         uint256 busyDay = startDate.div(86400000);
         for (uint256 i = 0; i < duration; i++) {
-            makeTokenFreeOnDay(storageAddress, tokenId, busyDay.add(i));
+            SnarkLoanLibExt.makeTokenFreeOnDay(storageAddress, tokenId, busyDay.add(i));
         }
     }
 
-    /// @notice frees up in the calendar a specific token on a specific date 
-    function makeTokenFreeOnDay(address storageAddress, uint256 tokenId, uint256 day) public {
-        SnarkStorage(storageAddress).setBool(
-            keccak256(abi.encodePacked("tokenCalendar", tokenId, day)),
-            false
-        );
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, day)),
-            0
-        );
-    }
-
-    /// @notice returns maximum duration for which a token can be loaned  
-    function getDefaultLoanDuration(address storageAddress) public view returns (uint256) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256("defaultLoanDuration"));
-    }
-
-    /// @notice set maximum duration for which a token can be loaned  
-    function setDefaultLoanDuration(address storageAddress, uint256 duration) public {
-        SnarkStorage(storageAddress).setUint(keccak256("defaultLoanDuration"), duration);
-    }
+    // /// @notice returns total number of loans in the system 
+    // function getTotalNumberOfLoans(address storageAddress) public view returns (uint256) {
+    //     return SnarkLoanLibExt.getTotalNumberOfLoans(storageAddress);
+    // }
 
     /// @notice creates new loan request for the token to the token owner
     function addLoanRequestToTokenOwner(address storageAddress, address tokenOwner, uint256 tokenId, uint256 loanId)
         public 
     {
         uint256 index = increaseCountLoanRequestsForTokenOwner(storageAddress, tokenOwner).sub(1);
-        setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, tokenId);
-        setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, loanId);
-        saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId, index);
+        SnarkLoanLibExt.setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, tokenId);
+        SnarkLoanLibExt.setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, loanId);
+        SnarkLoanLibExt.saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId, index);
         setExistingLoanRequestForTokenOwner(storageAddress, tokenOwner, tokenId, loanId, true);
     }
 
@@ -446,67 +221,6 @@ library SnarkLoanLib {
         SnarkStorage(storageAddress).setBool(
             keccak256(abi.encodePacked("SignOfExistingLoanRequestForTokenOwner", tokenOwner, tokenId, loanId)),
             isExist
-        );
-    }
-
-    function isExistLoanRequestForTokenOwner(
-        address storageAddress, 
-        address tokenOwner, 
-        uint256 tokenId, 
-        uint256 loanId
-    )
-        public
-        view
-        returns (bool)
-    {
-        return SnarkStorage(storageAddress).boolStorage(
-            keccak256(abi.encodePacked("SignOfExistingLoanRequestForTokenOwner", tokenOwner, tokenId, loanId))
-        );
-    }
-
-    /// @notice sets the token into request list for the token owner and index 
-    function setTokenForLoanRequestByTokenOwnerAndIndex(
-        address storageAddress, 
-        address tokenOwner, 
-        uint256 index, 
-        uint256 tokenId
-    )
-        public
-    {
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("LoanRequestsForToken", tokenOwner, index)),
-            tokenId
-        );
-    }
-
-    /// @notice sets loan into request list for token owners and index 
-    function setLoanForLoanRequestByTokenOwnerAndIndex(
-        address storageAddress, 
-        address tokenOwner, 
-        uint256 index, 
-        uint256 loanId
-    )
-        public
-    {
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("LoanRequestsForLoan", tokenOwner, index)),
-            loanId
-        );
-    }
-
-    /// @notice save loan request index for token owner 
-    function saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(
-        address storageAddress,
-        address tokenOwner,
-        uint256 tokenId,
-        uint256 loanId,
-        uint256 index
-    ) 
-        public 
-    {
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("IndexOfLoanRequestForTokenOwner", tokenOwner, tokenId, loanId)),
-            index
         );
     }
 
@@ -529,7 +243,7 @@ library SnarkLoanLib {
     /// @notice remove loan request from the list of token owner 
     function deleteLoanRequestFromTokenOwner(address storageAddress, uint256 loanId, uint256 tokenId) public {
         address tokenOwner = SnarkBaseLib.getOwnerOfToken(storageAddress, tokenId);
-        if (isExistLoanRequestForTokenOwner(storageAddress, tokenOwner, tokenId, loanId)) {
+        if (SnarkLoanLibExt.isExistLoanRequestForTokenOwner(storageAddress, tokenOwner, tokenId, loanId)) {
             uint256 index = 
                 getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(storageAddress, tokenOwner, tokenId, loanId);
             uint256 maxIndex = getCountLoanRequestsForTokenOwner(storageAddress, tokenOwner);
@@ -540,9 +254,9 @@ library SnarkLoanLib {
                 if (index < maxIndex) {
                     (uint256 maxIndexTokenId, uint256 maxIndexLoanId) = 
                         getLoanRequestForTokenOwnerByIndex(storageAddress, tokenOwner, maxIndex);
-                    setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, maxIndexTokenId);
-                    setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, maxIndexLoanId);
-                    saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(
+                    SnarkLoanLibExt.setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, maxIndexTokenId);
+                    SnarkLoanLibExt.setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, index, maxIndexLoanId);
+                    SnarkLoanLibExt.saveIndexOfLoanRequestForTokenOwnerByTokenAndLoan(
                         storageAddress,
                         tokenOwner,
                         maxIndexTokenId,
@@ -550,8 +264,8 @@ library SnarkLoanLib {
                         index
                     );
                 }
-                setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
-                setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
+                SnarkLoanLibExt.setTokenForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
+                SnarkLoanLibExt.setLoanForLoanRequestByTokenOwnerAndIndex(storageAddress, tokenOwner, maxIndex, 0);
                 decreaseCountLoanRequestsForTokenOwner(storageAddress, tokenOwner);
                 setExistingLoanRequestForTokenOwner(storageAddress, tokenOwner, tokenId, loanId, false);
             }
@@ -915,13 +629,23 @@ library SnarkLoanLib {
     }
 
     /// @notice returns the loan list from the token loan list 
-    function getListOfLoansFromTokensLoanList(address storageAddress, uint256 tokenId) public view returns (uint256[]) {
+    function getListOfNotFinishedLoansForToken(address storageAddress, uint256 tokenId) public view returns (uint256[]) {
         uint256 numberOfLoans = getNumberOfLoansInTokensLoanList(storageAddress, tokenId);
         uint256[] memory loanList = new uint256[](numberOfLoans);
+        uint256 countOfNotFinishedLoans = 0;
         for (uint256 i = 0; i < numberOfLoans; i++) {
-            loanList[i] = getLoanFromLoansInTokensLoanListByIndex(storageAddress, tokenId, i);
+            uint256 loanId = getLoanFromLoansInTokensLoanListByIndex(storageAddress, tokenId, i);
+            uint256 saleStatus = SnarkLoanLibExt.getLoanSaleStatus(storageAddress, loanId);
+            if (saleStatus < 3) {
+                loanList[countOfNotFinishedLoans] = loanId;
+                countOfNotFinishedLoans++;
+            }
         }
-        return loanList;
+        uint256[] memory resultList = new uint256[](countOfNotFinishedLoans);
+        for (i = 0; i < countOfNotFinishedLoans; i++) {
+            resultList[i] = loanList[i];
+        }
+        return resultList;
     }
 
     /// @notice returns true or false depending is the loan is in the token loan list 
@@ -969,14 +693,12 @@ library SnarkLoanLib {
     /// @notice removal of token from loan.  possible only prior to loan start.
     function cancelTokenInLoan(address storageAddress, uint256 tokenId, uint256 loanId) public {
         require(
-            getLoanSaleStatus(storageAddress, loanId) != 3,
+            SnarkLoanLibExt.getLoanSaleStatus(storageAddress, loanId) != 3,
             "Loan can't be in 'Finished' status"
         );
-        // remove from the token calendar the booked days 
-        uint256 startDate = getStartDateOfLoan(storageAddress, loanId);
-        uint256 duration = getDurationOfLoan(storageAddress, loanId);
+        uint256 startDate = SnarkLoanLibExt.getStartDateOfLoan(storageAddress, loanId);
+        uint256 duration = SnarkLoanLibExt.getDurationOfLoan(storageAddress, loanId);
         makeTokenFreeForPeriod(storageAddress, tokenId, startDate, duration);
-        // remove loan request from the token owners 
         deleteLoanRequestFromTokenOwner(storageAddress, loanId, tokenId);
         removeTokenFromListOfLoan(storageAddress, loanId, tokenId);
         removeLoanFromTokensLoanList(storageAddress, tokenId, loanId);
@@ -987,42 +709,39 @@ library SnarkLoanLib {
     }
 
     function cancelTokenFromAllLoans(address storageAddress, uint256 tokenId) public {
-        uint256[] memory loanList = getListOfLoansFromTokensLoanList(storageAddress, tokenId);
+        uint256[] memory loanList = getListOfNotFinishedLoansForToken(storageAddress, tokenId);
         for (uint256 i = 0; i < loanList.length; i++) {
-            // check that the removal is not for loans with Finished status
-            if (getLoanSaleStatus(storageAddress, loanList[i]) != 3) {
-                // remove from the token calendar the booked days 
-                uint256 startDate = getStartDateOfLoan(storageAddress, loanList[i]);
-                uint256 duration = getDurationOfLoan(storageAddress, loanList[i]);
-                makeTokenFreeForPeriod(storageAddress, tokenId, startDate, duration);
-                // remove loan request from the token owners 
-                deleteLoanRequestFromTokenOwner(storageAddress, loanList[i], tokenId);
-                removeTokenFromListOfLoan(storageAddress, loanList[i], tokenId);
-                removeLoanFromTokensLoanList(storageAddress, tokenId, loanList[i]);
-                markLoanInTokensLoanListAsInUse(storageAddress, tokenId, loanList[i], false);
-                SnarkBaseLib.setSaleTypeToToken(storageAddress, tokenId, 0);
+            uint256 startDate = SnarkLoanLibExt.getStartDateOfLoan(storageAddress, loanList[i]);
+            uint256 duration = SnarkLoanLibExt.getDurationOfLoan(storageAddress, loanList[i]);
+            makeTokenFreeForPeriod(storageAddress, tokenId, startDate, duration);
+            deleteLoanRequestFromTokenOwner(storageAddress, loanList[i], tokenId);
+            removeTokenFromListOfLoan(storageAddress, loanList[i], tokenId);
+            removeLoanFromTokensLoanList(storageAddress, tokenId, loanList[i]);
+            markLoanInTokensLoanListAsInUse(storageAddress, tokenId, loanList[i], false);
+            SnarkBaseLib.setSaleTypeToToken(storageAddress, tokenId, 0);
 
-                emit TokenCanceledInLoans(tokenId, loanList[i]);
-            }
+            emit TokenCanceledInLoans(tokenId, loanList[i]);
         }
     }
 
     function cancelLoan(address storageAddress, uint256 loanId) public {
-        setLoanSaleStatus(storageAddress, loanId, 3); // 3 - Finished
-        address loanOwner = getOwnerOfLoan(storageAddress, loanId);
-        uint256 startDate = getStartDateOfLoan(storageAddress, loanId);
-        uint256 duration = getDurationOfLoan(storageAddress, loanId);
-        uint256[] memory approvedTokens = getTokensListOfLoanByType(storageAddress, loanId, 1);
+        SnarkLoanLibExt.setLoanSaleStatus(storageAddress, loanId, 3); // 3 - Finished
+        address loanOwner = SnarkLoanLibExt.getOwnerOfLoan(storageAddress, loanId);
+        uint256 startDate = SnarkLoanLibExt.getStartDateOfLoan(storageAddress, loanId);
+        uint256 duration = SnarkLoanLibExt.getDurationOfLoan(storageAddress, loanId);
+        uint256[] memory approvedTokens = SnarkLoanLibExt.getTokensListOfLoanByType(storageAddress, loanId, 1);
         for (uint256 i = 0; i < approvedTokens.length; i++) {
             makeTokenFreeForPeriod(storageAddress, approvedTokens[i], startDate, duration);
             deleteLoanRequestFromTokenOwner(storageAddress, loanId, approvedTokens[i]);
             SnarkBaseLib.setSaleTypeToToken(storageAddress, approvedTokens[i], 0);
         }
-        uint256[] memory notApprovedTokens = getTokensListOfLoanByType(storageAddress, loanId, 0);
+        uint256[] memory notApprovedTokens = SnarkLoanLibExt.getTokensListOfLoanByType(storageAddress, loanId, 0);
         for (i = 0; i < notApprovedTokens.length; i++) {
             deleteLoanRequestFromTokenOwner(storageAddress, loanId, notApprovedTokens[i]);
         }
 
         deleteLoanFromLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
     }
+
+
 }

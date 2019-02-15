@@ -2,6 +2,7 @@ var SnarkOfferBid = artifacts.require('SnarkOfferBid');
 var SnarkBase = artifacts.require('SnarkBase');
 var SnarkERC721 = artifacts.require('SnarkERC721');
 var SnarkLoan = artifacts.require('SnarkLoan');
+var SnarkLoanExt = artifacts.require('SnarkLoanExt');
 var SnarkLoanLib = artifacts.require('SnarkLoanLib');
 var SnarkTestFunctions = artifacts.require('SnarkTestFunctions');
 
@@ -21,6 +22,7 @@ contract('SnarkBase', async accounts => {
     instance_snarkbase = await SnarkBase.deployed();
     instance_erc = await SnarkERC721.deployed();
     instance_loan = await SnarkLoan.deployed();
+    instance_loanext = await SnarkLoanExt.deployed();
     instance_loanlib = await SnarkLoanLib.deployed();
     instance_testFunctions = await SnarkTestFunctions.deployed();
 
@@ -171,8 +173,9 @@ contract('SnarkBase', async accounts => {
     const startDateTimestamp1 = datetime.create(new Date()).getTime();
     const duration = 1;
 
-    await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
-    let loans = await instance_loan.getLoanRequestsListOfTokenOwner(accounts[1]);
+    // await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
+    await expect(instance_loan.createLoanForAllTokens(startDateTimestamp1, duration)).to.be.eventually.fulfilled;
+    let loans = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[1]);
     console.log('Tokens: ', loans[0]);
     console.log('Loans: ', loans[1]);
 
@@ -182,7 +185,7 @@ contract('SnarkBase', async accounts => {
     let tokens = await instance_loan.getTokenListsOfLoanByTypes(1);
     console.log('Tokens: ', tokens[0], tokens[1], tokens[2]);
 
-    let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1);
+    let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1);
     console.log('List of Loans: ', listOfLoans);
   });
   
@@ -196,7 +199,7 @@ contract('SnarkBase', async accounts => {
     let offer1 = await instance_offer.getOfferByToken(1);
     console.log('Offer token #1', offer1.toString());
 
-    loans = await instance_loan.getLoanRequestsListOfTokenOwner(accounts[1]);
+    loans = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[1]);
     console.log('Loans: ', loans);
 
     details = await instance_loan.getLoanDetail(1);
@@ -206,7 +209,7 @@ contract('SnarkBase', async accounts => {
     console.log('Tokens: ', tokens[0], tokens[1], tokens[2]);
     expect(tokens[0].length,"Loan 1 should not have any tokens").to.be.equal(0);
 
-    let listOfLoans = await instance_testFunctions.getListOfLoansFromTokensLoanList(1);
+    let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1);
     console.log('List of Loans: ', listOfLoans);
     expect(listOfLoans.length,"Token #1 shoult not have any related loans").to.be.equal(0);
 
