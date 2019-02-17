@@ -287,8 +287,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     function deleteLoan(uint256 loanId) public onlyLoanOwner(loanId) correctLoan(loanId) {
         // check loan status - it must not be Active or Finished
         require(
-            _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Active) &&
-            _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Finished),
+            _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Active),
             "Loan can't be in 'Active' or in 'Finished' status"
         );
         _storage.cancelLoan(loanId);
