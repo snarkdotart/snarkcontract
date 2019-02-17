@@ -648,6 +648,26 @@ library SnarkLoanLib {
         return resultList;
     }
 
+    /// @notice returns the loan list from the token loan list 
+    function getListOfNotStartedLoansForToken(address storageAddress, uint256 tokenId) public view returns (uint256[]) {
+        uint256 numberOfLoans = getNumberOfLoansInTokensLoanList(storageAddress, tokenId);
+        uint256[] memory loanList = new uint256[](numberOfLoans);
+        uint256 countOfNotStartedLoans = 0;
+        for (uint256 i = 0; i < numberOfLoans; i++) {
+            uint256 loanId = getLoanFromLoansInTokensLoanListByIndex(storageAddress, tokenId, i);
+            uint256 saleStatus = SnarkLoanLibExt.getLoanSaleStatus(storageAddress, loanId);
+            if (saleStatus < 2) {
+                loanList[countOfNotStartedLoans] = loanId;
+                countOfNotStartedLoans++;
+            }
+        }
+        uint256[] memory resultList = new uint256[](countOfNotStartedLoans);
+        for (i = 0; i < countOfNotStartedLoans; i++) {
+            resultList[i] = loanList[i];
+        }
+        return resultList;
+    }
+
     /// @notice returns true or false depending is the loan is in the token loan list 
     function isLoanInTokensLoanList(address storageAddress, uint256 tokenId, uint256 loanId)
         public
@@ -742,6 +762,5 @@ library SnarkLoanLib {
 
         deleteLoanFromLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
     }
-
 
 }
