@@ -74,51 +74,6 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         return _storage.getDefaultLoanDuration();
     }
 
-    // function createLoanForAllTokens(uint256 startDate, uint256 duration) public payable restrictedAccess {
-    //     require(duration <= getDefaultLoanDuration(), "Duration exceeds a max value");
-    //     if (msg.value > 0) { 
-    //         _storage.transfer(msg.value);
-    //         _storage.addPendingWithdrawals(_storage, msg.value); 
-    //     }
-    //     uint256[3] memory loanPriceStartDateDuration = [msg.value, startDate, duration];
-    //     uint256 loanId = _storage.createEmptyLoan(msg.sender, loanPriceStartDateDuration);
-    //     emit LoanCreated(msg.sender, loanId);
-    //     address artist;
-    //     address currentOwner;
-    //     bool isAcceptOfLoanRequestFromSnark;
-    //     bool isAcceptOfLoanRequestFromOthers;
-    //     bool isBusy;
-    //     bool isAgree;
-    //     uint256 saleTypeOfToken;
-    //     uint256 tokensCount = _storage.getTotalNumberOfTokens();
-    //     for (uint256 tokenId = 1; tokenId < (tokensCount + 1); tokenId++) {
-    //         (currentOwner, artist, , , , , , , , , isAcceptOfLoanRequestFromSnark, isAcceptOfLoanRequestFromOthers) = 
-    //             _storage.getTokenDetail(tokenId);
-    //         if (msg.sender == currentOwner || msg.sender == artist) continue;
-    //         saleTypeOfToken = _storage.getSaleTypeToToken(tokenId);
-    //         loanPriceStartDateDuration[0] = tokenId;
-    //         isBusy = _storage.isTokenBusyForPeriod(loanPriceStartDateDuration); // tokenId, startDate, duration
-    //         if (saleTypeOfToken == uint256(SaleType.Offer) || isBusy) {
-    //             emit TokenDeclinedInLoanCreation(tokenId);
-    //             continue;
-    //         }
-    //         isAgree = (msg.sender == owner) ? isAcceptOfLoanRequestFromSnark : isAcceptOfLoanRequestFromOthers;
-    //         if (isAgree) {
-    //             _storage.attachTokenToLoan(loanId, tokenId, uint256(1)); // 1 - Approved
-    //             _storage.makeTokenBusyForPeriod(loanId, loanPriceStartDateDuration); // tokenId, startDate, duration
-    //         } else {
-    //             _storage.attachTokenToLoan(loanId, tokenId, uint256(0)); // 0 - Not Approved
-    //             _storage.addLoanRequestToTokenOwner(currentOwner, tokenId, loanId);
-    //         }
-    //         _storage.setActualTokenOwnerForLoan(loanId, tokenId, currentOwner);
-    //         emit TokenAttachedToLoan(tokenId, loanId);
-    //     }
-    // }
-    // function attachTokenToLoan(uint256 loanId, uint256 tokenId, uint256 typeOfList) public {
-    //     // Type of List: 0 - NotApproved, 1 - Approved, 2 - Declined
-    //     _storage.attachTokenToLoan(loanId, tokenId, typeOfList);
-    //     emit TokenAttachedToLoan(tokenId, loanId);
-    // }
     /// @dev attributes of startDate input should be in the format datetime
     /// without consideration for time, for example: 1298851200000 => 2011-02-28T00:00:00.000Z
     /// duration - simple number in days, example 10 (days)

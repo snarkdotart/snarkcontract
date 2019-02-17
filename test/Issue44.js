@@ -173,8 +173,7 @@ contract('SnarkBase', async accounts => {
     const startDateTimestamp1 = datetime.create(new Date()).getTime();
     const duration = 1;
 
-    // await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
-    await expect(instance_loan.createLoanForAllTokens(startDateTimestamp1, duration)).to.be.eventually.fulfilled;
+    await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
     let loans = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[1]);
     console.log('Tokens: ', loans[0]);
     console.log('Loans: ', loans[1]);

@@ -97,12 +97,11 @@ contract('SnarkLoan', async (accounts) => {
         const withdrawBalanceOfStorageBeforeCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
 
         await instance_snarkbase.changeRestrictAccess(false);
-        await instance.createLoanForAllTokens(startDateTimestamp, duration, { from: borrower, value: loanCost });
         
-        // await instance.createLoan(
-        //     tokensIds, startDateTimestamp, duration, 
-        //     { from: borrower, value: loanCost }
-        // );
+        await instance.createLoan(
+            tokensIds, startDateTimestamp, duration, 
+            { from: borrower, value: loanCost }
+        );
 
         const balanceOfStorageAfterCreateLoan = await web3.eth.getBalance(instance_storage.address);        
         const withdrawBalanceOfStorageAfterCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
@@ -357,12 +356,10 @@ contract('SnarkLoan', async (accounts) => {
         let countOfLoan = await instance_loanext.getLoansListOfLoanOwner(borrower);
         assert.equal(countOfLoan.length, 0, 'Wrong number of loans belong to borrower');
 
-        await instance.createLoanForAllTokens(startDateTimestamp, duration, { from: borrower, value: loanCost });
-
-        // await instance.createLoan(
-        //     tokensIds, startDateTimestamp, duration, 
-        //     { from: borrower, value: loanCost }
-        // );
+        await instance.createLoan(
+            tokensIds, startDateTimestamp, duration, 
+            { from: borrower, value: loanCost }
+        );
 
         const idOfNewLoan = await instance_loanext.getTotalNumberOfLoans();
         assert.equal(idOfNewLoan, 2, 'Amount of loans is wrong after createLoan function');
@@ -413,11 +410,10 @@ contract('SnarkLoan', async (accounts) => {
         const balanceOfStorageBeforeCreateLoan = await web3.eth.getBalance(instance_storage.address);
         const withdrawBalanceOfStorageBeforeCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
 
-        await instance.createLoanForAllTokens(startDateTimestamp, duration, { from: borrower, value: loanCost });
-        // await instance.createLoan(
-        //     tokensIds, startDateTimestamp, duration, 
-        //     { from: borrower, value: loanCost }
-        // );
+        await instance.createLoan(
+            tokensIds, startDateTimestamp, duration, 
+            { from: borrower, value: loanCost }
+        );
 
         const balanceOfStorageAfterCreateLoan = await web3.eth.getBalance(instance_storage.address);
         const withdrawBalanceOfStorageAfterCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
@@ -669,8 +665,7 @@ contract('SnarkLoan', async (accounts) => {
         const startDateTimestamp = datetime.create(new Date(2019, 3, 1)).getTime();
         const duration = 3;
         const priceLoan = web3.utils.toWei('0.5', 'ether');
-        await instance.createLoanForAllTokens(startDateTimestamp, duration, { from: accounts[4], value: priceLoan } );
-        // await instance.createLoan([1,2,3,4], startDateTimestamp, duration, { from: accounts[4], value: priceLoan } );
+        await instance.createLoan([1,2,3,4], startDateTimestamp, duration, { from: accounts[4], value: priceLoan } );
 
         let loanId = await instance_loanext.getTotalNumberOfLoans();
         // по идее должны получить следующее поведение:

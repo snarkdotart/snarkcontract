@@ -204,8 +204,7 @@ contract('SnarkBase', async accounts => {
       let num = await instance_testFunctions.getNumberOfLoansInTokensLoanList(1)
       console.log('Loans for token 1: ', num.toNumber())
 
-    await expect(instance_loan.createLoanForAllTokens(startDateTimestamp1, duration)).to.be.eventually.fulfilled;
-    // await expect(instance_loan.createLoan([1,3], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
+    await expect(instance_loan.createLoan([1,3], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
 
     tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
     testFunctions.showLoanTokens(tokens, "After Loan Creation")

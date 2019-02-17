@@ -152,16 +152,14 @@ contract('SnarkBase', async accounts => {
     const startDateTimestamp1 = datetime.create(new Date()).getTime();
 
     const duration = 10;
-    await expect(instance_loan.createLoanForAllTokens(startDateTimestamp1, duration)).to.be.eventually.fulfilled;
-    // await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
+    await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
     let count = await instance_testFunctions.getCountLoanRequestsForTokenOwner(accounts[1]);
     console.log('Loan counter: ', count.toNumber());
 
     let loanIndex = await instance_testFunctions.getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(accounts[1], 1, 1);
     console.log('Loan index for tokenId and loanId : ', loanIndex.toNumber());
 
-    await expect(instance_loan.createLoanForAllTokens(startDateTimestamp1 + 1, duration)).to.be.eventually.fulfilled;
-    // await expect(instance_loan.createLoan([1], startDateTimestamp1 + 1, duration)).to.be.eventually.fulfilled;
+    await expect(instance_loan.createLoan([1], startDateTimestamp1 + 1, duration)).to.be.eventually.fulfilled;
     count = await instance_testFunctions.getCountLoanRequestsForTokenOwner(accounts[1]);
     console.log('Loan counter: ', count.toNumber());
 
