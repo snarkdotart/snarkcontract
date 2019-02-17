@@ -290,7 +290,6 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Active),
             "Loan can't be in 'Active' or in 'Finished' status"
         );
-        _storage.cancelLoan(loanId);
         address loanOwner = _storage.getOwnerOfLoan(loanId);
         uint256 loanPrice = _storage.getPriceOfLoan(loanId);
         if (loanPrice > 0) {
@@ -299,6 +298,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             // and move it to the balance of loan owner
             SnarkStorage(_storage).transferFunds(loanOwner, loanPrice);
         }
+        _storage.cancelLoan(loanId);
 
         emit LoanDeleted(loanId);
     }

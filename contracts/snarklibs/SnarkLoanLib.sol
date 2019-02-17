@@ -759,6 +759,10 @@ library SnarkLoanLib {
         for (i = 0; i < notApprovedTokens.length; i++) {
             deleteLoanRequestFromTokenOwner(storageAddress, loanId, notApprovedTokens[i]);
         }
+        uint256[] memory declinedTokens = SnarkLoanLibExt.getTokensListOfLoanByType(storageAddress, loanId, 2);
+        for (i = 0; i < declinedTokens.length; i++) {
+            deleteLoanRequestFromTokenOwner(storageAddress, loanId, declinedTokens[i]);
+        }
 
         deleteLoanFromLoanListOfLoanOwner(storageAddress, loanOwner, loanId);
     }
