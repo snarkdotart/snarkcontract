@@ -141,7 +141,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
 
         uint256 startDate = _storage.getStartDateOfLoan(loanId);
         uint256 duration = _storage.getDurationOfLoan(loanId);
-        uint256 numberOfTokens = _storage.getOwnedTokensCount(msg.sender);
+        uint256 numberOfTokens = _storage.getTotalNumberOfTokens();
         uint256[3] memory tokenIdStartDateDuration = [0, startDate, duration];
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
