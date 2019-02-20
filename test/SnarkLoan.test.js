@@ -365,9 +365,23 @@ contract('SnarkLoan', async (accounts) => {
     //     assert.equal(loanListOfBorrower.length, 1, 'length of loans list is not correct before stopLoan');
 
     for (let i = 1; i < batchSize + 1; i++) {
+        let loanDetail = await snarkloan.getLoanDetail(i);
+        expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(2);
+
+        let tokensList = await snarkloan.getTokenListsOfLoanByTypes(i);
+        for (let j = 0; j < tokensList.length; j++) {
+            expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.equal(borrower);
+        }
+
         await snarkloan.stopLoan(i);
-        // здесь можно проверить, что именно заданный лоан был остановлен и 
-        // именно токены этого лоана были высвобождены
+
+        loanDetail = await snarkloan.getLoanDetail(i);
+        expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(3);
+
+        tokensList = await snarkloan.getTokenListsOfLoanByTypes(i);
+        for (j = 0; j < tokensList.length; j++) {
+            expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.not.equal(borrower);
+        }
     }
     
     for (i = 1; i < needTokensCount + 1; i++) {
