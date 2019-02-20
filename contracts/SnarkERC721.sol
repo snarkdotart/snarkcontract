@@ -205,6 +205,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         } else {
             _storage.transferToken(_tokenId, _from, _to);
         }
+        emit Transfer(_from, _to, _tokenId);
     }
 
     /// @notice Transfers the ownership of an NFT from one address to another address

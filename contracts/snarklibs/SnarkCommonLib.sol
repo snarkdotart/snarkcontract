@@ -12,8 +12,6 @@ library SnarkCommonLib {
     using SnarkBaseLib for address;
     using SnarkBaseExtraLib for address;
 
-    event Transfer(address indexed _from, address indexed _to, uint256 indexed _tokenId);
-
     function transferToken(address _storageAddress, uint256 _tokenId, address _from, address _to) internal {
         require(_tokenId > 0 && _tokenId <= _storageAddress.getTotalNumberOfTokens(), "Token Id is wrong");
         require(
@@ -24,7 +22,6 @@ library SnarkCommonLib {
         _storageAddress.deleteTokenFromOwner(_from, _index);
         _storageAddress.setOwnerOfToken(_tokenId, _to);
         _storageAddress.addTokenToOwner(_to, _tokenId);
-        emit Transfer(_from, _to, _tokenId);
     }
 
     /// @dev Snark platform takes it's profit share
