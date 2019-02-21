@@ -400,6 +400,7 @@ library SnarkLoanLib {
                 if (index < maxIndex) {
                     uint256 lastLoan = getLoanFromLoanListOfLoanOwnerByIndex(storageAddress, loanOwner, maxIndex);
                     setLoanToLoanListOfLoanOwnerByIndex(storageAddress, loanOwner, index, lastLoan);
+                    saveIndexOfLoanInLoanListOfLoanOwner(storageAddress, loanOwner, lastLoan, index);
                 }
                 setLoanToLoanListOfLoanOwnerByIndex(storageAddress, loanOwner, maxIndex, 0);
                 decreaseCountOfLoansForLoanOwner(storageAddress, loanOwner);

@@ -363,27 +363,32 @@ contract('SnarkLoan', async (accounts) => {
 
     //     let loanListOfBorrower = await instance_loanext.getLoansListOfLoanOwner(loanDetail.loanOwner);
     //     assert.equal(loanListOfBorrower.length, 1, 'length of loans list is not correct before stopLoan');
-
-    for (let i = 1; i < batchSize + 1; i++) {
-        let loanDetail = await snarkloan.getLoanDetail(i);
+    console.log(`List of Loans before stoping: ${await snarkloanext.getLoansListOfLoanOwner(borrower)}`);
+    const loansOrderToRemove = [1, 15, 2, 5, 3, 7, 12, 4, 10, 14, 6, 9, 13, 8, 11];
+    for (let i = 0; i < loansOrderToRemove.length; i++) {
+        let loanId = loansOrderToRemove[i];
+        let loanDetail = await snarkloan.getLoanDetail(loanId);
+        
         expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(2);
-
-        let tokensList = await snarkloan.getTokenListsOfLoanByTypes(i);
+        
+        let tokensList = await snarkloan.getTokenListsOfLoanByTypes(loanId);
         for (let j = 0; j < tokensList.length; j++) {
             expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.equal(borrower);
         }
+        
+        await snarkloan.stopLoan(loanId);
 
-        await snarkloan.stopLoan(i);
+        console.log(`List of Loans after stoping loan #${loanId}: ${await snarkloanext.getLoansListOfLoanOwner(borrower)}`);
 
-        loanDetail = await snarkloan.getLoanDetail(i);
+        loanDetail = await snarkloan.getLoanDetail(loanId);
         expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(3);
 
-        tokensList = await snarkloan.getTokenListsOfLoanByTypes(i);
+        tokensList = await snarkloan.getTokenListsOfLoanByTypes(loanId);
         for (j = 0; j < tokensList.length; j++) {
             expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.not.equal(borrower);
         }
     }
-    
+      
     for (i = 1; i < needTokensCount + 1; i++) {
         let accountId = (((i / batchSize) - Math.floor(i / batchSize)) == 0 ) ? 
         Math.floor(i / batchSize) == 0 ? 0 : Math.floor(i / batchSize) - 1 : 
