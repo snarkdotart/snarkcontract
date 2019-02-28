@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity >=0.5.4;
 
 import "./openzeppelin/Ownable.sol";
 import "./SnarkDefinitions.sol";
@@ -234,7 +234,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
 
     /// @dev Accept the artist's offer
     /// @param _offerIdArray Array of Offers ID
-    function buyOffer(uint256[] _offerIdArray) public payable {
+    function buyOffer(uint256[] memory _offerIdArray) public payable {
         uint256 sumPrice;
         for (uint256 i = 0; i < _offerIdArray.length; i++) { 
             sumPrice += _storage.getOfferPrice(_offerIdArray[i]); 
@@ -249,9 +249,9 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         uint256 refunds = msg.value.sub(sumPrice);
         _storage.transfer(msg.value);
 
-        for (i = 0; i < _offerIdArray.length; i++) {
-            tokenId = _storage.getTokenByOffer(_offerIdArray[i]);
-            tokenOwner = _storage.getOwnerOfToken(tokenId);
+        for (uint256 i = 0; i < _offerIdArray.length; i++) {
+            uint256 tokenId = _storage.getTokenByOffer(_offerIdArray[i]);
+            uint256 tokenOwner = _storage.getOwnerOfToken(tokenId);
             uint256 price = _storage.getOfferPrice(_offerIdArray[i]);
             _storage.buy(tokenId, price, tokenOwner, msg.sender);
             _erc721.echoTransfer(tokenOwner, msg.sender, tokenId);
@@ -312,7 +312,7 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         tokenOwner = _storage.getOwnerOfToken(tokenId);
     }
 
-    function getListOfOffersForOwner(address _offerOwner) public view returns (uint256[]) {
+    function getListOfOffersForOwner(address _offerOwner) public view returns (uint256[] memory) {
         return _storage.getListOfOffersForOwner(_offerOwner);
     }
 
@@ -359,11 +359,11 @@ contract SnarkOfferBid is Ownable, SnarkDefinitions {
         bidPrice = _storage.getMaxBidPriceForToken(_tokenId);
     }
 
-    function getListOfBidsForToken(uint256 _tokenId) public view returns (uint256[]) {
+    function getListOfBidsForToken(uint256 _tokenId) public view returns (uint256[] memory) {
         return _storage.getListOfBidsForToken(_tokenId);
     }
 
-    function getListOfBidsForOwner(address _bidOwner) public view returns (uint256[]) {
+    function getListOfBidsForOwner(address _bidOwner) public view returns (uint256[] memory) {
         return _storage.getListOfBidsForOwner(_bidOwner);
     }
 

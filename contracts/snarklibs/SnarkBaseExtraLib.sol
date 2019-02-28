@@ -1,18 +1,19 @@
-pragma solidity ^0.4.25;
+pragma solidity >=0.5.4;
 
 import "../SnarkStorage.sol";
 import "../openzeppelin/SafeMath.sol";
 
 
 library SnarkBaseExtraLib {
+
     using SafeMath for uint256;
 
     function setTokenToParticipantApproving(
-        address storageAddress, 
-        uint256 tokenId, 
-        address participant, 
+        address payable storageAddress,
+        uint256 tokenId,
+        address participant,
         bool consent
-    ) 
+    )
         public
     {
         SnarkStorage(storageAddress).setBool(
@@ -22,10 +23,10 @@ library SnarkBaseExtraLib {
     }
 
     function addProfitShareScheme(
-        address storageAddress,
+        address payable storageAddress,
         address schemeOwner,
-        address[] participants,
-        uint256[] profits
+        address[] memory participants,
+        uint256[] memory profits
     )
         public
         returns (uint256 schemeId) 
@@ -72,7 +73,7 @@ library SnarkBaseExtraLib {
         );
     }
 
-    function registerParticipantForSchemeOwner(address storageAddress, address schemeOwner, address participant)
+    function registerParticipantForSchemeOwner(address payable storageAddress, address schemeOwner, address participant)
         public 
     {
         SnarkStorage(storageAddress).setBool(
@@ -82,7 +83,7 @@ library SnarkBaseExtraLib {
     }
 
     /*** GET ***/
-    function getTokenProfitShareSchemeId(address storageAddress, uint256 tokenId) public view
+    function getTokenProfitShareSchemeId(address payable storageAddress, uint256 tokenId) public view
         returns (uint256 profitShareSchemeId)
     {
         return SnarkStorage(storageAddress).uintStorage(
@@ -90,7 +91,7 @@ library SnarkBaseExtraLib {
         );
     }
 
-    function isParticipantRegisteredForSchemeOwner(address storageAddress, address schemeOwner, address participant)
+    function isParticipantRegisteredForSchemeOwner(address payable storageAddress, address schemeOwner, address participant)
         public
         view
         returns (bool)
@@ -100,11 +101,11 @@ library SnarkBaseExtraLib {
         );
     }
 
-    function getTotalNumberOfProfitShareSchemes(address storageAddress) public view returns (uint256 number) {
+    function getTotalNumberOfProfitShareSchemes(address payable storageAddress) public view returns (uint256 number) {
         return SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfProfitShareSchemes"));
     }
 
-    function getNumberOfParticipantsForProfitShareScheme(address storageAddress, uint256 schemeId) 
+    function getNumberOfParticipantsForProfitShareScheme(address payable storageAddress, uint256 schemeId) 
         public 
         view 
         returns (uint256)
@@ -113,7 +114,7 @@ library SnarkBaseExtraLib {
             keccak256(abi.encodePacked("numberOfParticipantsForProfitShareScheme", schemeId)));
     }
 
-    function getParticipantOfProfitShareScheme(address storageAddress, uint256 schemeId, uint256 index) 
+    function getParticipantOfProfitShareScheme(address payable storageAddress, uint256 schemeId, uint256 index) 
         public
         view
         returns (
@@ -130,7 +131,7 @@ library SnarkBaseExtraLib {
         );
     }
 
-    function getNumberOfProfitShareSchemesForOwner(address storageAddress, address schemeOwner) 
+    function getNumberOfProfitShareSchemesForOwner(address payable storageAddress, address schemeOwner) 
         public 
         view 
         returns (uint256)
@@ -139,7 +140,7 @@ library SnarkBaseExtraLib {
             keccak256(abi.encodePacked("numberOfProfitShareSchemesForOwner", schemeOwner)));
     }
 
-    function getProfitShareSchemeIdForOwner(address storageAddress, address schemeOwner, uint256 index)
+    function getProfitShareSchemeIdForOwner(address payable storageAddress, address schemeOwner, uint256 index)
         public
         view
         returns (uint256)
@@ -148,7 +149,7 @@ library SnarkBaseExtraLib {
             keccak256(abi.encodePacked("profitShareSchemeIdsForOwner", schemeOwner, index)));
     }
 
-    function doesProfitShareSchemeIdBelongsToOwner(address storageAddress, address schemeOwner, uint256 schemeId)
+    function doesProfitShareSchemeIdBelongsToOwner(address payable storageAddress, address schemeOwner, uint256 schemeId)
         public
         view
         returns (bool)
@@ -166,7 +167,7 @@ library SnarkBaseExtraLib {
         return doesBelongs;
     }
 
-    function getNumberOfUniqueParticipantsForOwner(address storageAddress, address schemeOwner)
+    function getNumberOfUniqueParticipantsForOwner(address payable storageAddress, address schemeOwner)
         public 
         view 
         returns (uint256) 
@@ -176,7 +177,7 @@ library SnarkBaseExtraLib {
         );
     }
 
-    function getParticipantByIndexForOwner(address storageAddress, address schemeOwner, uint256 index)
+    function getParticipantByIndexForOwner(address payable storageAddress, address schemeOwner, uint256 index)
         public
         view
         returns (address)
@@ -186,10 +187,10 @@ library SnarkBaseExtraLib {
         );
     }
 
-    function getListOfUniqueParticipantsForOwner(address storageAddress, address schemeOwner)
+    function getListOfUniqueParticipantsForOwner(address payable storageAddress, address schemeOwner)
         public
         view
-        returns (address[])
+        returns (address[] memory)
     {
         uint256 _count = getNumberOfUniqueParticipantsForOwner(storageAddress, schemeOwner);
         address[] memory participants = new address[](_count);

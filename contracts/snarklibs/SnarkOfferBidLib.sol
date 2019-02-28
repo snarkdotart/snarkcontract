@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity >=0.5.4;
 
 import "../SnarkStorage.sol";
 import "../openzeppelin/SafeMath.sol";
@@ -127,7 +127,9 @@ library SnarkOfferBidLib {
         );
     }
 
-    function getListOfOffersForOwner(address _storageAddress, address _offerOwner) public view returns (uint256[]) {
+    function getListOfOffersForOwner(address _storageAddress, address _offerOwner) 
+        public view returns (uint256[] memory) 
+    {
         uint256 countOfOffers = getTotalNumberOfOwnerOffers(_storageAddress, _offerOwner);
         uint256[] memory offersList = new uint256[](countOfOffers);
         for (uint256 i = 0; i < countOfOffers; i++) {
@@ -374,7 +376,7 @@ library SnarkOfferBidLib {
         );
     }
 
-    function getListOfBidsForToken(address _storageAddress, uint256 _tokenId) public view returns (uint256[]) {
+    function getListOfBidsForToken(address _storageAddress, uint256 _tokenId) public view returns (uint256[] memory) {
         uint256 countOfBids = getNumberBidsOfToken(_storageAddress, _tokenId);
         uint256[] memory bidsList = new uint256[](countOfBids);
         for (uint256 i = 0; i < countOfBids; i++) {
@@ -488,7 +490,7 @@ library SnarkOfferBidLib {
         );
     }
 
-    function getListOfBidsForOwner(address _storageAddress, address _bidOwner) public view returns (uint256[]) {
+    function getListOfBidsForOwner(address _storageAddress, address _bidOwner) public view returns (uint256[] memory) {
         uint256 countOfBids = getNumberBidsOfOwner(_storageAddress, _bidOwner);
         uint256[] memory bidsList = new uint256[](countOfBids);
         for (uint256 i = 0; i < countOfBids; i++) {

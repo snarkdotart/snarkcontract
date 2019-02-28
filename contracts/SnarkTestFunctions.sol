@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.5.4;
 
 import "./snarklibs/SnarkLoanLib.sol";
 import "./snarklibs/SnarkLoanLibExt.sol";
@@ -11,7 +11,7 @@ contract SnarkTestFunctions {
     using SnarkLoanLibExt for address;
     using SnarkBaseLib for address;
 
-    address _storage;
+    address private _storage;
 
     constructor(address storageAddress) public {
         _storage = storageAddress;
@@ -27,7 +27,7 @@ contract SnarkTestFunctions {
         return _storage.getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(tokenOwner, tokenId, loanId);
     }
 
-    function getListOfNotFinishedLoansForToken(uint256 tokenId) public view returns (uint256[]) 
+    function getListOfNotFinishedLoansForToken(uint256 tokenId) public view returns (uint256[] memory) 
     {
         return _storage.getListOfNotFinishedLoansForToken(tokenId);
     }
@@ -117,7 +117,7 @@ contract SnarkTestFunctions {
         return _storage.getCountOfLoansForLoanOwner(loanOwner);
     }
 
-    function getLoansListOfLoanOwner(address loanOwner) public view returns (uint256[]) {
+    function getLoansListOfLoanOwner(address loanOwner) public view returns (uint256[] memory) {
         return _storage.getLoansListOfLoanOwner(loanOwner);
     }
 }

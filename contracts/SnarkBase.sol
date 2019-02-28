@@ -1,6 +1,6 @@
 /// @title Base contract for Snark. Holds all common structs, events and base variables.
 /// @dev See the Snark contract documentation to understand how the contract is structured.
-pragma solidity ^0.4.25;
+pragma solidity >=0.5.4;
 
 import "./openzeppelin/Ownable.sol";
 import "./openzeppelin/SafeMath.sol";
@@ -32,7 +32,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     event NeedApproveProfitShareRemoving(address indexed participant, uint256 tokenId);
     
     modifier restrictedAccess() {
-        if (_storage.isRestrictedAccess()) {
+        if (SnarkBaseLib.isRestrictedAccess(address(uint160(_storage)))) {
             require(msg.sender == owner, "only Snark can perform the function");
         }
         _;
@@ -41,17 +41,17 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Modifier that checks that an owner has a specific token
     /// @param tokenId Token ID
     modifier onlyOwnerOf(uint256 tokenId) {
-        require(msg.sender == _storage.getOwnerOfToken(tokenId));
+        require(msg.sender == SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokenId));
         _;
     }
 
     /// @dev Modifier that checks that an owner possesses multiple tokens
     /// @param tokenIds Array of token IDs
-    modifier onlyOwnerOfMany(uint256[] tokenIds) {
+    modifier onlyOwnerOfMany(uint256[] memory tokenIds) {
         bool isOwnerOfAll = true;
         for (uint8 i = 0; i < tokenIds.length; i++) {
             isOwnerOfAll = isOwnerOfAll && 
-                (msg.sender == _storage.getOwnerOfToken(tokenIds[i]));
+                (msg.sender == SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokenIds[i]));
         }
         require(isOwnerOfAll);
         _;
@@ -60,7 +60,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Modifier that only allows the artist to do an operation
     /// @param tokenId Token Id
     modifier onlyArtistOf(uint256 tokenId) {
-        address artist = _storage.getTokenArtist(tokenId);
+        address artist = SnarkBaseLib.getTokenArtist(address(uint160(_storage)), tokenId);
         require(msg.sender == artist);
         _;
     }
@@ -68,7 +68,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     modifier onlyProfitShareSchemeOfOwner(uint256 tokenId, uint256 schemeId) {
         require(schemeId > 0, "id of scheme can't be zero");
         
-        address artist = _storage.getTokenArtist(tokenId);
+        address artist = SnarkBaseLib.getTokenArtist(address(uint160(_storage)), tokenId);
         require(msg.sender == artist, "Only artist can change the profit share scheme");
 
         bool isSchemeOwner = false;
@@ -84,11 +84,13 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Modifier that allows access for a participant only
     modifier onlyParticipantOf(uint256 tokenId) {
         bool isItParticipant = false;
-        uint256 schemeId = _storage.getTokenProfitShareSchemeId(tokenId);
-        uint256 participantsCount = _storage.getNumberOfParticipantsForProfitShareScheme(schemeId);
+        uint256 schemeId = SnarkBaseExtraLib.getTokenProfitShareSchemeId(address(uint160(_storage)), tokenId);
+        uint256 participantsCount = 
+            SnarkBaseExtraLib.getNumberOfParticipantsForProfitShareScheme(address(uint160(_storage)), schemeId);
         address participant;
         for (uint256 i = 0; i < participantsCount; i++) {
-            (participant,) = _storage.getParticipantOfProfitShareScheme(schemeId, i);
+            (participant,) = 
+                SnarkBaseExtraLib.getParticipantOfProfitShareScheme(address(uint160(_storage)), schemeId, i);
             if (msg.sender == participant) { 
                 isItParticipant = true; 
                 break; 
@@ -108,18 +110,20 @@ contract SnarkBase is Ownable, SnarkDefinitions {
 
     /// @dev Function to destroy a contract in the blockchain
     function kill() external onlyOwner {
-        selfdestruct(owner);
+        selfdestruct(msg.sender);
     }
 
     /// @dev Generate event to get approval from each participant of the token
     /// @param tokenId Id of token
     function sendRequestForApprovalOfProfitShareRemovalForSecondarySale(uint tokenId) external onlyArtistOf(tokenId) {
-        uint256 schemeId = _storage.getTokenProfitShareSchemeId(tokenId);
-        uint256 participantsCount = _storage.getNumberOfParticipantsForProfitShareScheme(schemeId);
+        uint256 schemeId = SnarkBaseExtraLib.getTokenProfitShareSchemeId(address(uint160(_storage)), tokenId);
+        uint256 participantsCount = 
+            SnarkBaseExtraLib.getNumberOfParticipantsForProfitShareScheme(address(uint160(_storage)), schemeId);
         address participant;
         for (uint256 i = 0; i < participantsCount; i++) {
-            (participant,) = _storage.getParticipantOfProfitShareScheme(schemeId, i);
-            _storage.setTokenToParticipantApproving(tokenId, participant, false);
+            (participant,) =
+                SnarkBaseExtraLib.getParticipantOfProfitShareScheme(address(uint160(_storage)), schemeId, i);
+            SnarkBaseExtraLib.setTokenToParticipantApproving(address(uint160(_storage)), tokenId, participant, false);
             emit NeedApproveProfitShareRemoving(participant, tokenId);
         }
     }
@@ -127,16 +131,19 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Delete profit share from secondary sale
     /// @param tokenId Token Id
     function approveRemovingProfitShareFromSecondarySale(uint256 tokenId) external onlyParticipantOf(tokenId) {
-        _storage.setTokenToParticipantApproving(tokenId, msg.sender, true);
-        uint256 schemeId = _storage.getTokenProfitShareSchemeId(tokenId);
-        uint256 participantsCount = _storage.getNumberOfParticipantsForProfitShareScheme(schemeId);
+        SnarkBaseExtraLib.setTokenToParticipantApproving(address(uint160(_storage)), tokenId, msg.sender, true);
+        uint256 schemeId = SnarkBaseExtraLib.getTokenProfitShareSchemeId(address(uint160(_storage)), tokenId);
+        uint256 participantsCount = 
+            SnarkBaseExtraLib.getNumberOfParticipantsForProfitShareScheme(address(uint160(_storage)), schemeId);
         address participant;
         bool isApproved = true;
         for (uint256 i = 0; i < participantsCount; i++) {
-            (participant,) = _storage.getParticipantOfProfitShareScheme(schemeId, i);
-            isApproved = isApproved && _storage.getTokenToParticipantApproving(tokenId, participant);
+            (participant,) = 
+                SnarkBaseExtraLib.getParticipantOfProfitShareScheme(address(uint160(_storage)), schemeId, i);
+            isApproved = isApproved && 
+                SnarkBaseLib.getTokenToParticipantApproving(address(uint160(_storage)), tokenId, participant);
         }
-        if (isApproved) _storage.setTokenProfitShareFromSecondarySale(tokenId, 0);
+        if (isApproved) SnarkBaseLib.setTokenProfitShareFromSecondarySale(address(uint160(_storage)), tokenId, 0);
     }
 
     function setTokenAcceptOfLoanRequestFromSnarkAndOthers(
@@ -146,28 +153,35 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     ) 
         public 
     {
-        require(msg.sender == owner || msg.sender == _storage.getOwnerOfToken(tokenId));
-        _storage.setTokenAcceptOfLoanRequestFromSnark(tokenId, isAcceptForSnark);
-        _storage.setTokenAcceptOfLoanRequestFromOthers(tokenId, isAcceptForOthers);
+        require(
+            msg.sender == owner || 
+            msg.sender == SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokenId)
+        );
+        SnarkBaseLib.setTokenAcceptOfLoanRequestFromSnark(address(uint160(_storage)), tokenId, isAcceptForSnark);
+        SnarkBaseLib.setTokenAcceptOfLoanRequestFromOthers(address(uint160(_storage)), tokenId, isAcceptForOthers);
     }
 
-    function setTokenName(string tokenName) public onlyOwner {
-        _storage.setTokenName(tokenName);
+    function setTokenName(string memory tokenName) public onlyOwner {
+        SnarkBaseLib.setTokenName(address(uint160(_storage)), tokenName);
     }
 
-    function setTokenSymbol(string tokenSymbol) public onlyOwner {
-        _storage.setTokenSymbol(tokenSymbol);
+    function setTokenSymbol(string memory tokenSymbol) public onlyOwner {
+        SnarkBaseLib.setTokenSymbol(address(uint160(_storage)), tokenSymbol);
     }
 
     function changeRestrictAccess(bool isRestrict) public onlyOwner {
-        _storage.setRestrictAccess(isRestrict);
+        SnarkBaseLib.setRestrictAccess(address(uint160(_storage)), isRestrict);
     }
 
     /// @dev Create a scheme of profit share for user
     /// @param participants List of profit sharing participants
     /// @param percentAmount List of profit share % of participants
     /// @return A scheme id
-    function createProfitShareScheme(address artistAddress, address[] participants, uint256[] percentAmount)
+    function createProfitShareScheme(
+        address artistAddress, 
+        address[] memory participants, 
+        uint256[] memory percentAmount
+    )
         public
         restrictedAccess
         returns(uint256)
@@ -180,39 +194,40 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             sum = sum.add(percentAmount[i]);
         }
         require(sum == 100, "Sum of all percentages has to be equal 100");
-        uint256 schemeId = _storage.addProfitShareScheme(artistAddress, participants, percentAmount);
+        uint256 schemeId = SnarkBaseExtraLib.addProfitShareScheme(
+            address(uint160(_storage)), artistAddress, participants, percentAmount);
         emit ProfitShareSchemeAdded(artistAddress, schemeId);
     }
 
     /// @dev Return a total number of profit share schemes
     function getProfitShareSchemesTotalCount() public view returns (uint256) {
-        return _storage.getTotalNumberOfProfitShareSchemes();
+        return SnarkBaseExtraLib.getTotalNumberOfProfitShareSchemes(address(uint160(_storage)));
     }
 
     /// @dev Return a total number of user's profit share schemes
     function getProfitShareSchemeCountByAddress(address schemeOwner) public view onlyOwner returns (uint256) {
-        return _storage.getNumberOfProfitShareSchemesForOwner(schemeOwner);
+        return SnarkBaseExtraLib.getNumberOfProfitShareSchemesForOwner(address(uint160(_storage)), schemeOwner);
     }
 
     /// @dev Return a scheme Id for user by index
     /// @param index Index of scheme for current user's address
     function getProfitShareSchemeIdByIndex(address schemeOwner, uint256 index) public view onlyOwner returns (uint256) {
-        return _storage.getProfitShareSchemeIdForOwner(schemeOwner, index);
+        return SnarkBaseExtraLib.getProfitShareSchemeIdForOwner(address(uint160(_storage)), schemeOwner, index);
     }
 
     /// @dev Return a list of user profit share schemes
     /// @return A list of schemes belongs to owner
     function getProfitShareParticipantsCount(address schemeOwner) public view onlyOwner returns(uint256) {
-        return _storage.getNumberOfUniqueParticipantsForOwner(schemeOwner);
+        return SnarkBaseExtraLib.getNumberOfUniqueParticipantsForOwner(address(uint160(_storage)), schemeOwner);
     }
 
     /// @dev Return a list of unique profit share participants
-    function getProfitShareParticipantsList(address schemeOwner) public view onlyOwner returns (address[]) {
-        return _storage.getListOfUniqueParticipantsForOwner(schemeOwner);
+    function getProfitShareParticipantsList(address schemeOwner) public view onlyOwner returns (address[] memory) {
+        return SnarkBaseExtraLib.getListOfUniqueParticipantsForOwner(address(uint160(_storage)), schemeOwner);
     }
 
     function getOwnerOfToken(uint256 tokenId) public view returns (address) {
-        return _storage.getOwnerOfToken(tokenId);
+        return SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokenId);
     }
 
     /// @dev Function to add a new digital token to blockchain. Only Snark can call this function.
@@ -228,22 +243,22 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @param isAcceptOfLoanRequestFromSnarkFromOthers sign of auto accept of requests from Snark and other users
     function addToken(
         address artistAddress,
-        string hashOfToken,
-        string tokenUrl,
-        string decorationUrl,
-        string decriptionKey,
-        uint256[] limitedEditionProfitSFSSProfitSSID,
-        bool[] isAcceptOfLoanRequestFromSnarkFromOthers
+        string memory hashOfToken,
+        string memory tokenUrl,
+        string memory decorationUrl,
+        string memory decriptionKey,
+        uint256[] memory limitedEditionProfitSFSSProfitSSID,
+        bool[] memory isAcceptOfLoanRequestFromSnarkFromOthers
     ) 
         public
         restrictedAccess
     {
         // check if profitShareSchemeId belongs to artistAddress
-        require(_storage.doesProfitShareSchemeIdBelongsToOwner(
-                artistAddress, limitedEditionProfitSFSSProfitSSID[2]) == true,
+        require(SnarkBaseExtraLib.doesProfitShareSchemeIdBelongsToOwner(
+            address(uint160(_storage)), artistAddress, limitedEditionProfitSFSSProfitSSID[2]) == true,
             "Artist has to have the profit share schemeId");
         // Check for an identical hash of the digital token in existence to prevent uploading a duplicate token
-        require(_storage.getTokenHashAsInUse(hashOfToken) == false, 
+        require(SnarkBaseLib.getTokenHashAsInUse(address(uint160(_storage)), hashOfToken) == false, 
             "Token is already exist with the same hash"
         );
         // Check that the number of token editions is >= 1 and <= 10
@@ -263,7 +278,8 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             lEeNlPpSSIDpSFSS[3] = limitedEditionProfitSFSSProfitSSID[2];    // profitShareSchemeId
             lEeNlPpSSIDpSFSS[4] = limitedEditionProfitSFSSProfitSSID[1];    // profitShareForSecondarySale
 
-            uint256 tokenId = _storage.addToken(
+            uint256 tokenId = SnarkBaseLib.addToken(
+                address(uint160(_storage)),
                 artistAddress,                                              // artistAddress
                 hashOfToken,                                                // tokenHash
                 lEeNlPpSSIDpSFSS,
@@ -271,17 +287,17 @@ contract SnarkBase is Ownable, SnarkDefinitions {
                 isAcceptOfLoanRequestFromSnarkFromOthers
             );
             // set that a digital work with this hash has already been loaded
-            _storage.setTokenHashAsInUse(hashOfToken, true);
+            SnarkBaseLib.setTokenHashAsInUse(address(uint160(_storage)), hashOfToken, true);
             // Add new token to new artist's token list
-            _storage.addTokenToArtistList(tokenId, artistAddress);
+            SnarkBaseLib.addTokenToArtistList(address(uint160(_storage)), tokenId, artistAddress);
             // Set a decription key for original file of token
-            _storage.setTokenDecryptionKey(tokenId, decriptionKey);
+            SnarkBaseLib.setTokenDecryptionKey(address(uint160(_storage)), tokenId, decriptionKey);
             // Set a url for token decoration on OpenSea platform
-            _storage.setDecorationUrl(tokenId, decorationUrl);
+            SnarkBaseLib.setDecorationUrl(address(uint160(_storage)), tokenId, decorationUrl);
             // Enter the new owner
-            _storage.setOwnerOfToken(tokenId, artistAddress);
+            SnarkBaseLib.setOwnerOfToken(address(uint160(_storage)), tokenId, artistAddress);
             // Add new token to new owner's token list
-            _storage.addTokenToOwner(artistAddress, tokenId);
+            SnarkBaseLib.addTokenToOwner(address(uint160(_storage)), artistAddress, tokenId);
             // emit token event
             emit TokenCreated(artistAddress, hashOfToken, tokenId);
             // emit transfer token event
@@ -289,48 +305,48 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         }
     }
 
-    function getTokenDecryptionKey(uint256 tokenId) public view returns (string) {
+    function getTokenDecryptionKey(uint256 tokenId) public view returns (string memory) {
         require(
-            msg.sender == _storage.getOwnerOfToken(tokenId) ||
+            msg.sender == SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokenId) ||
             msg.sender == owner
         );
-        return _storage.getTokenDecryptionKey(tokenId);
+        return SnarkBaseLib.getTokenDecryptionKey(address(uint160(_storage)), tokenId);
     }
 
     function getTokensCount() public view returns (uint256) {
-        return _storage.getTotalNumberOfTokens();
+        return SnarkBaseLib.getTotalNumberOfTokens(address(uint160(_storage)));
     }
 
     function getTokensCountByArtist(address artist) public view returns (uint256) {
-        return _storage.getNumberOfArtistTokens(artist);
+        return SnarkBaseLib.getNumberOfArtistTokens(address(uint160(_storage)), artist);
     }
 
-    function getTokenListForArtist(address artist) public view returns (uint256[]) {
-        uint256 _count = _storage.getNumberOfArtistTokens(artist);
+    function getTokenListForArtist(address artist) public view returns (uint256[] memory) {
+        uint256 _count = SnarkBaseLib.getNumberOfArtistTokens(address(uint160(_storage)), artist);
         uint256[] memory _retarray = new uint256[](_count);
         for (uint256 i = 0; i < _count; i++) {
-            _retarray[i] = _storage.getTokenIdForArtist(artist, i);
+            _retarray[i] = SnarkBaseLib.getTokenIdForArtist(address(uint160(_storage)), artist, i);
         }
         return _retarray;
     }
 
     function getTokensCountByOwner(address tokenOwner) public view returns (uint256) {
-        return _storage.getOwnedTokensCount(tokenOwner);
+        return SnarkBaseLib.getOwnedTokensCount(address(uint160(_storage)), tokenOwner);
     }
 
-    function getTokenListForOwner(address tokenOwner) public view returns (uint256[]) {
-        uint256 _count = _storage.getOwnedTokensCount(tokenOwner);
+    function getTokenListForOwner(address tokenOwner) public view returns (uint256[] memory) {
+        uint256 _count = SnarkBaseLib.getOwnedTokensCount(address(uint160(_storage)), tokenOwner);
         uint256[] memory _retarray = new uint256[](_count);
         for (uint256 i = 0; i < _count; i++) {
-            _retarray[i] = _storage.getTokenIdOfOwner(tokenOwner, i);
+            _retarray[i] = SnarkBaseLib.getTokenIdOfOwner(address(uint160(_storage)), tokenOwner, i);
         }
         return _retarray;
     }
 
     function isTokenAcceptOfLoanRequestFromSnarkAndOthers(uint256 tokenId) public view returns (bool, bool) {
         return (
-            _storage.isTokenAcceptOfLoanRequestFromSnark(tokenId),
-            _storage.isTokenAcceptOfLoanRequestFromOthers(tokenId)
+            SnarkBaseLib.isTokenAcceptOfLoanRequestFromSnark(address(uint160(_storage)), tokenId),
+            SnarkBaseLib.isTokenAcceptOfLoanRequestFromOthers(address(uint160(_storage)), tokenId)
         );
     }
 
@@ -342,19 +358,19 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         returns (
             address currentOwner,
             address artist,
-            string hashOfToken, 
+            string memory hashOfToken, 
             uint256 limitedEdition, 
             uint256 editionNumber, 
             uint256 lastPrice,
             uint256 profitShareSchemeId,
             uint256 profitShareFromSecondarySale, 
-            string tokenUrl,
-            string decorationUrl,
+            string memory tokenUrl,
+            string memory decorationUrl,
             bool isAcceptOfLoanRequestFromSnark,
             bool isAcceptOfLoanRequestFromOthers
         ) 
     {
-        return _storage.getTokenDetail(tokenId);
+        return SnarkBaseLib.getTokenDetail(address(uint160(_storage)), tokenId);
     }
 
     /// @dev Change in profit sharing. Change can only be to the percentages for already registered wallet addresses.
@@ -367,17 +383,17 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         public
         onlyProfitShareSchemeOfOwner(tokenId, newProfitShareSchemeId)
     {
-        _storage.setTokenProfitShareSchemeId(tokenId, newProfitShareSchemeId);
+        SnarkBaseLib.setTokenProfitShareSchemeId(address(uint160(_storage)), tokenId, newProfitShareSchemeId);
     }
     
     /// @dev Function to view the balance in our contract that an owner can withdraw 
     function getWithdrawBalance(address tokenOwner) public view returns (uint256) {
-        return _storage.getPendingWithdrawals(tokenOwner);
+        return SnarkBaseLib.getPendingWithdrawals(address(uint160(_storage)), tokenOwner);
     }
 
     /// @dev Return number of particpants
     function getNumberOfParticipantsForProfitShareScheme(uint256 schemeId) public view returns (uint256) {
-        return _storage.getNumberOfParticipantsForProfitShareScheme(schemeId);
+        return SnarkBaseExtraLib.getNumberOfParticipantsForProfitShareScheme(address(uint160(_storage)), schemeId);
     }
 
     /// @dev Function returns a participant address and its profit
@@ -388,63 +404,63 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         view 
         returns (address, uint256) 
     {
-        return _storage.getParticipantOfProfitShareScheme(schemeId, index);
+        return SnarkBaseExtraLib.getParticipantOfProfitShareScheme(address(uint160(_storage)), schemeId, index);
     }
 
     /// @dev Function to withdraw funds to the owners wallet 
     function withdrawFunds() public {
-        uint256 balance = _storage.getPendingWithdrawals(msg.sender);
+        uint256 balance = SnarkBaseLib.getPendingWithdrawals(address(uint160(_storage)), msg.sender);
         require(balance > 0);
-        _storage.subPendingWithdrawals(msg.sender, balance);
-        SnarkStorage(_storage).transferFunds(msg.sender, balance);
+        SnarkBaseLib.subPendingWithdrawals(address(uint160(_storage)), msg.sender, balance);
+        SnarkStorage(address(uint160(_storage))).transferFunds(msg.sender, balance);
     }
 
     function setSnarkWalletAddress(address snarkWalletAddr) public onlyOwner {
-        _storage.setSnarkWalletAddress(snarkWalletAddr);
+        SnarkBaseLib.setSnarkWalletAddress(address(uint160(_storage)), snarkWalletAddr);
     }
 
     function setPlatformProfitShare(uint256 profit) public onlyOwner {
-        _storage.setPlatformProfitShare(profit);
+        SnarkBaseLib.setPlatformProfitShare(address(uint160(_storage)), profit);
     }
 
     function changeTokenData(
         uint256 tokenId,
-        string hashOfToken,
-        string tokenUrl,
-        string decorationUrl,
-        string decriptionKey
+        string memory hashOfToken,
+        string memory tokenUrl,
+        string memory decorationUrl,
+        string memory decriptionKey
     ) 
         public 
         onlyOwner 
     {
-        SnarkStorage(_storage).setString(
+        SnarkStorage(address(uint160(_storage))).setString(
             keccak256(abi.encodePacked("token", "hashOfToken", tokenId)), hashOfToken);
-        SnarkStorage(_storage).setString(
+        SnarkStorage(address(uint160(_storage))).setString(
             keccak256(abi.encodePacked("token", "url", tokenId)), tokenUrl);
 
-        _storage.setDecorationUrl(tokenId, decorationUrl);
-        _storage.setTokenDecryptionKey(tokenId, decriptionKey);
+        SnarkBaseLib.setDecorationUrl(address(uint160(_storage)), tokenId, decorationUrl);
+        SnarkBaseLib.setTokenDecryptionKey(address(uint160(_storage)), tokenId, decriptionKey);
     }
 
     function getSnarkWalletAddressAndProfit() public view returns (address snarkWalletAddr, uint256 platformProfit) {
-        snarkWalletAddr = _storage.getSnarkWalletAddress();
-        platformProfit = _storage.getPlatformProfitShare();
+        snarkWalletAddr = SnarkBaseLib.getSnarkWalletAddress(address(uint160(_storage)));
+        platformProfit = SnarkBaseLib.getPlatformProfitShare(address(uint160(_storage)));
     }
 
     function getPlatformProfitShare() public view returns (uint256) {
-        return _storage.getPlatformProfitShare();
+        return SnarkBaseLib.getPlatformProfitShare(address(uint160(_storage)));
     }
 
     function getSaleTypeToToken(uint256 tokenId) public view returns (uint256) {
-        return _storage.getSaleTypeToToken(tokenId);
+        return SnarkBaseLib.getSaleTypeToToken(address(uint160(_storage)), tokenId);
     }
 
-    function getTokenHashAsInUse(string tokenHash) public view returns (bool) {
-        return _storage.getTokenHashAsInUse(tokenHash);
+    function getTokenHashAsInUse(string memory tokenHash) public view returns (bool) {
+        return SnarkBaseLib.getTokenHashAsInUse(address(uint160(_storage)), tokenHash);
     }
 
     function getNumberOfProfitShareSchemesForOwner(address schemeOwner) public view returns (uint256) {
-        return _storage.getNumberOfProfitShareSchemesForOwner(schemeOwner);
+        return SnarkBaseExtraLib.getNumberOfProfitShareSchemesForOwner(address(uint160(_storage)), schemeOwner);
     }
 
     function getProfitShareSchemeIdForOwner(address schemeOwner, uint256 index)
@@ -452,10 +468,10 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         view
         returns (uint256)
     {
-        return _storage.getProfitShareSchemeIdForOwner(schemeOwner, index);
+        return SnarkBaseExtraLib.getProfitShareSchemeIdForOwner(address(uint160(_storage)), schemeOwner, index);
     }
 
-    function getListOfAllArtists() public view returns (address[]) {
-        return _storage.getListOfAllArtists();
+    function getListOfAllArtists() public view returns (address[] memory) {
+        return SnarkBaseLib.getListOfAllArtists(address(uint160(_storage)));
     }
 }

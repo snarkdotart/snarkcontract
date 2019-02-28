@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity >=0.5.4;
 
 import "./openzeppelin/Ownable.sol";
 import "./SnarkDefinitions.sol";
@@ -44,25 +44,27 @@ contract SnarkLoanExt  is Ownable, SnarkDefinitions {
         return _storage.getActualTokenOwnerForLoan(loanId, tokenId);
     }
 
-    function getListOfNotFinishedLoansForToken(uint256 tokenId) public view returns (uint256[]) {
+    function getListOfNotFinishedLoansForToken(uint256 tokenId) public view returns (uint256[] memory) {
         return _storage.getListOfNotFinishedLoansForToken(tokenId);
     }
 
-    function getListOfNotStartedLoansForToken(uint256 tokenId) public view returns (uint256[]) {
+    function getListOfNotStartedLoansForToken(uint256 tokenId) public view returns (uint256[] memory) {
         return _storage.getListOfNotStartedLoansForToken(tokenId);
     }
 
     /// @notice return list of loan request by token owner 
-    function getLoanRequestsListOfTokenOwner(address tokenOwner) public view returns (uint256[], uint256[]) {
+    function getLoanRequestsListOfTokenOwner(address tokenOwner) 
+        public view returns (uint256[] memory, uint256[] memory) 
+    {
         return _storage.getLoanRequestsListForTokenOwner(tokenOwner);
     }
 
     /// @notice return list of loan borrowers 
-    function getLoansListOfLoanOwner(address loanOwner) public view returns (uint256[]) {
+    function getLoansListOfLoanOwner(address loanOwner) public view returns (uint256[] memory) {
         return _storage.getLoansListOfLoanOwner(loanOwner);
     }
 
-    function attachTokensToLoan(uint256 loanId, uint256[] tokensIds) public onlyOwner {
+    function attachTokensToLoan(uint256 loanId, uint256[] memory tokensIds) public onlyOwner {
         require(
             _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Active) &&
             _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Finished),
@@ -99,7 +101,7 @@ contract SnarkLoanExt  is Ownable, SnarkDefinitions {
         return _storage.isTokenBusyForPeriod(data);
     }
 
-    function getListOfLoansWithFreeSlots() public view returns (uint256[]) {
+    function getListOfLoansWithFreeSlots() public view returns (uint256[] memory) {
         uint256 loansCount = getTotalNumberOfLoans();
         uint256[] memory listOfLoans = new uint256[](loansCount);
         uint256 index = 0;
@@ -114,7 +116,7 @@ contract SnarkLoanExt  is Ownable, SnarkDefinitions {
             }
         }
         uint256[] memory resultList = new uint256[](index);
-        for (i = 0; i < index; i++) {
+        for (uint256 i = 0; i < index; i++) {
             resultList[i] = listOfLoans[i];
         }
 

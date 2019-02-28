@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity >=0.5.4;
 
 import "./openzeppelin/Ownable.sol";
 import "./openzeppelin/SupportsInterfaceWithLookup.sol";
@@ -19,7 +19,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     using SnarkBaseLib for address;
     using SnarkCommonLib for address;
 
-    address private _storage;
+    address payable private _storage;
 
     bytes4 private constant ERC721_RECEIVED = 0x150b7a02;
 
@@ -35,13 +35,13 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
 
     modifier correctToken(uint256 _tokenId) {
         require(
-            _tokenId > 0 && _tokenId <= _storage.getTotalNumberOfTokens(),
+            _tokenId > 0 && _tokenId <= SnarkBaseLib.getTotalNumberOfTokens(address(uint160(_storage))),
             "Token is not correct"
         );
         _;
     }
 
-    constructor(address storageAddress) public {
+    constructor(address payable storageAddress) public {
         // get an address of a storage
         _storage = storageAddress;
         // register the supported interfaces to conform to ERC721 via ERC165
@@ -56,7 +56,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
 
     /// @dev Function to destroy a contract in the blockchain
     function kill() external onlyOwner {
-        selfdestruct(owner);
+        selfdestruct(msg.sender);
     }
 
     /********************/
@@ -64,33 +64,33 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /********************/
     /// @dev Gets the token name
     /// @return string representing the token name
-    function name() public view returns (string) {
-        return _storage.getTokenName();
+    function name() public view returns (string memory) {
+        return SnarkBaseLib.getTokenName(address(uint160(_storage)));
     }
 
     /// @dev Gets the token symbol
     /// @return string representing the token symbol
-    function symbol() public view returns (string) {
-        return _storage.getTokenSymbol();
+    function symbol() public view returns (string memory) {
+        return SnarkBaseLib.getTokenSymbol(address(uint160(_storage)));
     }
 
     /// @dev Returns an URI for a given token ID
     /// Throws if the token ID does not exist. May return an empty string.
     /// @param _tokenId uint256 ID of the token to query
-    function tokenURI(uint256 _tokenId) public view correctToken(_tokenId) returns (string) {
-        return _storage.getDecorationUrl(_tokenId);
+    function tokenURI(uint256 _tokenId) public view correctToken(_tokenId) returns (string memory) {
+        return SnarkBaseLib.getDecorationUrl(address(uint160(_storage)), _tokenId);
     }
 
     /**********************/
     /** ERC721Enumerable **/
     /**********************/
     function totalSupply() public view returns (uint256) {
-        return _storage.getTotalNumberOfTokens();
+        return SnarkBaseLib.getTotalNumberOfTokens(address(uint160(_storage)));
     }
 
     function tokenOfOwnerByIndex(address _owner, uint256 _index) public view returns (uint256 _tokenId) {
         require(_index < balanceOf(_owner));
-        return _storage.getTokenIdOfOwner(_owner, _index);
+        return SnarkBaseLib.getTokenIdOfOwner(address(uint160(_storage)), _owner, _index);
     }
 
     function tokenByIndex(uint256 _index) public view returns (uint256) {
@@ -108,7 +108,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @return The number of NFTs owned by `_owner`, possibly zero
     function balanceOf(address _owner) public view returns (uint256) {
         require(_owner != address(0));
-        return _storage.getOwnedTokensCount(_owner);
+        return SnarkBaseLib.getOwnedTokensCount(address(uint160(_storage)), _owner);
     }
 
     /// @notice Find the owner of an NFT
@@ -117,7 +117,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     ///      about them do throw.
     /// @return The address of the owner of the NFT
     function ownerOf(uint256 _tokenId) public view correctToken(_tokenId) returns (address) {
-        address tokenOwner = _storage.getOwnerOfToken(_tokenId);
+        address tokenOwner = SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), _tokenId);
         require(tokenOwner != address(0));
         return tokenOwner;
     }
@@ -126,7 +126,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @param _tokenId uint256 ID of the token to query the existance of
     /// @return whether the token exists
     function exists(uint256 _tokenId) public view returns (bool _exists) {
-        return (_storage.getOwnerOfToken(_tokenId) != address(0));
+        return (SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), _tokenId) != address(0));
     }
 
     /// @notice Set or reaffirm the approved address for an NFT
@@ -140,7 +140,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         require(tokenOwner != _to);
         require(msg.sender == tokenOwner || isApprovedForAll(tokenOwner, msg.sender));
         if (getApproved(_tokenId) != address(0) || _to != address(0)) {
-            _storage.setApprovalsToToken(tokenOwner, _tokenId, _to);
+            SnarkBaseLib.setApprovalsToToken(address(uint160(_storage)), tokenOwner, _tokenId, _to);
             emit Approval(msg.sender, _to, _tokenId);
         }
     }
@@ -151,7 +151,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @return The approved address for this NFT, or the zero address if there is none
     function getApproved(uint256 _tokenId) public view correctToken(_tokenId) returns (address _operator) {
         address tokenOwner = ownerOf(_tokenId);
-        return _storage.getApprovalsToToken(tokenOwner, _tokenId);
+        return SnarkBaseLib.getApprovalsToToken(address(uint160(_storage)), tokenOwner, _tokenId);
     }
 
     /// @notice Enable or disable approval for a third party ("operator") to manage
@@ -161,7 +161,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @param _approved True if the operators is approved, false to revoke approval
     function setApprovalForAll(address _operator, bool _approved) public {
         require(_operator != msg.sender);
-        _storage.setApprovalsToOperator(msg.sender, _operator, _approved);
+        SnarkBaseLib.setApprovalsToOperator(address(uint160(_storage)), msg.sender, _operator, _approved);
         emit ApprovalForAll(msg.sender, _operator, _approved);
     }
 
@@ -170,7 +170,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @param _operator The address that acts on behalf of the owner
     /// @return True if `_operator` is an approved operator for `_owner`, false otherwise
     function isApprovedForAll(address _owner, address _operator) public view returns (bool) {
-        return _storage.getApprovalsToOperator(_owner, _operator);
+        return SnarkBaseLib.getApprovalsToOperator(address(uint160(_storage)), _owner, _operator);
     }
 
     /// @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
@@ -190,7 +190,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         payable 
     {
         require(
-            _storage.getSaleTypeToToken(_tokenId) == uint256(SaleType.None), 
+            SnarkBaseLib.getSaleTypeToToken(address(uint160(_storage)), _tokenId) == uint256(SaleType.None), 
             "Token has to be free from different obligations on Snark platform"
         );
         require(_from != address(0), "Sender's address can't be equal zero");
@@ -200,10 +200,10 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         _clearApproval(_from, _tokenId);
 
         if (msg.value > 0) {
-            _storage.transfer(msg.value);
-            _storage.buy(_tokenId, msg.value, _from, _to);
+            address(_storage).transfer(msg.value);
+            SnarkCommonLib.buy(address(uint160(_storage)), _tokenId, msg.value, _from, _to);
         } else {
-            _storage.transferToken(_tokenId, _from, _to);
+            SnarkCommonLib.transferToken(address(uint160(_storage)), _tokenId, _from, _to);
         }
         emit Transfer(_from, _to, _tokenId);
     }
@@ -234,7 +234,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         address _from, 
         address _to, 
         uint256 _tokenId, 
-        bytes _data
+        bytes memory _data
     ) 
         public 
         canTransfer(_tokenId)
@@ -254,8 +254,8 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @param _tokenId uint256 ID of the token to be transferred
     function _clearApproval(address _owner, uint256 _tokenId) internal {
         require(ownerOf(_tokenId) == _owner);
-        if (_storage.getApprovalsToToken(_owner, _tokenId) != address(0)) {
-            _storage.setApprovalsToToken(_owner, _tokenId, address(0));
+        if (SnarkBaseLib.getApprovalsToToken(address(uint160(_storage)), _owner, _tokenId) != address(0)) {
+            SnarkBaseLib.setApprovalsToToken(address(uint160(_storage)), _owner, _tokenId, address(0));
             emit Approval(_owner, address(0), _tokenId);
         }
     }
@@ -285,7 +285,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         address _from, 
         address _to, 
         uint256 _tokenId, 
-        bytes _data
+        bytes memory _data
     ) 
         internal 
         returns (bool) 

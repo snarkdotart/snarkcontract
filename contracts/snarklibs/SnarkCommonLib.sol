@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity >=0.5.4;
 
 import "../openzeppelin/SafeMath.sol";
 import "../SnarkStorage.sol";
@@ -13,23 +13,25 @@ library SnarkCommonLib {
     using SnarkBaseExtraLib for address;
 
     function transferToken(address _storageAddress, uint256 _tokenId, address _from, address _to) internal {
-        require(_tokenId > 0 && _tokenId <= _storageAddress.getTotalNumberOfTokens(), "Token Id is wrong");
         require(
-            _from == _storageAddress.getOwnerOfToken(_tokenId), 
+            _tokenId > 0 && _tokenId <= SnarkBaseLib.getTotalNumberOfTokens(address(uint160(_storageAddress))), 
+            "Token Id is wrong"
+        );
+        require(
+            _from == SnarkBaseLib.getOwnerOfToken(address(uint160(_storageAddress)), _tokenId), 
             "You try to transfer token from wrong owner address."
         );
-        uint256 _index = _storageAddress.getIndexOfOwnerToken(_from, _tokenId);
-        _storageAddress.deleteTokenFromOwner(_from, _index);
-        _storageAddress.setOwnerOfToken(_tokenId, _to);
-        _storageAddress.addTokenToOwner(_to, _tokenId);
+        uint256 _index = SnarkBaseLib.getIndexOfOwnerToken(address(uint160(_storageAddress)), _from, _tokenId);
+        SnarkBaseLib.deleteTokenFromOwner(address(uint160(_storageAddress)), _from, _index);
+        SnarkBaseLib.setOwnerOfToken(address(uint160(_storageAddress)), _tokenId, _to);
+        SnarkBaseLib.addTokenToOwner(address(uint160(_storageAddress)), _to, _tokenId);
     }
 
     /// @dev Snark platform takes it's profit share
     /// @param _profit A price of selling
     function takePlatformProfitShare(address _storageAddress, uint256 _profit) internal {
-        address snarkWallet = _storageAddress.getSnarkWalletAddress();
-        // _storageAddress.addPendingWithdrawals(snarkWallet, _profit);
-        SnarkStorage(_storageAddress).transferFunds(snarkWallet, _profit);
+        address snarkWallet = SnarkBaseLib.getSnarkWalletAddress(address(uint160(_storageAddress)));
+        SnarkStorage(address(uint160(_storageAddress))).transferFunds(address(uint160(snarkWallet)), _profit);
     }
 
     /// @dev Function to distribute the profits to participants
@@ -37,9 +39,11 @@ library SnarkCommonLib {
     /// @param _tokenId Token token ID
     /// @param _from Seller Address
     function incomeDistribution(address _storageAddress, uint256 _price, uint256 _tokenId, address _from) internal {
-        uint256 lastPrice = _storageAddress.getTokenLastPrice(_tokenId);
-        uint256 profitShareSchemaId = _storageAddress.getTokenProfitShareSchemeId(_tokenId);
-        uint256 profitShareFromSecondarySale = _storageAddress.getTokenProfitShareFromSecondarySale(_tokenId);
+        uint256 lastPrice = SnarkBaseLib.getTokenLastPrice(address(uint160(_storageAddress)), _tokenId);
+        uint256 profitShareSchemaId = SnarkBaseExtraLib.getTokenProfitShareSchemeId(
+            address(uint160(_storageAddress)), _tokenId);
+        uint256 profitShareFromSecondarySale = SnarkBaseLib.getTokenProfitShareFromSecondarySale(
+            address(uint160(_storageAddress)), _tokenId);
         uint256 profit = 0;
         if (_price > lastPrice) profit = _price.sub(lastPrice);
         if (profit >= 100) {
@@ -48,27 +52,26 @@ library SnarkCommonLib {
                 profit = profit.mul(profitShareFromSecondarySale).div(100);
                 countToSeller = countToSeller.sub(profit);
                 // _storageAddress.addPendingWithdrawals(_from, countToSeller);
-                SnarkStorage(_storageAddress).transferFunds(_from, countToSeller);
+                SnarkStorage(address(uint160(_storageAddress))).transferFunds(address(uint160(_from)), countToSeller);
             }
             uint256 residue = profit;
             uint256 participantsCount = 
-                _storageAddress.getNumberOfParticipantsForProfitShareScheme(profitShareSchemaId);
+                SnarkBaseExtraLib.getNumberOfParticipantsForProfitShareScheme(address(uint160(_storageAddress)), profitShareSchemaId);
             address currentParticipant;
             uint256 participantProfit;
             for (uint256 i = 0; i < participantsCount; i++) {
                 (currentParticipant, participantProfit) = 
-                    _storageAddress.getParticipantOfProfitShareScheme(profitShareSchemaId, i);
+                    SnarkBaseExtraLib.getParticipantOfProfitShareScheme(address(uint160(_storageAddress)), profitShareSchemaId, i);
                 uint256 payout = profit.mul(participantProfit).div(100);
                 // _storageAddress.addPendingWithdrawals(currentParticipant, payout);
-                SnarkStorage(_storageAddress).transferFunds(currentParticipant, payout);
+                SnarkStorage(address(uint160(_storageAddress))).transferFunds(address(uint160(currentParticipant)), payout);
                 residue = residue.sub(payout);
             }
             lastPrice = residue;
         } else {
             lastPrice = _price;
         }
-        // _storageAddress.addPendingWithdrawals(_from, lastPrice);
-        SnarkStorage(_storageAddress).transferFunds(_from, lastPrice);
+        SnarkStorage(address(uint160(_storageAddress))).transferFunds(address(uint160(_from)), lastPrice);
     }
 
     function calculatePlatformProfitShare(address _storageAddress, uint256 _income) 
@@ -76,7 +79,7 @@ library SnarkCommonLib {
         view 
         returns (uint256 profit, uint256 residue) 
     {
-        uint256 platformProfit = _storageAddress.getPlatformProfitShare();
+        uint256 platformProfit = SnarkBaseLib.getPlatformProfitShare(address(uint160(_storageAddress)));
         profit = _income.mul(platformProfit).div(100);
         residue = _income.sub(profit);
     }
@@ -101,13 +104,13 @@ library SnarkCommonLib {
         (profit, price) = calculatePlatformProfitShare(_storageAddress, _value);
         takePlatformProfitShare(_storageAddress, profit);
         incomeDistribution(_storageAddress, price, _tokenId, _from);
-        _storageAddress.setTokenLastPrice(_tokenId, _value);
-        _storageAddress.setSaleTypeToToken(_tokenId, 0);
+        SnarkBaseLib.setTokenLastPrice(address(uint160(_storageAddress)), _tokenId, _value);
+        SnarkBaseLib.setSaleTypeToToken(address(uint160(_storageAddress)), _tokenId, 0);
         transferToken(_storageAddress, _tokenId, _from, _to);
     }
 
     function echoTransfer(address _erc721Address, address _from, address _to, uint256 _tokenId) internal {
-        SnarkERC721(_erc721Address).echoTransfer(_from, _to, _tokenId);
+        SnarkERC721(address(uint160(_erc721Address))).echoTransfer(_from, _to, _tokenId);
     }
     
 }

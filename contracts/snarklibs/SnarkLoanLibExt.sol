@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity >=0.5.4;
 
 import "../openzeppelin/SafeMath.sol";
 import "../SnarkStorage.sol";
@@ -12,23 +12,24 @@ library SnarkLoanLibExt {
     /// @notice increase the number of loans in the system 
     function increaseNumberOfLoans(address storageAddress) public returns (uint256) {
         uint256 totalNumber = getTotalNumberOfLoans(storageAddress).add(1);
-        SnarkStorage(storageAddress).setUint(keccak256("totalNumberOfLoans"), totalNumber);
+        SnarkStorage(address(uint160(storageAddress))).setUint(keccak256("totalNumberOfLoans"), totalNumber);
         return totalNumber;
     }
 
     /// @notice returns total number of loans in the system 
     function getTotalNumberOfLoans(address storageAddress) public view returns (uint256) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256("totalNumberOfLoans"));
+        return SnarkStorage(address(uint160(storageAddress))).uintStorage(keccak256("totalNumberOfLoans"));
     }
 
     /// @notice returns loan owner 
     function getOwnerOfLoan(address storageAddress, uint256 loanId) public view returns (address) {
-        return SnarkStorage(storageAddress).addressStorage(keccak256(abi.encodePacked("loanOwner", loanId)));
+        return SnarkStorage(address(uint160(storageAddress)))
+            .addressStorage(keccak256(abi.encodePacked("loanOwner", loanId)));
     }
 
     /// @notice sets the loan owner
     function setOwnerOfLoan(address storageAddress, address loanOwner, uint256 loanId) public {
-        SnarkStorage(storageAddress).setAddress(
+        SnarkStorage(address(uint160(storageAddress))).setAddress(
             keccak256(abi.encodePacked("loanOwner", loanId)),
             loanOwner
         );
@@ -40,7 +41,7 @@ library SnarkLoanLibExt {
         view 
         returns (bool)
     {
-        return SnarkStorage(storageAddress).boolStorage(
+        return SnarkStorage(address(uint160(storageAddress))).boolStorage(
             keccak256(abi.encodePacked("isTokenIncludedInLoan", loanId, tokenId))
         );
     }
@@ -49,7 +50,7 @@ library SnarkLoanLibExt {
     function setTokenAsIncludedInLoan(address storageAddress, uint256 loanId, uint256 tokenId, bool isIncluded) 
         public 
     {
-        SnarkStorage(storageAddress).setBool(
+        SnarkStorage(address(uint160(storageAddress))).setBool(
             keccak256(abi.encodePacked("isTokenIncludedInLoan", loanId, tokenId)),
             isIncluded
         );
@@ -61,7 +62,7 @@ library SnarkLoanLibExt {
         view 
         returns (uint256) 
     {
-        return SnarkStorage(storageAddress).uintStorage(
+        return SnarkStorage(address(uint160(storageAddress))).uintStorage(
             keccak256(abi.encodePacked("typeOfTokenListForLoan", loanId, tokenId))
         );
     }
@@ -70,7 +71,7 @@ library SnarkLoanLibExt {
     function setTypeOfTokenListForLoan(address storageAddress, uint256 loanId, uint256 tokenId, uint256 listType) 
         public
     {
-        SnarkStorage(storageAddress).setUint(
+        SnarkStorage(address(uint160(storageAddress))).setUint(
             keccak256(abi.encodePacked("typeOfTokenListForLoan", loanId, tokenId)),
             listType
         );
@@ -82,7 +83,7 @@ library SnarkLoanLibExt {
         view 
         returns (uint256) 
     {
-        return SnarkStorage(storageAddress).uintStorage(
+        return SnarkStorage(address(uint160(storageAddress))).uintStorage(
             keccak256(abi.encodePacked("numberOfTokensInListByType", loanId, listType))
         );
     }
@@ -93,7 +94,7 @@ library SnarkLoanLibExt {
         returns (uint256) 
     {
         uint256 numberOfTokens = getNumberOfTokensInListByType(storageAddress, loanId, listType).add(1);
-        SnarkStorage(storageAddress).setUint(
+        SnarkStorage(address(uint160(storageAddress))).setUint(
             keccak256(abi.encodePacked("numberOfTokensInListByType", loanId, listType)), 
             numberOfTokens
         );
@@ -106,7 +107,7 @@ library SnarkLoanLibExt {
         returns (uint256) 
     {
         uint256 numberOfTokens = getNumberOfTokensInListByType(storageAddress, loanId, listType).sub(1);
-        SnarkStorage(storageAddress).setUint(
+        SnarkStorage(address(uint160(storageAddress))).setUint(
             keccak256(abi.encodePacked("numberOfTokensInListByType", loanId, listType)), 
             numberOfTokens
         );
@@ -119,7 +120,7 @@ library SnarkLoanLibExt {
         view
         returns (uint256)
     {
-        return SnarkStorage(storageAddress).uintStorage(
+        return SnarkStorage(address(uint160(storageAddress))).uintStorage(
             keccak256(abi.encodePacked("tokensListOfLoanByType", loanId, listType, index))
         );
     }
@@ -134,7 +135,7 @@ library SnarkLoanLibExt {
     ) 
         public
     {
-        SnarkStorage(storageAddress).setUint(
+        SnarkStorage(address(uint160(storageAddress))).setUint(
             keccak256(abi.encodePacked("tokensListOfLoanByType", loanId, listType, index)), 
             tokenId
         );
@@ -145,7 +146,7 @@ library SnarkLoanLibExt {
     function getTokensListOfLoanByType(address storageAddress, uint256 loanId, uint256 listType) 
         public 
         view 
-        returns (uint256[]) 
+        returns (uint256[] memory) 
     {
         uint256 amount = getNumberOfTokensInListByType(storageAddress, loanId, listType);
         uint256[] memory list = new uint256[](amount);
@@ -165,7 +166,7 @@ library SnarkLoanLibExt {
         view 
         returns (uint256) 
     {
-        return SnarkStorage(storageAddress).uintStorage(
+        return SnarkStorage(address(uint160(storageAddress))).uintStorage(
             keccak256(abi.encodePacked("tokenIndexInsideListOfLoan", loanId, tokenId))
         );
     }
@@ -179,7 +180,7 @@ library SnarkLoanLibExt {
     )
         public 
     {
-        SnarkStorage(storageAddress).setUint(
+        SnarkStorage(address(uint160(storageAddress))).setUint(
             keccak256(abi.encodePacked("tokenIndexInsideListOfLoan", loanId, tokenId)),
             index
         );
@@ -187,37 +188,43 @@ library SnarkLoanLibExt {
 
     /// @notice return date of the loan start 
     function getStartDateOfLoan(address storageAddress, uint256 loanId) public view returns (uint256) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToStartDate", loanId)));
+        return SnarkStorage(address(uint160(storageAddress)))
+            .uintStorage(keccak256(abi.encodePacked("loanToStartDate", loanId)));
     }
 
     /// @notice set date of the loan start 
     function setStartDateOfLoan(address storageAddress, uint256 loanId, uint256 startDate) public {
-        SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("loanToStartDate", loanId)), startDate);
+        SnarkStorage(address(uint160(storageAddress)))
+            .setUint(keccak256(abi.encodePacked("loanToStartDate", loanId)), startDate);
     }
 
     /// @notice return loan duration 
     function getDurationOfLoan(address storageAddress, uint256 loanId) public view returns (uint256) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToDuration", loanId)));
+        return SnarkStorage(address(uint160(storageAddress)))
+            .uintStorage(keccak256(abi.encodePacked("loanToDuration", loanId)));
     }
 
     /// @notice set loan duration 
     function setDurationOfLoan(address storageAddress, uint256 loanId, uint256 duration) public {
-        SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("loanToDuration", loanId)), duration);
+        SnarkStorage(address(uint160(storageAddress)))
+            .setUint(keccak256(abi.encodePacked("loanToDuration", loanId)), duration);
     }
 
     /// @notice return loan status
     function getLoanSaleStatus(address storageAddress, uint256 loanId) public view returns (uint256) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256(abi.encodePacked("loanToSaleStatus", loanId)));
+        return SnarkStorage(address(uint160(storageAddress)))
+            .uintStorage(keccak256(abi.encodePacked("loanToSaleStatus", loanId)));
     }
 
     /// @notice set loan status
     function setLoanSaleStatus(address storageAddress, uint256 loanId, uint256 saleStatus) public {
-        SnarkStorage(storageAddress).setUint(keccak256(abi.encodePacked("loanToSaleStatus", loanId)), saleStatus);
+        SnarkStorage(address(uint160(storageAddress)))
+            .setUint(keccak256(abi.encodePacked("loanToSaleStatus", loanId)), saleStatus);
     }
 
     /// @notice checks in the token calendar if it is busy on a specific date 
     function isTokenBusyOnDay(address storageAddress, uint256 tokenId, uint256 day) public view returns (bool) {
-        return SnarkStorage(storageAddress).boolStorage(
+        return SnarkStorage(address(uint160(storageAddress))).boolStorage(
             keccak256(abi.encodePacked("tokenCalendar", tokenId, day))
         );
     }
@@ -229,7 +236,7 @@ library SnarkLoanLibExt {
         returns (uint256) 
     {
         uint256 day = date.div(86400000);
-        SnarkStorage(storageAddress).uintStorage(
+        SnarkStorage(address(uint160(storageAddress))).uintStorage(
             keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, day))
         );
     }
@@ -237,11 +244,11 @@ library SnarkLoanLibExt {
     /// @notice marks that the token is busy on a specific date and by which loan 
     function makeTokenBusyOnDay(address storageAddress, uint256 loanId, uint256 tokenId, uint256 date) public {
         uint256 day = date.div(86400000);
-        SnarkStorage(storageAddress).setBool(
+        SnarkStorage(address(uint160(storageAddress))).setBool(
             keccak256(abi.encodePacked("tokenCalendar", tokenId, day)),
             true
         );
-        SnarkStorage(storageAddress).setUint(
+        SnarkStorage(address(uint160(storageAddress))).setUint(
             keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, day)),
             loanId
         );
@@ -249,11 +256,11 @@ library SnarkLoanLibExt {
 
     /// @notice frees up in the calendar a specific token on a specific date 
     function makeTokenFreeOnDay(address storageAddress, uint256 tokenId, uint256 day) public {
-        SnarkStorage(storageAddress).setBool(
+        SnarkStorage(address(uint160(storageAddress))).setBool(
             keccak256(abi.encodePacked("tokenCalendar", tokenId, day)),
             false
         );
-        SnarkStorage(storageAddress).setUint(
+        SnarkStorage(address(uint160(storageAddress))).setUint(
             keccak256(abi.encodePacked("tokenCalendarDayToEventId", tokenId, day)),
             0
         );
@@ -261,12 +268,12 @@ library SnarkLoanLibExt {
 
     /// @notice returns maximum duration for which a token can be loaned  
     function getDefaultLoanDuration(address storageAddress) public view returns (uint256) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256("defaultLoanDuration"));
+        return SnarkStorage(address(uint160(storageAddress))).uintStorage(keccak256("defaultLoanDuration"));
     }
 
     /// @notice set maximum duration for which a token can be loaned  
     function setDefaultLoanDuration(address storageAddress, uint256 duration) public {
-        SnarkStorage(storageAddress).setUint(keccak256("defaultLoanDuration"), duration);
+        SnarkStorage(address(uint160(storageAddress))).setUint(keccak256("defaultLoanDuration"), duration);
     }
 
     function isExistLoanRequestForTokenOwner(
@@ -279,7 +286,7 @@ library SnarkLoanLibExt {
         view
         returns (bool)
     {
-        return SnarkStorage(storageAddress).boolStorage(
+        return SnarkStorage(address(uint160(storageAddress))).boolStorage(
             keccak256(abi.encodePacked("SignOfExistingLoanRequestForTokenOwner", tokenOwner, tokenId, loanId))
         );
     }
@@ -293,7 +300,7 @@ library SnarkLoanLibExt {
     )
         public
     {
-        SnarkStorage(storageAddress).setUint(
+        SnarkStorage(address(uint160(storageAddress))).setUint(
             keccak256(abi.encodePacked("LoanRequestsForToken", tokenOwner, index)),
             tokenId
         );
@@ -308,7 +315,7 @@ library SnarkLoanLibExt {
     )
         public
     {
-        SnarkStorage(storageAddress).setUint(
+        SnarkStorage(address(uint160(storageAddress))).setUint(
             keccak256(abi.encodePacked("LoanRequestsForLoan", tokenOwner, index)),
             loanId
         );
@@ -324,7 +331,7 @@ library SnarkLoanLibExt {
     ) 
         public 
     {
-        SnarkStorage(storageAddress).setUint(
+        SnarkStorage(address(uint160(storageAddress))).setUint(
             keccak256(abi.encodePacked("IndexOfLoanRequestForTokenOwner", tokenOwner, tokenId, loanId)),
             index
         );

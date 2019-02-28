@@ -1,13 +1,5 @@
 require('dotenv').config();
-
-var Web3 = require("web3");
-var web3 = new Web3('http://localhost:8545');
-
 var HDWalletProvider = require("truffle-hdwallet-provider");
-
-var mainNetProvider = new HDWalletProvider(process.env.SECRET_KEY, "https://mainnet.infura.io/v3/" + process.env.PROJECT_ID);
-var ropstenProvider = new HDWalletProvider(process.env.SECRET_KEY, "https://ropsten.infura.io/v3/" + process.env.PROJECT_ID);
-var rinkebyProvider = new HDWalletProvider(process.env.SECRET_KEY, "https://rinkeby.infura.io/v3/" + process.env.PROJECT_ID);
 
 module.exports = {
     networks: {
@@ -18,42 +10,33 @@ module.exports = {
             gasPrice: 1
         },
         main: {
-            provider: mainNetProvider,
+            provider: new HDWalletProvider(process.env.SECRET_KEY, "https://mainnet.infura.io/v3/" + process.env.PROJECT_ID),
             gas: 7800000,
-            gasPrice: web3.utils.toWei("8", "gwei"),
+            gasPrice: 8000000000, // 8 Gwei
             network_id: 1,
             confirmations: 2,
             skipDryRun: true,
-            // host: "18.220.154.113",
-            // port: 8545,
-            // from: '0xc5a3d99e05c39a18d6342b5f27c08c64a486df00'
         },
         ropsten: {
-            provider: ropstenProvider,
+            provider: new HDWalletProvider(process.env.SECRET_KEY, "https://ropsten.infura.io/v3/" + process.env.PROJECT_ID),
             gas: 7800000,
-            gasPrice: web3.utils.toWei("8", "gwei"),
+            gasPrice: 8000000000, // 8 Gwei
             network_id: 3,
             confirmations: 2,
             skipDryRun: true,
-            // host: "13.58.178.26",
-            // port: 8545,
-            // from: '0xc5a3d99e05c39a18d6342b5f27c08c64a486df00'
         },
         rinkeby: {
-            provider: rinkebyProvider,
+            provider: new HDWalletProvider(process.env.SECRET_KEY, "https://rinkeby.infura.io/v3/" + process.env.PROJECT_ID),
             gas: 7800000,
-            gasPrice: web3.utils.toWei("8", "gwei"),
+            gasPrice: 8000000000, // 8 Gwei
             network_id: 4,
             confirmations: 2,
             skipDryRun: true,
-            // host: "127.0.0.1",
-            // port: 8545,
-            // from: '0xc5a3d99e05c39a18d6342b5f27c08c64a486df00'
         }        
     },
     compilers: {
         solc: {
-            version: "0.4.25",
+            version: "0.5.4",
             settings: {
                 optimizer: {
                     enabled: true,
