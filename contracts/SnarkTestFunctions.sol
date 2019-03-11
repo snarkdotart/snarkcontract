@@ -1,4 +1,4 @@
-pragma solidity >=0.5.4;
+pragma solidity >=0.5.0;
 
 import "./snarklibs/SnarkLoanLib.sol";
 import "./snarklibs/SnarkLoanLibExt.sol";
@@ -18,28 +18,29 @@ contract SnarkTestFunctions {
     }
 
     function getCountLoanRequestsForTokenOwner(address _tokenOwner) public view  returns (uint256) {
-        return _storage.getCountLoanRequestsForTokenOwner(_tokenOwner);
+        return SnarkLoanLib.getCountLoanRequestsForTokenOwner(address(uint160(_storage)), _tokenOwner);
     }
 
     function getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(address tokenOwner, uint tokenId, uint loanId) 
         public view returns (uint256) 
     {
-        return _storage.getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(tokenOwner, tokenId, loanId);
+        return SnarkLoanLib.getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(
+            address(uint160(_storage)), tokenOwner, tokenId, loanId);
     }
 
     function getListOfNotFinishedLoansForToken(uint256 tokenId) public view returns (uint256[] memory) 
     {
-        return _storage.getListOfNotFinishedLoansForToken(tokenId);
+        return SnarkLoanLib.getListOfNotFinishedLoansForToken(address(uint160(_storage)), tokenId);
     }
 
     function getNumberOfLoansInTokensLoanList(uint256 tokenId) public view returns (uint256) 
     {
-        return _storage.getNumberOfLoansInTokensLoanList(tokenId);
+        return SnarkLoanLib.getNumberOfLoansInTokensLoanList(address(uint160(_storage)), tokenId);
     }
 
     function getSaleTypeToToken(uint256 tokenId) public view returns (uint256)
     {
-        return _storage.getSaleTypeToToken(tokenId);
+        return SnarkBaseLib.getSaleTypeToToken(address(uint160(_storage)), tokenId);
     }
 
     function getTypeOfTokenListForLoan(uint256 loanId, uint256 tokenId) 
@@ -47,7 +48,7 @@ contract SnarkTestFunctions {
         view 
         returns (uint256) 
     {
-        return _storage.getTypeOfTokenListForLoan(loanId, tokenId);
+        return SnarkLoanLibExt.getTypeOfTokenListForLoan(address(uint160(_storage)), loanId, tokenId);
     }
 
     function getTokenIndexInListOfLoanByType(uint256 loanId, uint256 tokenId) 
@@ -55,7 +56,7 @@ contract SnarkTestFunctions {
         view 
         returns (uint256) 
     {
-        return _storage.getTokenIndexInListOfLoanByType(loanId, tokenId);
+        return SnarkLoanLibExt.getTokenIndexInListOfLoanByType(address(uint160(_storage)), loanId, tokenId);
     }
 
     function getTokenForLoanListByTypeAndIndex(uint256 loanId, uint256 listType, uint256 index) 
@@ -63,7 +64,7 @@ contract SnarkTestFunctions {
         view
         returns (uint256)
     {
-        return _storage.getTokenForLoanListByTypeAndIndex(loanId, listType, index);
+        return SnarkLoanLibExt.getTokenForLoanListByTypeAndIndex(address(uint160(_storage)), loanId, listType, index);
     }
 
     function getNumberOfTokensInListByType(uint256 loanId, uint256 listType) 
@@ -71,53 +72,53 @@ contract SnarkTestFunctions {
         view 
         returns (uint256) 
     {
-        return _storage.getNumberOfTokensInListByType(loanId, listType);
+        return SnarkLoanLibExt.getNumberOfTokensInListByType(address(uint160(_storage)), loanId, listType);
     }
 
     ///////////////////////////
     function addTokenToListOfLoan(uint256 loanId, uint256 tokenId, uint256 listType) public {
-        _storage.addTokenToListOfLoan(loanId, tokenId, listType);
+        SnarkLoanLib.addTokenToListOfLoan(address(uint160(_storage)), loanId, tokenId, listType);
     }
 
     function removeTokenFromListOfLoan(uint256 loanId, uint256 tokenId) public {
-        _storage.removeTokenFromListOfLoan(loanId, tokenId);
+        SnarkLoanLib.removeTokenFromListOfLoan(address(uint160(_storage)), loanId, tokenId);
     }
 
     function makeTokenFreeForPeriod(uint256 tokenId, uint256 startDate, uint256 duration) public {
-        _storage.makeTokenFreeForPeriod(tokenId, startDate, duration);
+        SnarkLoanLib.makeTokenFreeForPeriod(address(uint160(_storage)), tokenId, startDate, duration);
     }
 
     ///////////////////////////
     function addLoanRequestToTokenOwner(address tokenOwner, uint256 tokenId, uint256 loanId) public {
-        _storage.addLoanRequestToTokenOwner(tokenOwner, tokenId, loanId);
+        SnarkLoanLib.addLoanRequestToTokenOwner(address(uint160(_storage)), tokenOwner, tokenId, loanId);
     }
 
     function deleteLoanRequestFromTokenOwner(uint256 loanId, uint256 tokenId) public {
-        _storage.deleteLoanRequestFromTokenOwner(loanId, tokenId);
+        SnarkLoanLib.deleteLoanRequestFromTokenOwner(address(uint160(_storage)), loanId, tokenId);
     }
 
     ///////////////////////////
     function addLoanToLoanListOfLoanOwner(address loanOwner, uint256 loanId) public {
-        _storage.addLoanToLoanListOfLoanOwner(loanOwner, loanId);
+        SnarkLoanLib.addLoanToLoanListOfLoanOwner(address(uint160(_storage)), loanOwner, loanId);
     }
 
     function deleteLoanFromLoanListOfLoanOwner(address loanOwner, uint256 loanId) public {
-        _storage.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId);
+        SnarkLoanLib.deleteLoanFromLoanListOfLoanOwner(address(uint160(_storage)), loanOwner, loanId);
     }
 
     function isExistLoanInLoanListOfLoanOwner(address loanOwner, uint256 loanId) public view returns (bool) {
-        return _storage.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId);
+        return SnarkLoanLib.isExistLoanInLoanListOfLoanOwner(address(uint160(_storage)), loanOwner, loanId);
     }
 
     function getLoanFromLoanListOfLoanOwnerByIndex(address loanOwner, uint256 index) public view returns (uint256) {
-        return _storage.getLoanFromLoanListOfLoanOwnerByIndex(loanOwner, index);
+        return SnarkLoanLib.getLoanFromLoanListOfLoanOwnerByIndex(address(uint160(_storage)), loanOwner, index);
     }
 
     function getCountOfLoansForLoanOwner(address loanOwner) public view returns (uint256) {
-        return _storage.getCountOfLoansForLoanOwner(loanOwner);
+        return SnarkLoanLib.getCountOfLoansForLoanOwner(address(uint160(_storage)), loanOwner);
     }
 
     function getLoansListOfLoanOwner(address loanOwner) public view returns (uint256[] memory) {
-        return _storage.getLoansListOfLoanOwner(loanOwner);
+        return SnarkLoanLib.getLoansListOfLoanOwner(address(uint160(_storage)), loanOwner);
     }
 }

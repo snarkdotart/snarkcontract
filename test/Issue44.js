@@ -1,4 +1,5 @@
-var SnarkOfferBid = artifacts.require('SnarkOfferBid');
+var SnarkOffer = artifacts.require('SnarkOffer');
+var SnarkBid = artifacts.require('SnarkBid');
 var SnarkBase = artifacts.require('SnarkBase');
 var SnarkERC721 = artifacts.require('SnarkERC721');
 var SnarkLoan = artifacts.require('SnarkLoan');
@@ -18,7 +19,8 @@ expect = chai.expect;
 contract('SnarkBase', async accounts => {
   let instance_snarkbase = null;
   before(async () => {
-    instance_offer = await SnarkOfferBid.deployed();
+    instance_offer = await SnarkOffer.deployed();
+    instance_bid = await SnarkBid.deployed();
     instance_snarkbase = await SnarkBase.deployed();
     instance_erc = await SnarkERC721.deployed();
     instance_loan = await SnarkLoan.deployed();
@@ -50,7 +52,7 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    instance_offer.BidAdded({ fromBlock: 'latest' }, function(error, result) {
+    instance_bid.BidAdded({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
         var bidder = result.args._bidder;
         var bidId = result.args._bidId;

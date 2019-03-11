@@ -6,24 +6,24 @@ var SnarkOfferBidLib    = artifacts.require("snarklibs/SnarkOfferBidLib");
 var SnarkLoanLib        = artifacts.require("snarklibs/SnarkLoanLib");
 
 var SnarkStorage        = artifacts.require("SnarkStorage");
-var SnarkOfferBid       = artifacts.require("SnarkOfferBid");
+var SnarkBid            = artifacts.require("SnarkBid");
 var SnarkERC721         = artifacts.require("SnarkERC721");
 
 module.exports = function(deployer) {
     deployer.then(async () => {
-        await deployer.link(SafeMath, SnarkOfferBid);
-        await deployer.link(SnarkCommonLib, SnarkOfferBid);
-        await deployer.link(SnarkBaseLib, SnarkOfferBid);
-        await deployer.link(SnarkBaseExtraLib, SnarkOfferBid);
-        await deployer.link(SnarkOfferBidLib, SnarkOfferBid);
-        await deployer.link(SnarkLoanLib, SnarkOfferBid);
+        await deployer.link(SafeMath, SnarkBid);
+        await deployer.link(SnarkCommonLib, SnarkBid);
+        await deployer.link(SnarkBaseLib, SnarkBid);
+        await deployer.link(SnarkBaseExtraLib, SnarkBid);
+        await deployer.link(SnarkOfferBidLib, SnarkBid);
+        await deployer.link(SnarkLoanLib, SnarkBid);
 
         const storage_instance = await SnarkStorage.deployed();
         const erc721_instance = await SnarkERC721.deployed();
-        await deployer.deploy(SnarkOfferBid, storage_instance.address, erc721_instance.address);
+        await deployer.deploy(SnarkBid, storage_instance.address, erc721_instance.address);
 
-        const snarkofferbid_instance = await SnarkOfferBid.deployed();
-        await storage_instance.allowAccess(snarkofferbid_instance.address);
+        const snarkbid_instance = await SnarkBid.deployed();
+        await storage_instance.allowAccess(snarkbid_instance.address);
     });
 
 };

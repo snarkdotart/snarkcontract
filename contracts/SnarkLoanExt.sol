@@ -1,4 +1,4 @@
-pragma solidity >=0.5.4;
+pragma solidity >=0.5.0;
 
 import "./openzeppelin/Ownable.sol";
 import "./SnarkDefinitions.sol";
@@ -27,69 +27,70 @@ contract SnarkLoanExt  is Ownable, SnarkDefinitions {
 
     /// @dev Function to destroy the contract in the blockchain
     function kill() external onlyOwner {
-        selfdestruct(owner);
+        selfdestruct(msg.sender);
     }
 
     /// @notice store the gas cost of calling function StopLoan
     function setCostOfStopLoanOperationForLoan(uint256 loanId, uint256 costOfStopOperation) public onlyOwner {
-        _storage.setCostOfStopLoanOperationForLoan(loanId, costOfStopOperation);
+        SnarkLoanLib.setCostOfStopLoanOperationForLoan(address(uint160(_storage)), loanId, costOfStopOperation);
     }
 
     /// @notice return a total number of loans
     function getTotalNumberOfLoans() public view returns (uint256) {
-        return _storage.getTotalNumberOfLoans();
+        return SnarkLoanLibExt.getTotalNumberOfLoans(address(uint160(_storage)));
     }
 
     function getActualTokenOwnerForLoan(uint256 loanId, uint256 tokenId) public view returns (address) {
-        return _storage.getActualTokenOwnerForLoan(loanId, tokenId);
+        return SnarkLoanLib.getActualTokenOwnerForLoan(address(uint160(_storage)), loanId, tokenId);
     }
 
     function getListOfNotFinishedLoansForToken(uint256 tokenId) public view returns (uint256[] memory) {
-        return _storage.getListOfNotFinishedLoansForToken(tokenId);
+        return SnarkLoanLib.getListOfNotFinishedLoansForToken(address(uint160(_storage)), tokenId);
     }
 
     function getListOfNotStartedLoansForToken(uint256 tokenId) public view returns (uint256[] memory) {
-        return _storage.getListOfNotStartedLoansForToken(tokenId);
+        return SnarkLoanLib.getListOfNotStartedLoansForToken(address(uint160(_storage)), tokenId);
     }
 
     /// @notice return list of loan request by token owner 
     function getLoanRequestsListOfTokenOwner(address tokenOwner) 
         public view returns (uint256[] memory, uint256[] memory) 
     {
-        return _storage.getLoanRequestsListForTokenOwner(tokenOwner);
+        return SnarkLoanLib.getLoanRequestsListForTokenOwner(address(uint160(_storage)), tokenOwner);
     }
 
     /// @notice return list of loan borrowers 
     function getLoansListOfLoanOwner(address loanOwner) public view returns (uint256[] memory) {
-        return _storage.getLoansListOfLoanOwner(loanOwner);
+        return SnarkLoanLib.getLoansListOfLoanOwner(address(uint160(_storage)), loanOwner);
     }
 
     function attachTokensToLoan(uint256 loanId, uint256[] memory tokensIds) public onlyOwner {
         require(
-            _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Active) &&
-            _storage.getLoanSaleStatus(loanId) != uint256(SaleStatus.Finished),
+            SnarkLoanLibExt.getLoanSaleStatus(address(uint160(_storage)), loanId) != uint256(SaleStatus.Active) &&
+            SnarkLoanLibExt.getLoanSaleStatus(address(uint160(_storage)), loanId) != uint256(SaleStatus.Finished),
             "Loan can't be in 'Active' of 'Finished' status"
         );
-        uint256 startDate = _storage.getStartDateOfLoan(loanId);
-        uint256 duration = _storage.getDurationOfLoan(loanId);
+        uint256 startDate = SnarkLoanLibExt.getStartDateOfLoan(address(uint160(_storage)), loanId);
+        uint256 duration = SnarkLoanLibExt.getDurationOfLoan(address(uint160(_storage)), loanId);
         uint256[3] memory tokenIdStartDateDuration = [tokensIds[0], startDate, duration];
         address tokenOwner;
         bool isAgree = false;
         for (uint256 i = 0; i < tokensIds.length; i++) {
             tokenIdStartDateDuration[0] = tokensIds[i];
-            if (_storage.getSaleTypeToToken(tokensIds[i]) != uint256(SaleType.Offer) 
-                && !_storage.isTokenBusyForPeriod(tokenIdStartDateDuration)
+            if (SnarkBaseLib.getSaleTypeToToken(address(uint160(_storage)), tokensIds[i]) != uint256(SaleType.Offer) 
+                && !SnarkLoanLib.isTokenBusyForPeriod(address(uint160(_storage)), tokenIdStartDateDuration)
             ) {
-                tokenOwner = _storage.getOwnerOfToken(tokensIds[i]);
-                _storage.setActualTokenOwnerForLoan(loanId, tokensIds[i], tokenOwner);
+                tokenOwner = SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokensIds[i]);
+                SnarkLoanLib.setActualTokenOwnerForLoan(address(uint160(_storage)), loanId, tokensIds[i], tokenOwner);
                 isAgree = (msg.sender == owner) ? 
-                    _storage.isTokenAcceptOfLoanRequestFromSnark(tokensIds[i]) :
-                    _storage.isTokenAcceptOfLoanRequestFromOthers(tokensIds[i]);
+                    SnarkBaseLib.isTokenAcceptOfLoanRequestFromSnark(address(uint160(_storage)), tokensIds[i]) :
+                    SnarkBaseLib.isTokenAcceptOfLoanRequestFromOthers(address(uint160(_storage)), tokensIds[i]);
                 if (isAgree) {
-                    _storage.makeTokenBusyForPeriod(loanId, tokenIdStartDateDuration);
-                    _storage.addTokenToListOfLoan(loanId, tokensIds[i], 1);
+                    SnarkLoanLib.makeTokenBusyForPeriod(address(uint160(_storage)), loanId, tokenIdStartDateDuration);
+                    SnarkLoanLib.addTokenToListOfLoan(address(uint160(_storage)), loanId, tokensIds[i], 1);
                 } else {
-                    _storage.addLoanRequestToTokenOwner(tokenOwner, tokensIds[i], loanId);
+                    SnarkLoanLib.addLoanRequestToTokenOwner(
+                        address(uint160(_storage)), tokenOwner, tokensIds[i], loanId);
                 }
                 emit TokenAttachedToLoan(tokensIds[i], loanId);
             } else { emit TokenDeclinedInLoanCreation(tokensIds[i]); }
@@ -98,7 +99,7 @@ contract SnarkLoanExt  is Ownable, SnarkDefinitions {
 
     function isTokenBusyForPeriod(uint256 tokenId, uint256 startDate, uint256 duration) public view returns (bool) {
         uint256[3] memory data = [tokenId, startDate, duration];
-        return _storage.isTokenBusyForPeriod(data);
+        return SnarkLoanLib.isTokenBusyForPeriod(address(uint160(_storage)), data);
     }
 
     function getListOfLoansWithFreeSlots() public view returns (uint256[] memory) {
@@ -106,9 +107,12 @@ contract SnarkLoanExt  is Ownable, SnarkDefinitions {
         uint256[] memory listOfLoans = new uint256[](loansCount);
         uint256 index = 0;
         for (uint256 i = 1; i < loansCount + 1; i++) {
-            if (_storage.getLoanSaleStatus(i) == 0 || _storage.getLoanSaleStatus(i) == 1) {
-                uint256[] memory notApprovedTokensList = _storage.getTokensListOfLoanByType(i, 0);
-                uint256[] memory approvedTokensList = _storage.getTokensListOfLoanByType(i, 1);
+            if (SnarkLoanLibExt.getLoanSaleStatus(address(uint160(_storage)), i) == 0 || 
+                SnarkLoanLibExt.getLoanSaleStatus(address(uint160(_storage)), i) == 1) {
+                uint256[] memory notApprovedTokensList = 
+                    SnarkLoanLibExt.getTokensListOfLoanByType(address(uint160(_storage)), i, 0);
+                uint256[] memory approvedTokensList = 
+                    SnarkLoanLibExt.getTokensListOfLoanByType(address(uint160(_storage)), i, 1);
                 if (notApprovedTokensList.length + approvedTokensList.length < 10) {
                     listOfLoans[index] = i;
                     index++;

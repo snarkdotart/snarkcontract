@@ -1,6 +1,6 @@
 /// @title Base contract for Snark. Holds all common structs, events and base variables.
 /// @dev See the Snark contract documentation to understand how the contract is structured.
-pragma solidity >=0.5.4;
+pragma solidity >=0.5.0;
 
 import "./openzeppelin/Ownable.sol";
 import "./openzeppelin/SafeMath.sol";
@@ -301,7 +301,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             // emit token event
             emit TokenCreated(artistAddress, hashOfToken, tokenId);
             // emit transfer token event
-            _erc721.echoTransfer(address(0), artistAddress, tokenId);
+            SnarkERC721(address(uint160(_erc721))).echoTransfer(address(0), artistAddress, tokenId);
         }
     }
 
