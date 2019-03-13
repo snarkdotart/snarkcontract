@@ -37,9 +37,9 @@ contract SnarkStorage is Ownable, ISnarkStorage {
         delete boolStorage[keccak256(abi.encodePacked("accessAllowed", _allowedAddress))];
     }
     
-    function transferFunds(address payable _to, uint256 _value) external onlyPlatform {
+    function transferFunds(address _to, uint256 _value) external onlyPlatform {
         require(address(this).balance >= _value, "Not enough ETH to transfer funds to the user");
-        _to.transfer(_value);
+        address(uint160(_to)).transfer(_value);
     }
 
     function setBool(bytes32 _key, bool _val) external onlyPlatform { boolStorage[_key] = _val; }

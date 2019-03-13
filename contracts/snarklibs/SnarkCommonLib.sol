@@ -56,15 +56,18 @@ library SnarkCommonLib {
             }
             uint256 residue = profit;
             uint256 participantsCount = 
-                SnarkBaseExtraLib.getNumberOfParticipantsForProfitShareScheme(address(uint160(_storageAddress)), profitShareSchemaId);
+                SnarkBaseExtraLib.getNumberOfParticipantsForProfitShareScheme(
+                    address(uint160(_storageAddress)), profitShareSchemaId);
             address currentParticipant;
             uint256 participantProfit;
             for (uint256 i = 0; i < participantsCount; i++) {
                 (currentParticipant, participantProfit) = 
-                    SnarkBaseExtraLib.getParticipantOfProfitShareScheme(address(uint160(_storageAddress)), profitShareSchemaId, i);
+                    SnarkBaseExtraLib.getParticipantOfProfitShareScheme(
+                        address(uint160(_storageAddress)), profitShareSchemaId, i);
                 uint256 payout = profit.mul(participantProfit).div(100);
                 // _storageAddress.addPendingWithdrawals(currentParticipant, payout);
-                SnarkStorage(address(uint160(_storageAddress))).transferFunds(address(uint160(currentParticipant)), payout);
+                SnarkStorage(address(uint160(_storageAddress))).transferFunds(
+                    address(uint160(currentParticipant)), payout);
                 residue = residue.sub(payout);
             }
             lastPrice = residue;

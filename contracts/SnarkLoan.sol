@@ -125,7 +125,6 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                     SnarkBaseLib.isTokenAcceptOfLoanRequestFromSnark(address(uint160(_storage)), tokensListFinal[i]) :
                     SnarkBaseLib.isTokenAcceptOfLoanRequestFromOthers(address(uint160(_storage)), tokensListFinal[i]);
                 if (isAgree) {
-                    // storing the reserved period in the calendar and the loan that created the reserve 
                     // FIXME: сделать расчеты не по дням, а по минутам. 
                     tokenIdStartDateDuration[0] = tokensIds[i];
                     SnarkLoanLib.makeTokenBusyForPeriod(address(uint160(_storage)), loanId, tokenIdStartDateDuration);
