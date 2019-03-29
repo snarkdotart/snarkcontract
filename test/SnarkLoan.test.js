@@ -363,44 +363,44 @@ contract('SnarkLoan', async (accounts) => {
 
     //     let loanListOfBorrower = await instance_loanext.getLoansListOfLoanOwner(loanDetail.loanOwner);
     //     assert.equal(loanListOfBorrower.length, 1, 'length of loans list is not correct before stopLoan');
-    console.log(`List of Loans before stoping: ${await snarkloanext.getLoansListOfLoanOwner(borrower)}`);
-    const loansOrderToRemove = [1, 15, 2, 5, 3, 7, 12, 4, 10, 14, 6, 9, 13, 8, 11];
-    for (let i = 0; i < loansOrderToRemove.length; i++) {
-        let loanId = loansOrderToRemove[i];
-        let loanDetail = await snarkloan.getLoanDetail(loanId);
-        
-        expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(2);
-        
-        let tokensList = await snarkloan.getTokenListsOfLoanByTypes(loanId);
-        for (let j = 0; j < tokensList.length; j++) {
-            expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.equal(borrower);
+        console.log(`List of Loans before stoping: ${await snarkloanext.getLoansListOfLoanOwner(borrower)}`);
+        const loansOrderToRemove = [1, 15, 2, 5, 3, 7, 12, 4, 10, 14, 6, 9, 13, 8, 11];
+        for (let i = 0; i < loansOrderToRemove.length; i++) {
+            let loanId = loansOrderToRemove[i];
+            let loanDetail = await snarkloan.getLoanDetail(loanId);
+            
+            expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(2);
+            
+            let tokensList = await snarkloan.getTokenListsOfLoanByTypes(loanId);
+            for (let j = 0; j < tokensList.length; j++) {
+                expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.equal(borrower);
+            }
+            
+            await snarkloan.stopLoan(loanId);
+
+            console.log(`List of Loans after stoping loan #${loanId}: ${await snarkloanext.getLoansListOfLoanOwner(borrower)}`);
+
+            loanDetail = await snarkloan.getLoanDetail(loanId);
+            expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(3);
+
+            tokensList = await snarkloan.getTokenListsOfLoanByTypes(loanId);
+            for (j = 0; j < tokensList.length; j++) {
+                expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.not.equal(borrower);
+            }
         }
-        
-        await snarkloan.stopLoan(loanId);
-
-        console.log(`List of Loans after stoping loan #${loanId}: ${await snarkloanext.getLoansListOfLoanOwner(borrower)}`);
-
-        loanDetail = await snarkloan.getLoanDetail(loanId);
-        expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(3);
-
-        tokensList = await snarkloan.getTokenListsOfLoanByTypes(loanId);
-        for (j = 0; j < tokensList.length; j++) {
-            expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.not.equal(borrower);
-        }
-    }
       
-    for (i = 1; i < needTokensCount + 1; i++) {
-        let accountId = (((i / batchSize) - Math.floor(i / batchSize)) == 0 ) ? 
-        Math.floor(i / batchSize) == 0 ? 0 : Math.floor(i / batchSize) - 1 : 
-        Math.floor(i / batchSize);
-        expect(await snarkbase.getOwnerOfToken(i)).to.equal(accounts[accountId]);
-    }
+        for (i = 1; i < needTokensCount + 1; i++) {
+            let accountId = (((i / batchSize) - Math.floor(i / batchSize)) == 0 ) ? 
+            Math.floor(i / batchSize) == 0 ? 0 : Math.floor(i / batchSize) - 1 : 
+            Math.floor(i / batchSize);
+            expect(await snarkbase.getOwnerOfToken(i)).to.equal(accounts[accountId]);
+        }
 
-    for (i = 0; i < (needTokensCount / batchSize); i++) {
-        expect(new BN(await snarkbase.getTokensCountByOwner(accounts[i])).toNumber()).to.equal(batchSize);
-        let tokenList = await snarkbase.getTokenListForOwner(accounts[i]);
-        console.log(`Returned tokens for account[${i}]: ${tokenList}`);
-    }
+        for (i = 0; i < (needTokensCount / batchSize); i++) {
+            expect(new BN(await snarkbase.getTokensCountByOwner(accounts[i])).toNumber()).to.equal(batchSize);
+            let tokenList = await snarkbase.getTokenListForOwner(accounts[i]);
+            console.log(`Returned tokens for account[${i}]: ${tokenList}`);
+        }
 
     //     loanDetail = await instance.getLoanDetail(loanId);
     //     assert.equal(loanDetail.saleStatus, 3, "loan status is not correct after stopLoan");
@@ -688,9 +688,8 @@ contract('SnarkLoan', async (accounts) => {
     //         let status = await instance_snarkbase.getSaleTypeToToken(arr_tokens[i]);
     //         assert.equal(status, 0, `Status of token #${arr_tokens[i]} is not None - ${status}`);
          
-    //         let accepts = await instance_snarkbase.isTokenAcceptOfLoanRequestFromSnarkAndOthers(arr_tokens[i]);
-    //         assert.equal(accepts[0], false, "accept of loan request from snark is wrong");
-    //         assert.equal(accepts[1], false, "accept of loan request from others is wrong");
+    //         let accepts = await instance_snarkbase.isTokenAcceptOfLoanRequest(arr_tokens[i]);
+    //         assert.equal(accepts, false, "accept of loan request from snark is wrong");
     //     }
 
     //     await instance_snarkbase.createProfitShareScheme(

@@ -121,9 +121,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 address tokenOwner = SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokensListFinal[i]);
                 SnarkLoanLib.setActualTokenOwnerForLoan(
                     address(uint160(_storage)), loanId, tokensListFinal[i], tokenOwner);
-                isAgree = (msg.sender == owner) ? 
-                    SnarkBaseLib.isTokenAcceptOfLoanRequestFromSnark(address(uint160(_storage)), tokensListFinal[i]) :
-                    SnarkBaseLib.isTokenAcceptOfLoanRequestFromOthers(address(uint160(_storage)), tokensListFinal[i]);
+                SnarkBaseLib.isTokenAcceptOfLoanRequest(address(uint160(_storage)), tokensListFinal[i]);
                 if (isAgree) {
                     // FIXME: сделать расчеты не по дням, а по минутам. 
                     tokenIdStartDateDuration[0] = tokensIds[i];

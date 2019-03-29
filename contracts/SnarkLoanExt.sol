@@ -82,9 +82,7 @@ contract SnarkLoanExt  is Ownable, SnarkDefinitions {
             ) {
                 tokenOwner = SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokensIds[i]);
                 SnarkLoanLib.setActualTokenOwnerForLoan(address(uint160(_storage)), loanId, tokensIds[i], tokenOwner);
-                isAgree = (msg.sender == owner) ? 
-                    SnarkBaseLib.isTokenAcceptOfLoanRequestFromSnark(address(uint160(_storage)), tokensIds[i]) :
-                    SnarkBaseLib.isTokenAcceptOfLoanRequestFromOthers(address(uint160(_storage)), tokensIds[i]);
+                SnarkBaseLib.isTokenAcceptOfLoanRequest(address(uint160(_storage)), tokensIds[i]);
                 if (isAgree) {
                     SnarkLoanLib.makeTokenBusyForPeriod(address(uint160(_storage)), loanId, tokenIdStartDateDuration);
                     SnarkLoanLib.addTokenToListOfLoan(address(uint160(_storage)), loanId, tokensIds[i], 1);

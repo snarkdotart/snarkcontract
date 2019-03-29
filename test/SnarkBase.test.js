@@ -59,7 +59,7 @@ contract('SnarkBase', async (accounts) => {
     });
 
     it("3. test addToken function", async () => {
-        const artist = '0x7Af26b6056713AbB900f5dD6A6C45a38F1F70Bc5';
+        const artist = accounts[5];
         const tokenHash = web3.utils.sha3("tokenHash");
         const limitedEdition = 10;
         const profitShareFromSecondarySale = 20;
@@ -149,7 +149,7 @@ contract('SnarkBase', async (accounts) => {
             '0x3Dd34385A0D48eba7A7C8498dEC65f1B7fD1D195'
         ];
         const profits_2 = [ 70, 30 ];
-        const artist = '0x7Af26b6056713AbB900f5dD6A6C45a38F1F70Bc5';
+        const artist = accounts[5];
 
         retval = await instance.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 2, "error on step 1");
@@ -348,15 +348,10 @@ contract('SnarkBase', async (accounts) => {
     it('6. check saving auto LoanRequest from Snark and Others', async () => {
         const tokenId = 1;
 
-        const isAgreeForSnarkAndOthers = await instance.isTokenAcceptOfLoanRequestFromSnarkAndOthers(tokenId);
-        await instance.setTokenAcceptOfLoanRequestFromSnarkAndOthers(
-            tokenId,
-            !isAgreeForSnarkAndOthers[0],
-            !isAgreeForSnarkAndOthers[1]
-        );
-        const retval = await instance.isTokenAcceptOfLoanRequestFromSnarkAndOthers(tokenId);
-        assert.notEqual(retval[0], isAgreeForSnarkAndOthers[0], 'error for Snark');
-        assert.notEqual(retval[1], isAgreeForSnarkAndOthers[1], 'error for Other');
+        const isAgreeForSnarkAndOthers = await instance.isTokenAcceptOfLoanRequest(tokenId);
+        await instance.setTokenAcceptOfLoanRequest(tokenId, !isAgreeForSnarkAndOthers);
+        const retval = await instance.isTokenAcceptOfLoanRequest(tokenId);
+        assert.notEqual(retval, isAgreeForSnarkAndOthers, 'error for Snark');
     });
 
 });

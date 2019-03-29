@@ -8,6 +8,7 @@ import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkBaseExtraLib.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 import "./snarklibs/SnarkCommonLib.sol";
+import "./snarklibs/SnarkLoanLibExt.sol";
 
 
 contract SnarkBase is Ownable, SnarkDefinitions { 
@@ -16,6 +17,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     using SnarkBaseExtraLib for address;
     using SnarkBaseLib for address;
     using SnarkCommonLib for address;
+    using SnarkLoanLibExt for address;
 
     /*** STORAGE ***/
 
@@ -146,19 +148,12 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         if (isApproved) SnarkBaseLib.setTokenProfitShareFromSecondarySale(address(uint160(_storage)), tokenId, 0);
     }
 
-    function setTokenAcceptOfLoanRequestFromSnarkAndOthers(
-        uint256 tokenId, 
-        bool isAcceptForSnark, 
-        bool isAcceptForOthers
-    ) 
-        public 
-    {
+    function setTokenAcceptOfLoanRequest(uint256 tokenId, bool isAcceptForSnark) public {
         require(
             msg.sender == owner || 
             msg.sender == SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokenId)
         );
-        SnarkBaseLib.setTokenAcceptOfLoanRequestFromSnark(address(uint160(_storage)), tokenId, isAcceptForSnark);
-        SnarkBaseLib.setTokenAcceptOfLoanRequestFromOthers(address(uint160(_storage)), tokenId, isAcceptForOthers);
+        SnarkBaseLib.setTokenAcceptOfLoanRequest(address(uint160(_storage)), tokenId, isAcceptForSnark);
     }
 
     function setTokenName(string memory tokenName) public onlyOwner {
@@ -240,7 +235,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     ///         0 - Number of token edititons,
     ///         1 - Profit share % during secondary sale, going back to the artist and their list of participants
     ///         2 - Profit share scheme Id,
-    /// @param isAcceptOfLoanRequestFromSnarkFromOthers sign of auto accept of requests from Snark and other users
+    /// @param isAcceptOfLoanRequest sign of auto accept of requests from Snark and other users
     function addToken(
         address artistAddress,
         string memory hashOfToken,
@@ -248,7 +243,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         string memory decorationUrl,
         string memory decriptionKey,
         uint256[] memory limitedEditionProfitSFSSProfitSSID,
-        bool[] memory isAcceptOfLoanRequestFromSnarkFromOthers
+        bool isAcceptOfLoanRequest
     ) 
         public
         restrictedAccess
@@ -269,7 +264,6 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         require(limitedEditionProfitSFSSProfitSSID[1] <= 100, 
             "Profit Share for secondary sale has to be less or equal 100"
         );
-        // Create the number of editions specified by the limitEdition
         uint256[] memory lEeNlPpSSIDpSFSS = new uint256[](5);
         for (uint8 i = 0; i < limitedEditionProfitSFSSProfitSSID[0]; i++) {
             lEeNlPpSSIDpSFSS[0] = limitedEditionProfitSFSSProfitSSID[0];    // limitedEdition
@@ -284,23 +278,19 @@ contract SnarkBase is Ownable, SnarkDefinitions {
                 hashOfToken,                                                // tokenHash
                 lEeNlPpSSIDpSFSS,
                 tokenUrl,                                                   // tokenUrl
-                isAcceptOfLoanRequestFromSnarkFromOthers
+                isAcceptOfLoanRequest
             );
-            // set that a digital work with this hash has already been loaded
+            if (isAcceptOfLoanRequest)
+                SnarkLoanLibExt.addTokenToApprovedListForLoan(_storage, tokenId);
+            else 
+                SnarkLoanLibExt.addTokenToNotApprovedListForLoan(_storage, artistAddress, tokenId);
             SnarkBaseLib.setTokenHashAsInUse(address(uint160(_storage)), hashOfToken, true);
-            // Add new token to new artist's token list
             SnarkBaseLib.addTokenToArtistList(address(uint160(_storage)), tokenId, artistAddress);
-            // Set a decription key for original file of token
             SnarkBaseLib.setTokenDecryptionKey(address(uint160(_storage)), tokenId, decriptionKey);
-            // Set a url for token decoration on OpenSea platform
             SnarkBaseLib.setDecorationUrl(address(uint160(_storage)), tokenId, decorationUrl);
-            // Enter the new owner
             SnarkBaseLib.setOwnerOfToken(address(uint160(_storage)), tokenId, artistAddress);
-            // Add new token to new owner's token list
             SnarkBaseLib.addTokenToOwner(address(uint160(_storage)), artistAddress, tokenId);
-            // emit token event
             emit TokenCreated(artistAddress, hashOfToken, tokenId);
-            // emit transfer token event
             SnarkERC721(address(uint160(_erc721))).echoTransfer(address(0), artistAddress, tokenId);
         }
     }
@@ -343,11 +333,8 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         return _retarray;
     }
 
-    function isTokenAcceptOfLoanRequestFromSnarkAndOthers(uint256 tokenId) public view returns (bool, bool) {
-        return (
-            SnarkBaseLib.isTokenAcceptOfLoanRequestFromSnark(address(uint160(_storage)), tokenId),
-            SnarkBaseLib.isTokenAcceptOfLoanRequestFromOthers(address(uint160(_storage)), tokenId)
-        );
+    function isTokenAcceptOfLoanRequest(uint256 tokenId) public view returns (bool) {
+        return SnarkBaseLib.isTokenAcceptOfLoanRequest(address(uint160(_storage)), tokenId);
     }
 
     // /// @dev Return details about token
@@ -366,8 +353,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             uint256 profitShareFromSecondarySale, 
             string memory tokenUrl,
             string memory decorationUrl,
-            bool isAcceptOfLoanRequestFromSnark,
-            bool isAcceptOfLoanRequestFromOthers
+            bool isAcceptOfLoanRequest
         ) 
     {
         return SnarkBaseLib.getTokenDetail(address(uint160(_storage)), tokenId);

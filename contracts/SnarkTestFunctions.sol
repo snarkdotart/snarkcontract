@@ -121,4 +121,67 @@ contract SnarkTestFunctions {
     function getLoansListOfLoanOwner(address loanOwner) public view returns (uint256[] memory) {
         return SnarkLoanLib.getLoansListOfLoanOwner(address(uint160(_storage)), loanOwner);
     }
+
+    //////////// DECLARATIONS FOR New Loan Logic
+    function addTokenToApprovedListForLoan(uint256 tokenId) public {
+        SnarkLoanLibExt.addTokenToApprovedListForLoan(address(uint160(_storage)), tokenId);
+    }
+
+    function deleteTokenFromApprovedListForLoan(uint256 tokenId) public {
+        SnarkLoanLibExt.deleteTokenFromApprovedListForLoan(address(uint160(_storage)), tokenId);
+    }
+
+    function getTotalNumberOfTokensInApprovedTokensForLoan() public view returns (uint256) {
+        return SnarkLoanLibExt.getTotalNumberOfTokensInApprovedTokensForLoan(address(uint160(_storage)));
+    }
+
+    function getIndexOfTokenInApprovedTokensForLoan(uint256 tokenId) public view returns (uint256) {
+        return SnarkLoanLibExt.getIndexOfTokenInApprovedTokensForLoan(address(uint160(_storage)), tokenId);
+    }
+
+    function isTokenInApprovedListForLoan(uint256 tokenId) public view returns (bool) {
+        return SnarkLoanLibExt.isTokenInApprovedListForLoan(address(uint160(_storage)), tokenId);
+    }
+
+    function getTokenFromApprovedTokensForLoanByIndex(uint256 position) public view returns (uint256) {
+        return SnarkLoanLibExt.getTokenFromApprovedTokensForLoanByIndex(address(uint160(_storage)), position);
+    }
+
+    //// NOT APPROVED LIST
+    function addTokenToNotApprovedListForLoan(address tokenOwner, uint256 tokenId) public {
+        SnarkLoanLibExt.addTokenToNotApprovedListForLoan(address(uint160(_storage)), tokenOwner, tokenId);
+    }
+
+    function deleteTokenFromNotApprovedListForLoan(address tokenOwner, uint256 tokenId) public {
+        SnarkLoanLibExt.deleteTokenFromNotApprovedListForLoan(address(uint160(_storage)), tokenOwner, tokenId);
+    }
+
+    function getTotalNumberOfTokensInNotApprovedTokensForLoan(address tokenOwner) public view returns (uint256) {
+        return SnarkLoanLibExt.getTotalNumberOfTokensInNotApprovedTokensForLoan(address(uint160(_storage)), tokenOwner);
+    }
+
+    function getIndexOfTokenInNotApprovedTokensForLoan(address tokenOwner, uint256 tokenId) 
+        public view returns (uint256) 
+    {
+        return SnarkLoanLibExt.getIndexOfTokenInNotApprovedTokensForLoan(
+            address(uint160(_storage)), 
+            tokenOwner, 
+            tokenId
+        );
+    }
+
+    function isTokenInNotApprovedListForLoan(address tokenOwner, uint256 tokenId) public view returns (bool) {
+        return SnarkLoanLibExt.isTokenInNotApprovedListForLoan(address(uint160(_storage)), tokenOwner, tokenId);
+    }
+
+    function getTokenFromNotApprovedTokensForLoanByIndex(address tokenOwner, uint256 position) 
+        public view returns (uint256) 
+    {
+        return SnarkLoanLibExt.getTokenFromNotApprovedTokensForLoanByIndex(
+            address(uint160(_storage)), 
+            tokenOwner, 
+            position
+        );
+    }
+
 }

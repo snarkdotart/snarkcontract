@@ -151,14 +151,9 @@ library SnarkBaseLib {
         );
     }
 
-    function setTokenAcceptOfLoanRequestFromSnark(address storageAddress, uint256 tokenId, bool isAccept) public {
+    function setTokenAcceptOfLoanRequest(address storageAddress, uint256 tokenId, bool isAccept) public {
         SnarkStorage(address(uint160(storageAddress))).setBool(
             keccak256(abi.encodePacked("token", "isTokenAcceptOfLoanRequestFromSnark", tokenId)), isAccept);
-    }
-
-    function setTokenAcceptOfLoanRequestFromOthers(address storageAddress, uint256 tokenId, bool isAccept) public {
-        SnarkStorage(address(uint160(storageAddress))).setBool(
-            keccak256(abi.encodePacked("token", "isTokenAcceptOfLoanRequestFromOthers", tokenId)), isAccept);
     }
 
     /*** DELETE ***/
@@ -195,7 +190,7 @@ library SnarkBaseLib {
         string memory tokenHash,
         uint256[] memory lEeNlPpSSIDpSFSS,
         string memory tokenUrl,
-        bool[] memory isAcceptLoanRequestFromSnarkFromOthers
+        bool isAcceptLoanRequest
     ) 
         public
         returns (uint256 tokenId)
@@ -221,8 +216,7 @@ library SnarkBaseLib {
         SnarkStorage(address(uint160(storageAddress))).setString(
             keccak256(abi.encodePacked("token", "url", tokenId)), tokenUrl);
         addArtistToList(storageAddress, artistAddress);
-        setTokenAcceptOfLoanRequestFromSnark(storageAddress, tokenId, isAcceptLoanRequestFromSnarkFromOthers[0]);
-        setTokenAcceptOfLoanRequestFromOthers(storageAddress, tokenId, isAcceptLoanRequestFromSnarkFromOthers[1]);
+        setTokenAcceptOfLoanRequest(storageAddress, tokenId, isAcceptLoanRequest);
     }
 
     function addTokenToArtistList(address storageAddress, uint256 tokenId, address artistAddress) public {
@@ -395,20 +389,11 @@ library SnarkBaseLib {
         );
     }
 
-    function isTokenAcceptOfLoanRequestFromSnark(address storageAddress, uint256 tokenId) public view 
+    function isTokenAcceptOfLoanRequest(address storageAddress, uint256 tokenId) public view 
         returns (bool) 
     {
         return SnarkStorage(address(uint160(storageAddress))).boolStorage(
             keccak256(abi.encodePacked("token", "isTokenAcceptOfLoanRequestFromSnark", tokenId)));
-    }
-
-    function isTokenAcceptOfLoanRequestFromOthers(address storageAddress, uint256 tokenId) 
-        public 
-        view 
-        returns (bool)
-    {
-        return SnarkStorage(address(uint160(storageAddress))).boolStorage(
-            keccak256(abi.encodePacked("token", "isTokenAcceptOfLoanRequestFromOthers", tokenId)));
     }
 
     function getTokenDetail(address storageAddress, uint256 tokenId) 
@@ -425,8 +410,7 @@ library SnarkBaseLib {
             uint256 profitShareFromSecondarySale,
             string memory tokenUrl,
             string memory decorationUrl,
-            bool isAcceptOfLoanRequestFromSnark,
-            bool isAcceptOfLoanRequestFromOthers
+            bool isAcceptOfLoanRequest
         )
     {
         currentOwner = getOwnerOfToken(storageAddress, tokenId);
@@ -439,8 +423,7 @@ library SnarkBaseLib {
         profitShareFromSecondarySale = getTokenProfitShareFromSecondarySale(storageAddress, tokenId);
         tokenUrl = getTokenURL(storageAddress, tokenId);
         decorationUrl = getDecorationUrl(storageAddress, tokenId);
-        isAcceptOfLoanRequestFromSnark = isTokenAcceptOfLoanRequestFromSnark(storageAddress, tokenId);
-        isAcceptOfLoanRequestFromOthers = isTokenAcceptOfLoanRequestFromOthers(storageAddress, tokenId);
+        isAcceptOfLoanRequest = isTokenAcceptOfLoanRequest(storageAddress, tokenId);
     }
 
     function getOwnedTokensCount(address storageAddress, address tokenOwner) public view returns (uint256) {
