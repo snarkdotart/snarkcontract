@@ -281,9 +281,9 @@ contract SnarkBase is Ownable, SnarkDefinitions {
                 isAcceptOfLoanRequest
             );
             if (isAcceptOfLoanRequest)
-                SnarkLoanLibExt.addTokenToApprovedListForLoan(_storage, tokenId);
+                SnarkLoanLib.addTokenToApprovedListForLoan(_storage, tokenId);
             else 
-                SnarkLoanLibExt.addTokenToNotApprovedListForLoan(_storage, artistAddress, tokenId);
+                SnarkLoanLib.addTokenToNotApprovedListForLoan(_storage, artistAddress, tokenId);
             SnarkBaseLib.setTokenHashAsInUse(address(uint160(_storage)), hashOfToken, true);
             SnarkBaseLib.addTokenToArtistList(address(uint160(_storage)), tokenId, artistAddress);
             SnarkBaseLib.setTokenDecryptionKey(address(uint160(_storage)), tokenId, decriptionKey);

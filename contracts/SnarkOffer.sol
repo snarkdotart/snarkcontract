@@ -102,7 +102,7 @@ contract SnarkOffer is Ownable, SnarkDefinitions {
                 "Offer amount must be higher than the bid price");
         }
         // delete all loans if they exist
-        SnarkLoanLib.cancelTokenFromAllLoans(address(uint160(_storage)), _tokenId);
+        // SnarkLoanLib.cancelTokenFromAllLoans(address(uint160(_storage)), _tokenId);
         // Offer creation and return of the offer ID
         uint256 offerId = SnarkOfferBidLib.addOffer(address(uint160(_storage)), msg.sender, _tokenId, _price);
         // Emit an event that returns token id and offer id as well

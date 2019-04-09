@@ -139,7 +139,7 @@ contract SnarkBid is Ownable, SnarkDefinitions {
         address tokenOwner = SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokenId);
         require(msg.sender == tokenOwner, "Only owner can accept a bid for their token");
 
-        SnarkLoanLib.cancelTokenFromAllLoans(address(uint160(_storage)), tokenId);
+        // SnarkLoanLib.cancelTokenFromAllLoans(address(uint160(_storage)), tokenId);
 
         address bidOwner = SnarkOfferBidLib.getOwnerOfBid(address(uint160(_storage)), _bidId);
         SnarkBaseLib.subPendingWithdrawals(address(uint160(_storage)), _storage, price);
