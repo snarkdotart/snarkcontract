@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 import "./openzeppelin/Ownable.sol";
 import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkBaseLib.sol";
-import "./snarklibs/SnarkCommonLib.sol";
+// import "./snarklibs/SnarkCommonLib.sol";
 import "./snarklibs/SnarkLoanLib.sol";
 import "./openzeppelin/SafeMath.sol";
 // import "./snarklibs/SnarkLoanLibExt.sol";
@@ -14,7 +14,7 @@ import "./openzeppelin/SafeMath.sol";
 contract SnarkLoan is Ownable, SnarkDefinitions {
 
     using SnarkBaseLib for address;
-    using SnarkCommonLib for address;
+    // using SnarkCommonLib for address;
     using SnarkLoanLib for address;
     using SafeMath for uint256;
 
@@ -94,10 +94,37 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         SnarkLoanLib.toShiftPointer(_storage);
         uint256 afterLoanId;
         uint256 beforeLoanId;
-        (afterLoanId, beforeLoanId) = SnarkLoanLib.findPosition(_storage, timestampStart, timestampEnd);
+        bool isCrossedPeriod;
+        (afterLoanId, beforeLoanId, isCrossedPeriod) = 
+            SnarkLoanLib.findPosition(_storage, timestampStart, timestampEnd);
+        require(isCrossedPeriod == false, "Selected period has not to crossed with existing loans");
 
         // а тут уже добавляем сам лоан в систему и настраиваем поинтер
-        // setNumberOfLoans(storageAddress, getNumberOfLoans(storageAddress).add(1));
+        uint256 loanId = SnarkLoanLib.increaseMaxLoanId(_storage);
+        SnarkLoanLib.setOwnerOfLoan(_storage, loanId, msg.sender);
+        SnarkLoanLib.setLoanStartDate(_storage, loanId, timestampStart);
+        SnarkLoanLib.setLoanEndDate(_storage, loanId, timestampEnd);
+        SnarkLoanLib.setNextLoan(_storage, loanId, beforeLoanId);
+        SnarkLoanLib.setPreviousLoan(_storage, loanId, afterLoanId);
+
+        // изменяем количество лоанов
+        SnarkLoanLib.setNumberOfLoans(_storage, SnarkLoanLib.getNumberOfLoans(_storage).add(1));
+
+        // 1. изменить границы, если надо 
+        // 2. ссылки у соседних элементов
+        // 3. изменить pointer, если надо
+        if (afterLoanId == 0) { 
+            SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, timestampStart); 
+            SnarkLoanLib.setLoanPointer(_storage, loanId);
+        } else {
+            SnarkLoanLib.setNextLoan(_storage, afterLoanId, loanId);
+        }
+
+        if (beforeLoanId == 0) { 
+            SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, timestampEnd); 
+        } else {
+            SnarkLoanLib.setPreviousLoan(_storage, beforeLoanId, loanId);
+        }
     }
 
     // function getListOfLoans

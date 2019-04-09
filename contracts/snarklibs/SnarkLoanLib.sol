@@ -148,10 +148,11 @@ library SnarkLoanLib {
     }
 
     function findPosition(address storageAddress, uint256 timestampStart, uint256 timestampEnd) 
-        public view returns (uint256, uint256)
+        public view returns (uint256, uint256, bool)
     {
-        uint256 afterLoanId;
-        uint256 beforeLoanId;
+        uint256 afterLoanId = 0;
+        uint256 beforeLoanId = 0;
+        bool isCrossedPeriod = false;
         if (isEmptyPointer(storageAddress)) {
             // значит элемент будет первым
             require(timestampStart > getTopBoundaryOfLoansPeriod(storageAddress),
@@ -189,6 +190,7 @@ library SnarkLoanLib {
                     } else if (timestampStart < startDate && timestampEnd < endDate) {
                         beforeLoanId = loanId;
                     } else {
+                        isCrossedPeriod = true;
                         break;
                     }
 
@@ -197,7 +199,7 @@ library SnarkLoanLib {
             }
 
         }
-        return (afterLoanId, beforeLoanId);
+        return (afterLoanId, beforeLoanId, isCrossedPeriod);
     }
 
     function addTokenToApprovedListForLoan(address storageAddress, uint256 tokenId) public {
