@@ -8,7 +8,7 @@ import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkBaseExtraLib.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 import "./snarklibs/SnarkCommonLib.sol";
-import "./snarklibs/SnarkLoanLibExt.sol";
+import "./snarklibs/SnarkLoanLib.sol";
 
 
 contract SnarkBase is Ownable, SnarkDefinitions { 
@@ -17,7 +17,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     using SnarkBaseExtraLib for address;
     using SnarkBaseLib for address;
     using SnarkCommonLib for address;
-    using SnarkLoanLibExt for address;
+    using SnarkLoanLib for address;
 
     /*** STORAGE ***/
 

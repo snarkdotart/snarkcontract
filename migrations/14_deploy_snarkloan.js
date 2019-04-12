@@ -1,7 +1,6 @@
 var SafeMath        = artifacts.require("openzeppelin/SafeMath.sol");
 var SnarkCommonLib  = artifacts.require("snarklibs/SnarkCommonLib");
 var SnarkBaseLib    = artifacts.require("snarklibs/SnarkBaseLib");
-var SnarkLoanLibExt = artifacts.require("snarklibs/SnarkLoanLibExt");
 var SnarkLoanLib    = artifacts.require("snarklibs/SnarkLoanLib");
 
 var SnarkLoan       = artifacts.require("SnarkLoan");
@@ -13,7 +12,6 @@ module.exports = function(deployer) {
         await deployer.link(SafeMath, SnarkLoan);
         await deployer.link(SnarkCommonLib, SnarkLoan);
         await deployer.link(SnarkBaseLib, SnarkLoan);
-        await deployer.link(SnarkLoanLibExt, SnarkLoan);
         await deployer.link(SnarkLoanLib, SnarkLoan);
 
         const storage_instance = await SnarkStorage.deployed();

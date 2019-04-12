@@ -195,8 +195,6 @@ contract('SnarkERC721', async (accounts) => {
         );
 
         const profit = (tokenDetail.lastPrice == 0) ? new BigNumber(_v) : new BigNumber(_v).multipliedBy(tokenDetail.profitShareFromSecondarySale).dividedBy(100);
-
-        // процент снарку составляет
         const valueOfSnark = profit.multipliedBy(snarkwalletandprofit.platformProfit).dividedBy(100);
 
         balanceOfSnarkWalletAfterTransfer = await web3.eth.getBalance(snarkwalletandprofit.snarkWalletAddr);

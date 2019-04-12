@@ -2,15 +2,15 @@ pragma solidity >=0.5.0;
 
 import "../openzeppelin/SafeMath.sol";
 import "../SnarkStorage.sol";
-import "./SnarkBaseLib.sol";
 import "./SnarkBaseExtraLib.sol";
+import "./SnarkBaseLib.sol";
 import "../SnarkERC721.sol";
 
 
 library SnarkCommonLib {
     using SafeMath for uint256;
-    using SnarkBaseLib for address;
     using SnarkBaseExtraLib for address;
+    using SnarkBaseLib for address;
 
     function transferToken(address _storageAddress, uint256 _tokenId, address _from, address _to) internal {
         require(
@@ -39,19 +39,16 @@ library SnarkCommonLib {
     /// @param _tokenId Token token ID
     /// @param _from Seller Address
     function incomeDistribution(address _storageAddress, uint256 _price, uint256 _tokenId, address _from) internal {
-        uint256 lastPrice = SnarkBaseLib.getTokenLastPrice(address(uint160(_storageAddress)), _tokenId);
-        uint256 profitShareSchemaId = SnarkBaseExtraLib.getTokenProfitShareSchemeId(
-            address(uint160(_storageAddress)), _tokenId);
+        uint256 lastPrice = SnarkBaseLib.getTokenLastPrice(_storageAddress, _tokenId);
+        uint256 profitShareSchemaId = SnarkBaseExtraLib.getTokenProfitShareSchemeId(_storageAddress, _tokenId);
         uint256 profitShareFromSecondarySale = SnarkBaseLib.getTokenProfitShareFromSecondarySale(
-            address(uint160(_storageAddress)), _tokenId);
-        uint256 profit = 0;
-        if (_price > lastPrice) profit = _price.sub(lastPrice);
+            _storageAddress, _tokenId);
+        uint256 profit = (_price > lastPrice) ? _price.sub(lastPrice) : 0;
         if (profit >= 100) {
             if (lastPrice > 0) {
                 uint256 countToSeller = _price;
                 profit = profit.mul(profitShareFromSecondarySale).div(100);
                 countToSeller = countToSeller.sub(profit);
-                // _storageAddress.addPendingWithdrawals(_from, countToSeller);
                 SnarkStorage(address(uint160(_storageAddress))).transferFunds(address(uint160(_from)), countToSeller);
             }
             uint256 residue = profit;
@@ -65,7 +62,6 @@ library SnarkCommonLib {
                     SnarkBaseExtraLib.getParticipantOfProfitShareScheme(
                         address(uint160(_storageAddress)), profitShareSchemaId, i);
                 uint256 payout = profit.mul(participantProfit).div(100);
-                // _storageAddress.addPendingWithdrawals(currentParticipant, payout);
                 SnarkStorage(address(uint160(_storageAddress))).transferFunds(
                     address(uint160(currentParticipant)), payout);
                 residue = residue.sub(payout);

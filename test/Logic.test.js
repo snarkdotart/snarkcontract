@@ -1,6 +1,5 @@
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkLoan = artifacts.require("SnarkLoan");
-var SnarkLoanExt = artifacts.require("SnarkLoanExt");
 var SnarkOfferBid = artifacts.require("SnarkOfferBid");
 var SnarkERC721 = artifacts.require("SnarkERC721");
 var SnarkTestFunctions = artifacts.require("SnarkTestFunctions");
@@ -10,176 +9,175 @@ contract('Snark Logic', async (accounts) => {
     before(async () => {
         snarkbase = await SnarkBase.deployed();
         snarkloan = await SnarkLoan.deployed();
-        snarkloanext = await SnarkLoanExt.deployed();
         snarkofferbid = await SnarkOfferBid.deployed();
         snarkerc721 = await SnarkERC721.deployed();
         snarktest = await SnarkTestFunctions.deployed();
     });
 
-    it("test loan list functions for owner", async () => {
-        const loanOwner = accounts[0];
-        const loanId_1 = 1;
-        const loanId_2 = 2;
-        const loanId_3 = 3;
+    // it("test loan list functions for owner", async () => {
+    //     const loanOwner = accounts[0];
+    //     const loanId_1 = 1;
+    //     const loanId_2 = 2;
+    //     const loanId_3 = 3;
 
-        let countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
-        assert.equal(countOfLoans, 0, "error on step 1");
+    //     let countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
+    //     assert.equal(countOfLoans, 0, "error on step 1");
 
-        let isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_1);
-        assert.isFalse(isExist, "error on step 2");
+    //     let isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_1);
+    //     assert.isFalse(isExist, "error on step 2");
 
-        isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_2);
-        assert.isFalse(isExist, "error on step 3");
+    //     isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_2);
+    //     assert.isFalse(isExist, "error on step 3");
 
-        isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_3);
-        assert.isFalse(isExist, "error on step 4");
+    //     isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_3);
+    //     assert.isFalse(isExist, "error on step 4");
 
-        await snarktest.addLoanToLoanListOfLoanOwner(loanOwner, loanId_1);
+    //     await snarktest.addLoanToLoanListOfLoanOwner(loanOwner, loanId_1);
 
-        countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
-        assert.equal(countOfLoans, 1, "error on step 5");
+    //     countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
+    //     assert.equal(countOfLoans, 1, "error on step 5");
 
-        isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_1);
-        assert.isTrue(isExist, "error on step 6");
+    //     isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_1);
+    //     assert.isTrue(isExist, "error on step 6");
 
-        await snarktest.addLoanToLoanListOfLoanOwner(loanOwner, loanId_2);
+    //     await snarktest.addLoanToLoanListOfLoanOwner(loanOwner, loanId_2);
 
-        countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
-        assert.equal(countOfLoans, 2, "error on step 7");
+    //     countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
+    //     assert.equal(countOfLoans, 2, "error on step 7");
 
-        isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_2);
-        assert.isTrue(isExist, "error on step 8");
+    //     isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_2);
+    //     assert.isTrue(isExist, "error on step 8");
 
-        await snarktest.addLoanToLoanListOfLoanOwner(loanOwner, loanId_3);
+    //     await snarktest.addLoanToLoanListOfLoanOwner(loanOwner, loanId_3);
 
-        countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
-        assert.equal(countOfLoans, 3, "error on step 9");
+    //     countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
+    //     assert.equal(countOfLoans, 3, "error on step 9");
 
-        isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_3);
-        assert.isTrue(isExist, "error on step 10");
+    //     isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_3);
+    //     assert.isTrue(isExist, "error on step 10");
 
-        await snarktest.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId_1);
+    //     await snarktest.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId_1);
 
-        isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_1);
-        assert.isFalse(isExist, "error on step 11");
+    //     isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_1);
+    //     assert.isFalse(isExist, "error on step 11");
 
-        countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
-        assert.equal(countOfLoans, 2, "error on step 12");
+    //     countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
+    //     assert.equal(countOfLoans, 2, "error on step 12");
 
-        await snarktest.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId_2);
+    //     await snarktest.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId_2);
 
-        isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_2);
-        assert.isFalse(isExist, "error on step 13");
+    //     isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_2);
+    //     assert.isFalse(isExist, "error on step 13");
 
-        countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
-        assert.equal(countOfLoans, 1, "error on step 14");
+    //     countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
+    //     assert.equal(countOfLoans, 1, "error on step 14");
 
-        await snarktest.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId_3);
+    //     await snarktest.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId_3);
 
-        isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_3);
-        assert.isFalse(isExist, "error on step 15");
+    //     isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_3);
+    //     assert.isFalse(isExist, "error on step 15");
 
-        countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
-        assert.equal(countOfLoans, 0, "error on step 16");
+    //     countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
+    //     assert.equal(countOfLoans, 0, "error on step 16");
 
-        await snarktest.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId_3);
+    //     await snarktest.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId_3);
 
-        isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_3);
-        assert.isFalse(isExist, "error on step 17");
+    //     isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_3);
+    //     assert.isFalse(isExist, "error on step 17");
 
-        countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
-        assert.equal(countOfLoans, 0, "error on step 18");
+    //     countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
+    //     assert.equal(countOfLoans, 0, "error on step 18");
 
-        await snarktest.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId_1);
+    //     await snarktest.deleteLoanFromLoanListOfLoanOwner(loanOwner, loanId_1);
 
-        isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_1);
-        assert.isFalse(isExist, "error on step 19");
+    //     isExist = await snarktest.isExistLoanInLoanListOfLoanOwner(loanOwner, loanId_1);
+    //     assert.isFalse(isExist, "error on step 19");
 
-        countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
-        assert.equal(countOfLoans, 0, "error on step 20");
-    });
+    //     countOfLoans = await snarktest.getCountOfLoansForLoanOwner(loanOwner);
+    //     assert.equal(countOfLoans, 0, "error on step 20");
+    // });
 
-    it("test ApprovedTokensForLoan array", async () => {
-        let countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
-        assert.equal(countOfTokens, 0, "error on step 1");
-                        //  0  1  2  3  4  5  6
-        const tokensList = [1, 3, 5, 8, 2, 9, 4];
+    // it("test ApprovedTokensForLoan array", async () => {
+    //     let countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
+    //     assert.equal(countOfTokens, 0, "error on step 1");
+    //                     //  0  1  2  3  4  5  6
+    //     const tokensList = [1, 3, 5, 8, 2, 9, 4];
 
-        for (let i = 0; i < tokensList.length; i++) {
-            await snarktest.addTokenToApprovedListForLoan(tokensList[i]);
-        }
+    //     for (let i = 0; i < tokensList.length; i++) {
+    //         await snarktest.addTokenToApprovedListForLoan(tokensList[i]);
+    //     }
 
-        countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
-        assert.equal(countOfTokens, tokensList.length, "error on step 2");
+    //     countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
+    //     assert.equal(countOfTokens, tokensList.length, "error on step 2");
 
-        for (let i = 0; i < countOfTokens; i++) {
-            let t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(i);
-            assert.equal(t, tokensList[i], 'error with tokens order');
-        }
+    //     for (let i = 0; i < countOfTokens; i++) {
+    //         let t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(i);
+    //         assert.equal(t, tokensList[i], 'error with tokens order');
+    //     }
 
-        // delete token id = 8
-        await snarktest.deleteTokenFromApprovedListForLoan(8);
+    //     // delete token id = 8
+    //     await snarktest.deleteTokenFromApprovedListForLoan(8);
 
-        countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
-        assert.equal(countOfTokens, tokensList.length - 1, "error on step 3");
+    //     countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
+    //     assert.equal(countOfTokens, tokensList.length - 1, "error on step 3");
 
-        let t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(0);
-        assert.equal(t, 1, "error on step 4");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(1);
-        assert.equal(t, 3, "error on step 5");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(2);
-        assert.equal(t, 5, "error on step 6");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(3);
-        assert.equal(t, 4, "error on step 7");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(4);
-        assert.equal(t, 2, "error on step 8");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(5);
-        assert.equal(t, 9, "error on step 9");
-        t = await snarktest.isTokenInApprovedListForLoan(8);
-        assert.isFalse(t);
+    //     let t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(0);
+    //     assert.equal(t, 1, "error on step 4");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(1);
+    //     assert.equal(t, 3, "error on step 5");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(2);
+    //     assert.equal(t, 5, "error on step 6");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(3);
+    //     assert.equal(t, 4, "error on step 7");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(4);
+    //     assert.equal(t, 2, "error on step 8");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(5);
+    //     assert.equal(t, 9, "error on step 9");
+    //     t = await snarktest.isTokenInApprovedListForLoan(8);
+    //     assert.isFalse(t);
 
-        // delete token id = 1
-        await snarktest.deleteTokenFromApprovedListForLoan(1);
+    //     // delete token id = 1
+    //     await snarktest.deleteTokenFromApprovedListForLoan(1);
 
-        countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
-        assert.equal(countOfTokens, tokensList.length - 2, "error on step 10");
+    //     countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
+    //     assert.equal(countOfTokens, tokensList.length - 2, "error on step 10");
 
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(0);
-        assert.equal(t, 9, "error on step 11");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(1);
-        assert.equal(t, 3, "error on step 12");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(2);
-        assert.equal(t, 5, "error on step 13");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(3);
-        assert.equal(t, 4, "error on step 14");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(4);
-        assert.equal(t, 2, "error on step 15");
-        t = await snarktest.isTokenInApprovedListForLoan(1);
-        assert.isFalse(t);
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(0);
+    //     assert.equal(t, 9, "error on step 11");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(1);
+    //     assert.equal(t, 3, "error on step 12");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(2);
+    //     assert.equal(t, 5, "error on step 13");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(3);
+    //     assert.equal(t, 4, "error on step 14");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(4);
+    //     assert.equal(t, 2, "error on step 15");
+    //     t = await snarktest.isTokenInApprovedListForLoan(1);
+    //     assert.isFalse(t);
 
-        await snarktest.deleteTokenFromApprovedListForLoan(9);
-        t = await snarktest.isTokenInApprovedListForLoan(9);
-        assert.isFalse(t);
-        await snarktest.deleteTokenFromApprovedListForLoan(2);
-        t = await snarktest.isTokenInApprovedListForLoan(2);
-        assert.isFalse(t);
-        countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
-        assert.equal(countOfTokens, tokensList.length - 4, "error on step 16");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(0);
-        assert.equal(t, 4, "error on step 17");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(1);
-        assert.equal(t, 3, "error on step 18");
-        t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(2);
-        assert.equal(t, 5, "error on step 19");
+    //     await snarktest.deleteTokenFromApprovedListForLoan(9);
+    //     t = await snarktest.isTokenInApprovedListForLoan(9);
+    //     assert.isFalse(t);
+    //     await snarktest.deleteTokenFromApprovedListForLoan(2);
+    //     t = await snarktest.isTokenInApprovedListForLoan(2);
+    //     assert.isFalse(t);
+    //     countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
+    //     assert.equal(countOfTokens, tokensList.length - 4, "error on step 16");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(0);
+    //     assert.equal(t, 4, "error on step 17");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(1);
+    //     assert.equal(t, 3, "error on step 18");
+    //     t = await snarktest.getTokenFromApprovedTokensForLoanByIndex(2);
+    //     assert.equal(t, 5, "error on step 19");
 
-        await snarktest.deleteTokenFromApprovedListForLoan(4);
-        await snarktest.deleteTokenFromApprovedListForLoan(3);
-        await snarktest.deleteTokenFromApprovedListForLoan(5);
-        countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
-        assert.equal(countOfTokens, 0, "error on step 20");
+    //     await snarktest.deleteTokenFromApprovedListForLoan(4);
+    //     await snarktest.deleteTokenFromApprovedListForLoan(3);
+    //     await snarktest.deleteTokenFromApprovedListForLoan(5);
+    //     countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
+    //     assert.equal(countOfTokens, 0, "error on step 20");
 
-        await snarktest.deleteTokenFromApprovedListForLoan(54);
-    });
+    //     await snarktest.deleteTokenFromApprovedListForLoan(54);
+    // });
 
     // it("test new logic of loan", async () => {
     //     let balanceOfERC721 = await snarkerc721.balanceOf(accounts[0]);

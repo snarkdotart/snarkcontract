@@ -8,6 +8,7 @@ import "./openzeppelin/ERC721Receiver.sol";
 import "./openzeppelin/SafeMath.sol";
 import "./openzeppelin/AddressUtils.sol";
 import "./snarklibs/SnarkBaseLib.sol";
+import "./snarklibs/SnarkBaseExtraLib.sol";
 import "./snarklibs/SnarkCommonLib.sol";
 import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkLoanLib.sol";
@@ -18,6 +19,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     using SafeMath for uint256;
     using AddressUtils for address;
     using SnarkBaseLib for address;
+    using SnarkBaseExtraLib for address;
     using SnarkCommonLib for address;
     using SnarkLoanLib for address;
 
@@ -226,9 +228,9 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
 
         if (msg.value > 0) {
             address(uint160(_storage)).transfer(msg.value);
-            SnarkCommonLib.buy(address(uint160(_storage)), _tokenId, msg.value, _from, _to);
+            SnarkCommonLib.buy(_storage, _tokenId, msg.value, _from, _to);
         } else {
-            SnarkCommonLib.transferToken(address(uint160(_storage)), _tokenId, _from, _to);
+            SnarkCommonLib.transferToken(_storage, _tokenId, _from, _to);
         }
         emit Transfer(_from, _to, _tokenId);
     }

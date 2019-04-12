@@ -1,6 +1,5 @@
 var SnarkBaseLib    = artifacts.require("snarklibs/SnarkBaseLib");
 var SnarkLoanLib    = artifacts.require("snarklibs/SnarkLoanLib");
-var SnarkLoanLibExt = artifacts.require("snarklibs/SnarkLoanLibExt");
 
 var SnarkTestFunctions  = artifacts.require("SnarkTestFunctions");
 var SnarkStorage        = artifacts.require("SnarkStorage");
@@ -9,7 +8,6 @@ module.exports = function(deployer) {
     deployer.then(async () => {
         await deployer.link(SnarkBaseLib, SnarkTestFunctions);
         await deployer.link(SnarkLoanLib, SnarkTestFunctions);
-        await deployer.link(SnarkLoanLibExt, SnarkTestFunctions);
         
         let storage_instance = await SnarkStorage.deployed();
         await deployer.deploy(SnarkTestFunctions, storage_instance.address);

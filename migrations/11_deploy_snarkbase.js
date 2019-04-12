@@ -1,7 +1,7 @@
 var SnarkCommonLib      = artifacts.require("snarklibs/SnarkCommonLib");
 var SnarkBaseLib        = artifacts.require("snarklibs/SnarkBaseLib");
 var SnarkBaseExtraLib   = artifacts.require("snarklibs/SnarkBaseExtraLib");
-var SnarkLoanLibExt     = artifacts.require("snarklibs/SnarkLoanLibExt");
+var SnarkLoanLib        = artifacts.require("snarklibs/SnarkLoanLib");
 
 var SnarkBase           = artifacts.require("SnarkBase");
 var SnarkStorage        = artifacts.require("SnarkStorage");
@@ -12,7 +12,7 @@ module.exports = function(deployer) {
         await deployer.link(SnarkCommonLib, SnarkBase);
         await deployer.link(SnarkBaseExtraLib, SnarkBase);
         await deployer.link(SnarkBaseLib, SnarkBase);
-        await deployer.link(SnarkLoanLibExt, SnarkBase);
+        await deployer.link(SnarkLoanLib, SnarkBase);
 
         const storage_instance = await SnarkStorage.deployed();
         const erc721_instance = await SnarkERC721.deployed();

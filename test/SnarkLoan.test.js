@@ -1,5 +1,4 @@
 var SnarkLoan = artifacts.require("SnarkLoan");
-var SnarkLoanExt = artifacts.require("SnarkLoanExt");
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkStorage = artifacts.require("SnarkStorage");
 var SnarkTestFunctions = artifacts.require("SnarkTestFunctions");
@@ -19,7 +18,6 @@ contract('SnarkLoan', async (accounts) => {
         snarkbase       = await SnarkBase.deployed();
         snarkofferbid   = await SnarkOfferBid.deployed();
         snarkloan       = await SnarkLoan.deployed();
-        snarkloanext    = await SnarkLoanExt.deployed();
         snarktest       = await SnarkTestFunctions.deployed();
 
         await web3.eth.sendTransaction({
@@ -29,151 +27,151 @@ contract('SnarkLoan', async (accounts) => {
         });
     });
 
-    it("1. get size of the SnarkLoan library", async () => {
-        const bytecode = snarkloan.constructor._json.bytecode;
-        const deployed = snarkloan.constructor._json.deployedBytecode;
-        const sizeOfB = bytecode.length / 2;
-        const sizeOfD = deployed.length / 2;
-        console.log("size of bytecode in bytes = ", sizeOfB);
-        console.log("size of deployed in bytes = ", sizeOfD);
-        console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
-    });
+    // it("1. get size of the SnarkLoan library", async () => {
+    //     const bytecode = snarkloan.constructor._json.bytecode;
+    //     const deployed = snarkloan.constructor._json.deployedBytecode;
+    //     const sizeOfB = bytecode.length / 2;
+    //     const sizeOfD = deployed.length / 2;
+    //     console.log("size of bytecode in bytes = ", sizeOfB);
+    //     console.log("size of deployed in bytes = ", sizeOfD);
+    //     console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
+    // });
 
-    it("preparing: add 150 tokens", async () => {
-        const limitedEdition = 1;
-        const profitShareFromSecondarySale = 20;
-        const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
-        const decorationUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Enr";
-        const participants = [
-            '0xC04691B99EB731536E35F375ffC85249Ec713597', 
-            '0x93B68Af3849f518A2cBD0fc6317ac1BBAF21E79F'
-        ];
-        const profits = [ 20, 80 ];
+    // it("preparing: add 150 tokens", async () => {
+    //     const limitedEdition = 1;
+    //     const profitShareFromSecondarySale = 20;
+    //     const tokenUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Eni";
+    //     const decorationUrl = "QmXDeiDv96osHCBdgJdwK2sRD66CfPYmVo4KzS9e9E7Enr";
+    //     const participants = [
+    //         '0xC04691B99EB731536E35F375ffC85249Ec713597', 
+    //         '0x93B68Af3849f518A2cBD0fc6317ac1BBAF21E79F'
+    //     ];
+    //     const profits = [ 20, 80 ];
 
-        await snarkbase.changeRestrictAccess(false);
+    //     await snarkbase.changeRestrictAccess(false);
 
-        for (let i = 0; i < (needTokensCount / batchSize); i++) {
-            await snarkbase.createProfitShareScheme(accounts[i], participants, profits);
-        }
+    //     for (let i = 0; i < (needTokensCount / batchSize); i++) {
+    //         await snarkbase.createProfitShareScheme(accounts[i], participants, profits);
+    //     }
         
-        expect(new BN(await snarkbase.getTokensCount()).toNumber()).to.equal(0);
+    //     expect(new BN(await snarkbase.getTokensCount()).toNumber()).to.equal(0);
 
-        for (let i = 1; i < needTokensCount + 1; i++) {
+    //     for (let i = 1; i < needTokensCount + 1; i++) {
 
-            let accountId = (((i / batchSize) - Math.floor(i / batchSize)) == 0 ) ? 
-            Math.floor(i / batchSize) == 0 ? 0 : Math.floor(i / batchSize) - 1 : 
-            Math.floor(i / batchSize);
+    //         let accountId = (((i / batchSize) - Math.floor(i / batchSize)) == 0 ) ? 
+    //         Math.floor(i / batchSize) == 0 ? 0 : Math.floor(i / batchSize) - 1 : 
+    //         Math.floor(i / batchSize);
 
-            let tokenHash = web3.utils.sha3(`tokenHash${i}`);
-            await snarkbase.addToken(
-                accounts[accountId],
-                tokenHash,
-                tokenUrl,
-                decorationUrl,
-                '',
-                [limitedEdition, profitShareFromSecondarySale, accountId + 1],
-                [true, true],
-                { from: accounts[accountId] }
-            );
-        }
+    //         let tokenHash = web3.utils.sha3(`tokenHash${i}`);
+    //         await snarkbase.addToken(
+    //             accounts[accountId],
+    //             tokenHash,
+    //             tokenUrl,
+    //             decorationUrl,
+    //             '',
+    //             [limitedEdition, profitShareFromSecondarySale, accountId + 1],
+    //             [true, true],
+    //             { from: accounts[accountId] }
+    //         );
+    //     }
 
-        expect(new BN(await snarkbase.getTokensCount()).toNumber()).to.equal(needTokensCount);
+    //     expect(new BN(await snarkbase.getTokensCount()).toNumber()).to.equal(needTokensCount);
 
-        for (i = 0; i < (needTokensCount / batchSize); i++) {
-            expect(new BN(await snarkbase.getTokensCountByOwner(accounts[i])).toNumber()).to.equal(batchSize);
-            let tokenList = await snarkbase.getTokenListForOwner(accounts[i]);
-            console.log(`Tokens list for account[${i}]: ${tokenList}`);
-        }
-    });
+    //     for (i = 0; i < (needTokensCount / batchSize); i++) {
+    //         expect(new BN(await snarkbase.getTokensCountByOwner(accounts[i])).toNumber()).to.equal(batchSize);
+    //         let tokenList = await snarkbase.getTokenListForOwner(accounts[i]);
+    //         console.log(`Tokens list for account[${i}]: ${tokenList}`);
+    //     }
+    // });
 
-    it("create 15 loans", async () => {
-        const loanCost = web3.utils.toWei('0.2', "ether");
-        const startDateTimestamp = datetime.create(new Date(2019,4,1)).getTime();
-        const duration = 3;
+    // it("create 15 loans", async () => {
+    //     const loanCost = web3.utils.toWei('0.2', "ether");
+    //     const startDateTimestamp = datetime.create(new Date(2019,4,1)).getTime();
+    //     const duration = 3;
 
-        for (let i = 1; i < needTokensCount + 1; i++) {
-            expect(new BN(await snarkbase.getSaleTypeToToken(i)).toNumber()).to.equal(0);
-        }
+    //     for (let i = 1; i < needTokensCount + 1; i++) {
+    //         expect(new BN(await snarkbase.getSaleTypeToToken(i)).toNumber()).to.equal(0);
+    //     }
 
-        // const balanceOfBorrowerBeforeCreateLoan = await web3.eth.getBalance(borrower);        
-        // const withdrawBalanceOfBorrowerBeforeCreateLoan = await snarkbase.getWithdrawBalance(borrower);
+    //     // const balanceOfBorrowerBeforeCreateLoan = await web3.eth.getBalance(borrower);        
+    //     // const withdrawBalanceOfBorrowerBeforeCreateLoan = await snarkbase.getWithdrawBalance(borrower);
         
-        // const balanceOfStorageBeforeCreateLoan = await web3.eth.getBalance(snarkstorage.address);        
-        // const withdrawBalanceOfStorageBeforeCreateLoan = await snarkbase.getWithdrawBalance(snarkstorage.address);
+    //     // const balanceOfStorageBeforeCreateLoan = await web3.eth.getBalance(snarkstorage.address);        
+    //     // const withdrawBalanceOfStorageBeforeCreateLoan = await snarkbase.getWithdrawBalance(snarkstorage.address);
 
-        token = 0;
-        loanWithEmptySlot = 0;
-        for (i = 0; i < batchSize; i++) {
-            let tokens = [];
-            for (j = 0; j < (needTokensCount / batchSize); j++) {
-                let tokens_list_of_current_owner = await snarkbase.getTokenListForOwner(accounts[j]);
-                if (i == 5 && j == 5) {
-                    token = tokens_list_of_current_owner[i];
-                    loanWithEmptySlot = i + 1;
-                } else {
-                    tokens.push(tokens_list_of_current_owner[i]);
-                }
-            }
-            await snarkloan.createLoan(
-                tokens, startDateTimestamp, duration, 
-                { from: borrower, value: loanCost }
-            );
-            console.log(`Created Loan #${i+1} for tokens: ${tokens}`);
-        }
+    //     token = 0;
+    //     loanWithEmptySlot = 0;
+    //     for (i = 0; i < batchSize; i++) {
+    //         let tokens = [];
+    //         for (j = 0; j < (needTokensCount / batchSize); j++) {
+    //             let tokens_list_of_current_owner = await snarkbase.getTokenListForOwner(accounts[j]);
+    //             if (i == 5 && j == 5) {
+    //                 token = tokens_list_of_current_owner[i];
+    //                 loanWithEmptySlot = i + 1;
+    //             } else {
+    //                 tokens.push(tokens_list_of_current_owner[i]);
+    //             }
+    //         }
+    //         await snarkloan.createLoan(
+    //             tokens, startDateTimestamp, duration, 
+    //             { from: borrower, value: loanCost }
+    //         );
+    //         console.log(`Created Loan #${i+1} for tokens: ${tokens}`);
+    //     }
 
-        expect(new BN(await snarkloanext.getTotalNumberOfLoans()).toNumber()).to.equal(batchSize);
+    //     expect(new BN(await snarkloanext.getTotalNumberOfLoans()).toNumber()).to.equal(batchSize);
 
-        const listLoansWithFreeSlots = await snarkloanext.getListOfLoansWithFreeSlots();
-        expect(listLoansWithFreeSlots).to.have.lengthOf(1);
-        expect(new BN(listLoansWithFreeSlots[0]).toNumber()).to.equal(loanWithEmptySlot);
+    //     const listLoansWithFreeSlots = await snarkloanext.getListOfLoansWithFreeSlots();
+    //     expect(listLoansWithFreeSlots).to.have.lengthOf(1);
+    //     expect(new BN(listLoansWithFreeSlots[0]).toNumber()).to.equal(loanWithEmptySlot);
 
-        let tokenLists = await snarkloan.getTokenListsOfLoanByTypes(loanWithEmptySlot);
-        expect(tokenLists.notApprovedTokensList).to.have.length(0);
-        expect(tokenLists.approvedTokensList).to.have.length(9);
-        expect(tokenLists.declinedTokensList).to.have.length(0);
+    //     let tokenLists = await snarkloan.getTokenListsOfLoanByTypes(loanWithEmptySlot);
+    //     expect(tokenLists.notApprovedTokensList).to.have.length(0);
+    //     expect(tokenLists.approvedTokensList).to.have.length(9);
+    //     expect(tokenLists.declinedTokensList).to.have.length(0);
 
-        await snarkloanext.attachTokensToLoan(loanWithEmptySlot, [token]);
+    //     await snarkloanext.attachTokensToLoan(loanWithEmptySlot, [token]);
 
-        tokenLists = await snarkloan.getTokenListsOfLoanByTypes(loanWithEmptySlot);
-        expect(tokenLists.notApprovedTokensList).to.have.length(0);
-        expect(tokenLists.approvedTokensList).to.have.length(10);
-        expect(tokenLists.declinedTokensList).to.have.length(0);
+    //     tokenLists = await snarkloan.getTokenListsOfLoanByTypes(loanWithEmptySlot);
+    //     expect(tokenLists.notApprovedTokensList).to.have.length(0);
+    //     expect(tokenLists.approvedTokensList).to.have.length(10);
+    //     expect(tokenLists.declinedTokensList).to.have.length(0);
 
-        //////////////////////
+    //     //////////////////////
 
-        // const balanceOfStorageAfterCreateLoan = await web3.eth.getBalance(instance_storage.address);        
-        // const withdrawBalanceOfStorageAfterCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
+    //     // const balanceOfStorageAfterCreateLoan = await web3.eth.getBalance(instance_storage.address);        
+    //     // const withdrawBalanceOfStorageAfterCreateLoan = await instance_snarkbase.getWithdrawBalance(instance_storage.address);
 
-        // assert.equal(
-        //     new BigNumber(withdrawBalanceOfStorageBeforeCreateLoan).plus(loanCost).toNumber(),
-        //     new BigNumber(withdrawBalanceOfStorageAfterCreateLoan).toNumber(),
-        //     "Withdraw balance of storage is wrong after CreateLoan"
-        // );
+    //     // assert.equal(
+    //     //     new BigNumber(withdrawBalanceOfStorageBeforeCreateLoan).plus(loanCost).toNumber(),
+    //     //     new BigNumber(withdrawBalanceOfStorageAfterCreateLoan).toNumber(),
+    //     //     "Withdraw balance of storage is wrong after CreateLoan"
+    //     // );
 
-        // assert.equal(
-        //     new BigNumber(balanceOfStorageBeforeCreateLoan).plus(loanCost).toNumber(),
-        //     new BigNumber(balanceOfStorageAfterCreateLoan).toNumber(),
-        //     "Balance of storage wallet is wrong after CreateLoan"
-        // );
+    //     // assert.equal(
+    //     //     new BigNumber(balanceOfStorageBeforeCreateLoan).plus(loanCost).toNumber(),
+    //     //     new BigNumber(balanceOfStorageAfterCreateLoan).toNumber(),
+    //     //     "Balance of storage wallet is wrong after CreateLoan"
+    //     // );
 
-        // retval = await instance.getTokenListsOfLoanByTypes(1);
-        // assert.equal(retval.notApprovedTokensList.length, 3, "error on step 5");
-        // assert.equal(retval.approvedTokensList.length, 0, "error on step 6");
-        // assert.equal(retval.declinedTokensList.length, 0, "error on step 7");
+    //     // retval = await instance.getTokenListsOfLoanByTypes(1);
+    //     // assert.equal(retval.notApprovedTokensList.length, 3, "error on step 5");
+    //     // assert.equal(retval.approvedTokensList.length, 0, "error on step 6");
+    //     // assert.equal(retval.declinedTokensList.length, 0, "error on step 7");
 
-        // retval = await instance_snarkbase.getSaleTypeToToken(1);
-        // assert.equal(retval.toNumber(), 0, "error on step 8");
+    //     // retval = await instance_snarkbase.getSaleTypeToToken(1);
+    //     // assert.equal(retval.toNumber(), 0, "error on step 8");
 
-        // retval = await instance_snarkbase.getSaleTypeToToken(2);
-        // assert.equal(retval.toNumber(), 0, "error on step 9");
+    //     // retval = await instance_snarkbase.getSaleTypeToToken(2);
+    //     // assert.equal(retval.toNumber(), 0, "error on step 9");
 
-        // retval = await instance_snarkbase.getSaleTypeToToken(3);
-        // assert.equal(retval.toNumber(), 0, "error on step 10");
+    //     // retval = await instance_snarkbase.getSaleTypeToToken(3);
+    //     // assert.equal(retval.toNumber(), 0, "error on step 10");
 
-        // let loanDetail = await instance.getLoanDetail(1);
-        // assert.equal(loanDetail.saleStatus, 0, "loan status is not correct before stopLoan");
+    //     // let loanDetail = await instance.getLoanDetail(1);
+    //     // assert.equal(loanDetail.saleStatus, 0, "loan status is not correct before stopLoan");
 
-    });
+    // });
 
     // TODO: создать второй и третий лоан
     // TODO: оперировать не днями, а минутами
@@ -224,200 +222,200 @@ contract('SnarkLoan', async (accounts) => {
     //     assert.equal(retval.toNumber(), 0, "error on step 15");
     // });
 
-    it("4. test startLoan function", async () => {
+    // it("4. test startLoan function", async () => {
 
-        for (i = 0; i < needTokensCount; i++) {
-            expect(new BN(await snarkbase.getSaleTypeToToken(i + 1)).toNumber()).to.equal(0);
-        }
-
-        // retval = await instance.getTokenListsOfLoanByTypes(loanId);
-        // assert.equal(retval.notApprovedTokensList.length, 1, "error on step 2");
-        // assert.equal(retval.approvedTokensList.length, 2, "error on step 3");
-        // assert.equal(retval.declinedTokensList.length, 0, "error on step 4");
-        
-        // const loanDetail = await instance.getLoanDetail(loanId);
-        // assert.equal(loanDetail.saleStatus.toNumber(), 0, "error on step 5"); // [5]
-        // const costOfLoan = loanDetail.loanPrice;
-        
-        // retval = await instance_snarkbase.getOwnerOfToken(1);
-        // assert.equal(retval, tokenOwner, "error on step 6");
-        
-        // const balanceOfTokenOwnerBeforeStartLoan = await web3.eth.getBalance(tokenOwner);
-        // const balanceOfSnarkStorageBeforeStartLoan = await web3.eth.getBalance(instance_storage.address);
-
-        /////////
-        for (i = 1; i < batchSize + 1; i++) {
-            expect(new BN((await snarkloan.getLoanDetail(i)).saleStatus).toNumber()).to.equal(0);
-            await snarkloan.startLoan(i);            
-        }
-
-        for (i = 1; i < (needTokensCount / batchSize) + 1; i++) {
-            expect(new BN((await snarkloan.getLoanDetail(i)).saleStatus).toNumber()).to.equal(2);
-            expect(new BN(await snarkbase.getTokensCountByOwner(accounts[i - 1])).toNumber()).to.equal(15);
-        }
-        
-        for (i = 0; i < needTokensCount; i++) {
-            expect(new BN(await snarkbase.getSaleTypeToToken(i + 1)).toNumber()).to.equal(2);
-        }
-
-        /////////
-        // retval = await instance_snarkbase.getOwnerOfToken(1);
-        // assert.equal(retval, tokenOwner, "error on step 7");
-
-        // const balanceOfSnarkStorageAfterStartLoan = await web3.eth.getBalance(instance_storage.address);
-        // assert.equal(
-        //     new BigNumber(balanceOfSnarkStorageAfterStartLoan).toNumber(),
-        //     new BigNumber(balanceOfSnarkStorageBeforeStartLoan).minus(costOfLoan).toNumber(),
-        //     "Balance of storage is not correct after StartLoan"
-        // );
-
-        // // эта сумма должна перейти полностью к tokenOwner, т.к. в лоане задействованы только его 2 токена
-        // const balanceOfTokenOwnerAfterStartLoan = await web3.eth.getBalance(tokenOwner);
-        // assert.equal(
-        //     new BigNumber(balanceOfTokenOwnerAfterStartLoan).toNumber(),
-        //     new BigNumber(balanceOfTokenOwnerBeforeStartLoan).plus(costOfLoan).minus(gasUsedOfStartLoan).toNumber(),
-        //     "Balance of token owner is not correct"
-        // );        
-    });
-
-    it("5. test of borrowLoanedTokens function", async () => {
-    //     const loanId = 1;
-    //     const costOfStop = web3.utils.toWei('0.001', 'ether');
-    //     let loanDetail = await instance.getLoanDetail(loanId);
-    //     const borrower = loanDetail.loanOwner;
-
-    for (let i = 1; i < batchSize + 1; i++) {
-        await snarkloan.borrowLoanedTokens(i, { from: borrower }); // , value: web3.utils.toWei('0.0001', 'ether')
-    }
-
-    for (i = 1; i < needTokensCount + 1; i++) {
-        expect(await snarkbase.getOwnerOfToken(i)).to.equal(borrower);
-    }
-
-
-    //     try {
-    //         await instance.borrowLoanedTokens(loanId, { from: accounts[10], value: web3.utils.toWei('0.0001', 'ether') });
-    //     } catch(e) {
-    //         assert.equal(
-    //             e.message, 
-    //             'Returned error: VM Exception while processing transaction: revert Only loan owner can borrow tokens -- Reason given: Only loan owner can borrow tokens.', 
-    //             'exception should occur due to wrong loan owner'
-    //         );
+    //     for (i = 0; i < needTokensCount; i++) {
+    //         expect(new BN(await snarkbase.getSaleTypeToToken(i + 1)).toNumber()).to.equal(0);
     //     }
 
-    //     await instance_loanext.setCostOfStopLoanOperationForLoan(loanId, costOfStop);
+    //     // retval = await instance.getTokenListsOfLoanByTypes(loanId);
+    //     // assert.equal(retval.notApprovedTokensList.length, 1, "error on step 2");
+    //     // assert.equal(retval.approvedTokensList.length, 2, "error on step 3");
+    //     // assert.equal(retval.declinedTokensList.length, 0, "error on step 4");
+        
+    //     // const loanDetail = await instance.getLoanDetail(loanId);
+    //     // assert.equal(loanDetail.saleStatus.toNumber(), 0, "error on step 5"); // [5]
+    //     // const costOfLoan = loanDetail.loanPrice;
+        
+    //     // retval = await instance_snarkbase.getOwnerOfToken(1);
+    //     // assert.equal(retval, tokenOwner, "error on step 6");
+        
+    //     // const balanceOfTokenOwnerBeforeStartLoan = await web3.eth.getBalance(tokenOwner);
+    //     // const balanceOfSnarkStorageBeforeStartLoan = await web3.eth.getBalance(instance_storage.address);
 
-    //     try {
-    //         await instance.borrowLoanedTokens(loanId, { from: borrower, value: web3.utils.toWei('0.001', 'ether') });
-    //     } catch(e) {
-    //         assert.equal(
-    //             e.message,
-    //             'Returned error: VM Exception while processing transaction: revert The amount of funds received is less than the required. -- Reason given: The amount of funds received is less than the required.',
-    //             'exeption shoud occur due to wrong amount of funds'
-    //         );
+    //     /////////
+    //     for (i = 1; i < batchSize + 1; i++) {
+    //         expect(new BN((await snarkloan.getLoanDetail(i)).saleStatus).toNumber()).to.equal(0);
+    //         await snarkloan.startLoan(i);            
     //     }
 
-    //     const snark = await instance_snarkbase.getSnarkWalletAddressAndProfit();
-
-    //     const balanceOfSnarkWalletBefore = await web3.eth.getBalance(snark.snarkWalletAddr);
-    //     const balanceOfBorrowerBefore = await web3.eth.getBalance(borrower);
-
-    //     tx = await instance.borrowLoanedTokens(loanId, { from: borrower, value: costOfStop });
-    //     const gasUsedOfBorrowLoanedTokens = tx.receipt.gasUsed;
-
-    //     const balanceOfSnarkWalletAfter = await web3.eth.getBalance(snark.snarkWalletAddr);
-    //     const balanceOfBorrowerAfter = await web3.eth.getBalance(borrower);
+    //     for (i = 1; i < (needTokensCount / batchSize) + 1; i++) {
+    //         expect(new BN((await snarkloan.getLoanDetail(i)).saleStatus).toNumber()).to.equal(2);
+    //         expect(new BN(await snarkbase.getTokensCountByOwner(accounts[i - 1])).toNumber()).to.equal(15);
+    //     }
         
-    //     assert.equal(
-    //         new BigNumber(balanceOfSnarkWalletAfter).toNumber(),
-    //         new BigNumber(balanceOfSnarkWalletBefore).plus(costOfStop).toNumber(),
-    //         'Balance of storage is not correct'
-    //     );
-
-    //     assert.equal(
-    //         new BigNumber(balanceOfBorrowerAfter).toNumber(),
-    //         new BigNumber(balanceOfBorrowerBefore).minus(gasUsedOfBorrowLoanedTokens).minus(costOfStop).toNumber(),
-    //         'Balance of borrower is not correct'
-    //     );
-        
-    //     const tokensList = await instance.getTokenListsOfLoanByTypes(loanId);
-
-    //     assert.equal(tokensList.notApprovedTokensList.length, 0, "count of tokens in notApprovedTokensList is wrong");
-    //     assert.equal(tokensList.approvedTokensList.length, 2, "count of tokens in approvedTokensList is wrong");
-    //     assert.equal(tokensList.declinedTokensList.length, 1, "count of tokens in declinedTokensList is wrong");
-
-    //     for (let i = 0; i < tokensList.approvedTokensList.length; i++) {
-    //         let retval = await instance_snarkbase.getOwnerOfToken(tokensList.approvedTokensList[i]);
-    //         assert.equal(retval, borrower, `wrong owner of token ${tokensList.approvedTokensList[i]}`);
+    //     for (i = 0; i < needTokensCount; i++) {
+    //         expect(new BN(await snarkbase.getSaleTypeToToken(i + 1)).toNumber()).to.equal(2);
     //     }
 
-    //     loanDetail = await instance.getLoanDetail(loanId);
-    //     assert.equal(loanDetail.saleStatus, 2, "loan status is not correct");
-    });
+    //     /////////
+    //     // retval = await instance_snarkbase.getOwnerOfToken(1);
+    //     // assert.equal(retval, tokenOwner, "error on step 7");
 
-    it("6. test stopLoan function", async () => {
-    //     const loanId = 1;
+    //     // const balanceOfSnarkStorageAfterStartLoan = await web3.eth.getBalance(instance_storage.address);
+    //     // assert.equal(
+    //     //     new BigNumber(balanceOfSnarkStorageAfterStartLoan).toNumber(),
+    //     //     new BigNumber(balanceOfSnarkStorageBeforeStartLoan).minus(costOfLoan).toNumber(),
+    //     //     "Balance of storage is not correct after StartLoan"
+    //     // );
 
-    //     let loanDetail = await instance.getLoanDetail(loanId);
-    //     assert.equal(loanDetail.saleStatus, 2, "loan status is not correct before stopLoan");
+    //     // // эта сумма должна перейти полностью к tokenOwner, т.к. в лоане задействованы только его 2 токена
+    //     // const balanceOfTokenOwnerAfterStartLoan = await web3.eth.getBalance(tokenOwner);
+    //     // assert.equal(
+    //     //     new BigNumber(balanceOfTokenOwnerAfterStartLoan).toNumber(),
+    //     //     new BigNumber(balanceOfTokenOwnerBeforeStartLoan).plus(costOfLoan).minus(gasUsedOfStartLoan).toNumber(),
+    //     //     "Balance of token owner is not correct"
+    //     // );        
+    // });
 
-    //     let loanListOfBorrower = await instance_loanext.getLoansListOfLoanOwner(loanDetail.loanOwner);
-    //     assert.equal(loanListOfBorrower.length, 1, 'length of loans list is not correct before stopLoan');
-        console.log(`List of Loans before stoping: ${await snarkloanext.getLoansListOfLoanOwner(borrower)}`);
-        const loansOrderToRemove = [1, 15, 2, 5, 3, 7, 12, 4, 10, 14, 6, 9, 13, 8, 11];
-        for (let i = 0; i < loansOrderToRemove.length; i++) {
-            let loanId = loansOrderToRemove[i];
-            let loanDetail = await snarkloan.getLoanDetail(loanId);
+    // it("5. test of borrowLoanedTokens function", async () => {
+    // //     const loanId = 1;
+    // //     const costOfStop = web3.utils.toWei('0.001', 'ether');
+    // //     let loanDetail = await instance.getLoanDetail(loanId);
+    // //     const borrower = loanDetail.loanOwner;
+
+    // for (let i = 1; i < batchSize + 1; i++) {
+    //     await snarkloan.borrowLoanedTokens(i, { from: borrower }); // , value: web3.utils.toWei('0.0001', 'ether')
+    // }
+
+    // for (i = 1; i < needTokensCount + 1; i++) {
+    //     expect(await snarkbase.getOwnerOfToken(i)).to.equal(borrower);
+    // }
+
+
+    // //     try {
+    // //         await instance.borrowLoanedTokens(loanId, { from: accounts[10], value: web3.utils.toWei('0.0001', 'ether') });
+    // //     } catch(e) {
+    // //         assert.equal(
+    // //             e.message, 
+    // //             'Returned error: VM Exception while processing transaction: revert Only loan owner can borrow tokens -- Reason given: Only loan owner can borrow tokens.', 
+    // //             'exception should occur due to wrong loan owner'
+    // //         );
+    // //     }
+
+    // //     await instance_loanext.setCostOfStopLoanOperationForLoan(loanId, costOfStop);
+
+    // //     try {
+    // //         await instance.borrowLoanedTokens(loanId, { from: borrower, value: web3.utils.toWei('0.001', 'ether') });
+    // //     } catch(e) {
+    // //         assert.equal(
+    // //             e.message,
+    // //             'Returned error: VM Exception while processing transaction: revert The amount of funds received is less than the required. -- Reason given: The amount of funds received is less than the required.',
+    // //             'exeption shoud occur due to wrong amount of funds'
+    // //         );
+    // //     }
+
+    // //     const snark = await instance_snarkbase.getSnarkWalletAddressAndProfit();
+
+    // //     const balanceOfSnarkWalletBefore = await web3.eth.getBalance(snark.snarkWalletAddr);
+    // //     const balanceOfBorrowerBefore = await web3.eth.getBalance(borrower);
+
+    // //     tx = await instance.borrowLoanedTokens(loanId, { from: borrower, value: costOfStop });
+    // //     const gasUsedOfBorrowLoanedTokens = tx.receipt.gasUsed;
+
+    // //     const balanceOfSnarkWalletAfter = await web3.eth.getBalance(snark.snarkWalletAddr);
+    // //     const balanceOfBorrowerAfter = await web3.eth.getBalance(borrower);
+        
+    // //     assert.equal(
+    // //         new BigNumber(balanceOfSnarkWalletAfter).toNumber(),
+    // //         new BigNumber(balanceOfSnarkWalletBefore).plus(costOfStop).toNumber(),
+    // //         'Balance of storage is not correct'
+    // //     );
+
+    // //     assert.equal(
+    // //         new BigNumber(balanceOfBorrowerAfter).toNumber(),
+    // //         new BigNumber(balanceOfBorrowerBefore).minus(gasUsedOfBorrowLoanedTokens).minus(costOfStop).toNumber(),
+    // //         'Balance of borrower is not correct'
+    // //     );
+        
+    // //     const tokensList = await instance.getTokenListsOfLoanByTypes(loanId);
+
+    // //     assert.equal(tokensList.notApprovedTokensList.length, 0, "count of tokens in notApprovedTokensList is wrong");
+    // //     assert.equal(tokensList.approvedTokensList.length, 2, "count of tokens in approvedTokensList is wrong");
+    // //     assert.equal(tokensList.declinedTokensList.length, 1, "count of tokens in declinedTokensList is wrong");
+
+    // //     for (let i = 0; i < tokensList.approvedTokensList.length; i++) {
+    // //         let retval = await instance_snarkbase.getOwnerOfToken(tokensList.approvedTokensList[i]);
+    // //         assert.equal(retval, borrower, `wrong owner of token ${tokensList.approvedTokensList[i]}`);
+    // //     }
+
+    // //     loanDetail = await instance.getLoanDetail(loanId);
+    // //     assert.equal(loanDetail.saleStatus, 2, "loan status is not correct");
+    // });
+
+    // it("6. test stopLoan function", async () => {
+    // //     const loanId = 1;
+
+    // //     let loanDetail = await instance.getLoanDetail(loanId);
+    // //     assert.equal(loanDetail.saleStatus, 2, "loan status is not correct before stopLoan");
+
+    // //     let loanListOfBorrower = await instance_loanext.getLoansListOfLoanOwner(loanDetail.loanOwner);
+    // //     assert.equal(loanListOfBorrower.length, 1, 'length of loans list is not correct before stopLoan');
+    //     console.log(`List of Loans before stoping: ${await snarkloanext.getLoansListOfLoanOwner(borrower)}`);
+    //     const loansOrderToRemove = [1, 15, 2, 5, 3, 7, 12, 4, 10, 14, 6, 9, 13, 8, 11];
+    //     for (let i = 0; i < loansOrderToRemove.length; i++) {
+    //         let loanId = loansOrderToRemove[i];
+    //         let loanDetail = await snarkloan.getLoanDetail(loanId);
             
-            expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(2);
+    //         expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(2);
             
-            let tokensList = await snarkloan.getTokenListsOfLoanByTypes(loanId);
-            for (let j = 0; j < tokensList.length; j++) {
-                expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.equal(borrower);
-            }
+    //         let tokensList = await snarkloan.getTokenListsOfLoanByTypes(loanId);
+    //         for (let j = 0; j < tokensList.length; j++) {
+    //             expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.equal(borrower);
+    //         }
             
-            await snarkloan.stopLoan(loanId);
+    //         await snarkloan.stopLoan(loanId);
 
-            console.log(`List of Loans after stoping loan #${loanId}: ${await snarkloanext.getLoansListOfLoanOwner(borrower)}`);
+    //         console.log(`List of Loans after stoping loan #${loanId}: ${await snarkloanext.getLoansListOfLoanOwner(borrower)}`);
 
-            loanDetail = await snarkloan.getLoanDetail(loanId);
-            expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(3);
+    //         loanDetail = await snarkloan.getLoanDetail(loanId);
+    //         expect(new BN(loanDetail.saleStatus).toNumber()).to.equal(3);
 
-            tokensList = await snarkloan.getTokenListsOfLoanByTypes(loanId);
-            for (j = 0; j < tokensList.length; j++) {
-                expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.not.equal(borrower);
-            }
-        }
+    //         tokensList = await snarkloan.getTokenListsOfLoanByTypes(loanId);
+    //         for (j = 0; j < tokensList.length; j++) {
+    //             expect(await snarkbase.getOwnerOfToken(tokensList[j])).to.not.equal(borrower);
+    //         }
+    //     }
       
-        for (i = 1; i < needTokensCount + 1; i++) {
-            let accountId = (((i / batchSize) - Math.floor(i / batchSize)) == 0 ) ? 
-            Math.floor(i / batchSize) == 0 ? 0 : Math.floor(i / batchSize) - 1 : 
-            Math.floor(i / batchSize);
-            expect(await snarkbase.getOwnerOfToken(i)).to.equal(accounts[accountId]);
-        }
-
-        for (i = 0; i < (needTokensCount / batchSize); i++) {
-            expect(new BN(await snarkbase.getTokensCountByOwner(accounts[i])).toNumber()).to.equal(batchSize);
-            let tokenList = await snarkbase.getTokenListForOwner(accounts[i]);
-            console.log(`Returned tokens for account[${i}]: ${tokenList}`);
-        }
-
-    //     loanDetail = await instance.getLoanDetail(loanId);
-    //     assert.equal(loanDetail.saleStatus, 3, "loan status is not correct after stopLoan");
-
-    //     loanListOfBorrower = await instance_loanext.getLoansListOfLoanOwner(loanDetail.loanOwner);
-    //     assert.equal(loanListOfBorrower.length, 0, 'length of loans list is not correct after stopLoan');
-
-    //     const tokensList = await instance.getTokenListsOfLoanByTypes(loanId);
-
-    //     for (let i = 0; i < tokensList.approvedTokensList.length; i++) {
-    //         let retval = await instance_snarkbase.getOwnerOfToken(tokensList.approvedTokensList[i]);
-    //         assert.notEqual(retval, loanDetail.loanOwner, `wrong owner of token ${tokensList.approvedTokensList[i]}`);
-    //         retval = await instance_snarkbase.getSaleTypeToToken(tokensList.approvedTokensList[i]);
-    //         assert.equal(retval, 0, `sale status is not correct for token ${tokensList.approvedTokensList[i]}`);
+    //     for (i = 1; i < needTokensCount + 1; i++) {
+    //         let accountId = (((i / batchSize) - Math.floor(i / batchSize)) == 0 ) ? 
+    //         Math.floor(i / batchSize) == 0 ? 0 : Math.floor(i / batchSize) - 1 : 
+    //         Math.floor(i / batchSize);
+    //         expect(await snarkbase.getOwnerOfToken(i)).to.equal(accounts[accountId]);
     //     }
 
-    });
+    //     for (i = 0; i < (needTokensCount / batchSize); i++) {
+    //         expect(new BN(await snarkbase.getTokensCountByOwner(accounts[i])).toNumber()).to.equal(batchSize);
+    //         let tokenList = await snarkbase.getTokenListForOwner(accounts[i]);
+    //         console.log(`Returned tokens for account[${i}]: ${tokenList}`);
+    //     }
+
+    // //     loanDetail = await instance.getLoanDetail(loanId);
+    // //     assert.equal(loanDetail.saleStatus, 3, "loan status is not correct after stopLoan");
+
+    // //     loanListOfBorrower = await instance_loanext.getLoansListOfLoanOwner(loanDetail.loanOwner);
+    // //     assert.equal(loanListOfBorrower.length, 0, 'length of loans list is not correct after stopLoan');
+
+    // //     const tokensList = await instance.getTokenListsOfLoanByTypes(loanId);
+
+    // //     for (let i = 0; i < tokensList.approvedTokensList.length; i++) {
+    // //         let retval = await instance_snarkbase.getOwnerOfToken(tokensList.approvedTokensList[i]);
+    // //         assert.notEqual(retval, loanDetail.loanOwner, `wrong owner of token ${tokensList.approvedTokensList[i]}`);
+    // //         retval = await instance_snarkbase.getSaleTypeToToken(tokensList.approvedTokensList[i]);
+    // //         assert.equal(retval, 0, `sale status is not correct for token ${tokensList.approvedTokensList[i]}`);
+    // //     }
+
+    // });
 
     // it("7. test deleteLoan function", async () => {
     //     const loanId = 1;

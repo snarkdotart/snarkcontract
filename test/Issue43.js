@@ -94,29 +94,29 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    instance_loan.LoanAccepted({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var loanId = result.args.loanId;
-        var tokenId = result.args.tokenId;
-        var tokenOwner = result.args.tokenOwner;
+    // instance_loan.LoanAccepted({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var loanId = result.args.loanId;
+    //     var tokenId = result.args.tokenId;
+    //     var tokenOwner = result.args.tokenOwner;
 
-        console.log(
-          `       Loan Accepted. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
-        );
-      }
-    });
+    //     console.log(
+    //       `       Loan Accepted. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
+    //     );
+    //   }
+    // });
 
-    instance_loan.LoanDeclined({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var loanId = result.args.loanId;
-        var tokenId = result.args.tokenId;
-        var tokenOwner = result.args.tokenOwner;
+    // instance_loan.LoanDeclined({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var loanId = result.args.loanId;
+    //     var tokenId = result.args.tokenId;
+    //     var tokenOwner = result.args.tokenOwner;
 
-        console.log(
-          `       Loan Declined. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
-        );
-      }
-    });
+    //     console.log(
+    //       `       Loan Declined. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
+    //     );
+    //   }
+    // });
 
   });
 
@@ -148,36 +148,35 @@ contract('SnarkBase', async accounts => {
     retval = await instance_snarkbase.getTokensCountByOwner(accounts[1]);
     assert.equal(retval.toNumber(), 1, 'Accounts[1] should have one token');
   });
-
   
-  it('3. Create two loans for same period shifted only by 1 ms. Second loan should be rejected.', async () => {
-    const startDateTimestamp1 = datetime.create(new Date()).getTime();
+  // it('3. Create two loans for same period shifted only by 1 ms. Second loan should be rejected.', async () => {
+  //   const startDateTimestamp1 = datetime.create(new Date()).getTime();
 
-    const duration = 10;
-    await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
-    let count = await instance_testFunctions.getCountLoanRequestsForTokenOwner(accounts[1]);
-    console.log('Loan counter: ', count.toNumber());
+  //   const duration = 10;
+  //   await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
+  //   let count = await instance_testFunctions.getCountLoanRequestsForTokenOwner(accounts[1]);
+  //   console.log('Loan counter: ', count.toNumber());
 
-    let loanIndex = await instance_testFunctions.getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(accounts[1], 1, 1);
-    console.log('Loan index for tokenId and loanId : ', loanIndex.toNumber());
+  //   let loanIndex = await instance_testFunctions.getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(accounts[1], 1, 1);
+  //   console.log('Loan index for tokenId and loanId : ', loanIndex.toNumber());
 
-    await expect(instance_loan.createLoan([1], startDateTimestamp1 + 1, duration)).to.be.eventually.fulfilled;
-    count = await instance_testFunctions.getCountLoanRequestsForTokenOwner(accounts[1]);
-    console.log('Loan counter: ', count.toNumber());
+  //   await expect(instance_loan.createLoan([1], startDateTimestamp1 + 1, duration)).to.be.eventually.fulfilled;
+  //   count = await instance_testFunctions.getCountLoanRequestsForTokenOwner(accounts[1]);
+  //   console.log('Loan counter: ', count.toNumber());
 
-    loanIndex = await instance_testFunctions.getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(accounts[1], 1, 1);
-    console.log('Loan index for tokenId and loanId : ', loanIndex.toNumber());
-    await expect(instance_loan.acceptLoan(1,[1],{from:accounts[1]}),"Should be able to accept Loan 1").to.be.eventually.fulfilled;
-    await expect(instance_loan.acceptLoan(2,[1],{from:accounts[1]})," Should be able to accept Loan 2").to.be.eventually.fulfilled;
+  //   loanIndex = await instance_testFunctions.getIndexOfLoanRequestForTokenOwnerByTokenAndLoan(accounts[1], 1, 1);
+  //   console.log('Loan index for tokenId and loanId : ', loanIndex.toNumber());
+  //   await expect(instance_loan.acceptLoan(1,[1],{from:accounts[1]}),"Should be able to accept Loan 1").to.be.eventually.fulfilled;
+  //   await expect(instance_loan.acceptLoan(2,[1],{from:accounts[1]})," Should be able to accept Loan 2").to.be.eventually.fulfilled;
     
     
-    let tokensList1 = await instance_loan.getTokenListsOfLoanByTypes(1);
-    let tokensList2 = await instance_loan.getTokenListsOfLoanByTypes(2);
-    testFunctions.showLoanTokens(tokensList1,"Loan #1 Tokens");
-    testFunctions.showLoanTokens(tokensList2,"Loan #2 Tokens");
+  //   let tokensList1 = await instance_loan.getTokenListsOfLoanByTypes(1);
+  //   let tokensList2 = await instance_loan.getTokenListsOfLoanByTypes(2);
+  //   testFunctions.showLoanTokens(tokensList1,"Loan #1 Tokens");
+  //   testFunctions.showLoanTokens(tokensList2,"Loan #2 Tokens");
 
-    expect(tokensList1[1].length, "There should be one token in approved list for loan #1").to.be.equal(1);
-    expect(tokensList2[1].length, "There should be NO token in approved list for loan #2").to.be.equal(0);
-    expect(tokensList2[2].length, "There should be one token in declined list for loan #2").to.be.equal(1);
-  });
+  //   expect(tokensList1[1].length, "There should be one token in approved list for loan #1").to.be.equal(1);
+  //   expect(tokensList2[1].length, "There should be NO token in approved list for loan #2").to.be.equal(0);
+  //   expect(tokensList2[2].length, "There should be one token in declined list for loan #2").to.be.equal(1);
+  // });
 });

@@ -3,7 +3,6 @@ var SnarkBid = artifacts.require('SnarkBid');
 var SnarkBase = artifacts.require('SnarkBase');
 var SnarkERC721 = artifacts.require('SnarkERC721');
 var SnarkLoan = artifacts.require('SnarkLoan');
-var SnarkLoanExt = artifacts.require('SnarkLoanExt');
 var SnarkLoanLib = artifacts.require('SnarkLoanLib');
 var SnarkTestFunctions = artifacts.require('SnarkTestFunctions');
 
@@ -24,7 +23,6 @@ contract('SnarkBase', async accounts => {
     instance_snarkbase = await SnarkBase.deployed();
     instance_erc = await SnarkERC721.deployed();
     instance_loan = await SnarkLoan.deployed();
-    instance_loanext = await SnarkLoanExt.deployed();
     instance_loanlib = await SnarkLoanLib.deployed();
     instance_testFunctions = await SnarkTestFunctions.deployed();
 
@@ -74,27 +72,27 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    instance_loan.LoanDeleted({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var id = result.args.loanId;
-        console.log(`       Loan deleted !!! Id: ${id}`);
-      }
-    });
+    // instance_loan.LoanDeleted({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var id = result.args.loanId;
+    //     console.log(`       Loan deleted !!! Id: ${id}`);
+    //   }
+    // });
 
-    instance_loanlib.TokenCanceledInLoans({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var id = result.args.tokenId;
-        var loans = result.args.loanList;
-        console.log(`      Token Cancelled !!! Id: ${id} Loans: ${loans}`);
-      }
-    });
+    // instance_loanlib.TokenCanceledInLoans({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var id = result.args.tokenId;
+    //     var loans = result.args.loanList;
+    //     console.log(`      Token Cancelled !!! Id: ${id} Loans: ${loans}`);
+    //   }
+    // });
 
-    instance_loan.LoanFinished({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var id = result.args.loanId;
-        console.log(`       Loan finished !!! Id: ${id}`);
-      }
-    });
+    // instance_loan.LoanFinished({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var id = result.args.loanId;
+    //     console.log(`       Loan finished !!! Id: ${id}`);
+    //   }
+    // });
 
     instance_snarkbase.TokenCreated({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
@@ -118,29 +116,29 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    instance_loan.LoanAccepted({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var loanId = result.args.loanId;
-        var tokenId = result.args.tokenId;
-        var tokenOwner = result.args.tokenOwner;
+    // instance_loan.LoanAccepted({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var loanId = result.args.loanId;
+    //     var tokenId = result.args.tokenId;
+    //     var tokenOwner = result.args.tokenOwner;
 
-        console.log(
-          `       Loan Accepted. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
-        );
-      }
-    });
+    //     console.log(
+    //       `       Loan Accepted. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
+    //     );
+    //   }
+    // });
 
-    instance_loan.LoanDeclined({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var loanId = result.args.loanId;
-        var tokenId = result.args.tokenId;
-        var tokenOwner = result.args.tokenOwner;
+    // instance_loan.LoanDeclined({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var loanId = result.args.loanId;
+    //     var tokenId = result.args.tokenId;
+    //     var tokenOwner = result.args.tokenOwner;
 
-        console.log(
-          `       Loan Declined. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
-        );
-      }
-    });
+    //     console.log(
+    //       `       Loan Declined. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
+    //     );
+    //   }
+    // });
 
   });
 
@@ -171,49 +169,49 @@ contract('SnarkBase', async accounts => {
     assert.equal(retval.toNumber(), 1, 'Accounts[1] should have one token');
   });
 
-  it('3. Create loan for token with offer. Should be rejected.', async () => {
-    const startDateTimestamp1 = datetime.create(new Date()).getTime();
-    const duration = 1;
+  // it('3. Create loan for token with offer. Should be rejected.', async () => {
+  //   const startDateTimestamp1 = datetime.create(new Date()).getTime();
+  //   const duration = 1;
 
-    await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
-    let loans = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[1]);
-    console.log('Tokens: ', loans[0]);
-    console.log('Loans: ', loans[1]);
+  //   await expect(instance_loan.createLoan([1], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
+  //   let loans = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[1]);
+  //   console.log('Tokens: ', loans[0]);
+  //   console.log('Loans: ', loans[1]);
 
-    let details = await instance_loan.getLoanDetail(1);
-    console.log('Loan #1 Details: ', details);
+  //   let details = await instance_loan.getLoanDetail(1);
+  //   console.log('Loan #1 Details: ', details);
 
-    let tokens = await instance_loan.getTokenListsOfLoanByTypes(1);
-    console.log('Tokens: ', tokens[0], tokens[1], tokens[2]);
+  //   let tokens = await instance_loan.getTokenListsOfLoanByTypes(1);
+  //   console.log('Tokens: ', tokens[0], tokens[1], tokens[2]);
 
-    let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1);
-    console.log('List of Loans: ', listOfLoans);
-  });
+  //   let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1);
+  //   console.log('List of Loans: ', listOfLoans);
+  // });
   
-  it('4. Create one offer. Should be accepted. Loans should be removed.', async () => {
+  // it('4. Create one offer. Should be accepted. Loans should be removed.', async () => {
 
-    await expect(
-      instance_offer.addOffer(1, web3.utils.toWei('1',"ether"),{from:accounts[1]}),
-      "Should be able to create offer for token 1"
-    ).to.be.eventually.fulfilled;
+  //   await expect(
+  //     instance_offer.addOffer(1, web3.utils.toWei('1',"ether"),{from:accounts[1]}),
+  //     "Should be able to create offer for token 1"
+  //   ).to.be.eventually.fulfilled;
 
-    let offer1 = await instance_offer.getOfferByToken(1);
-    console.log('Offer token #1', offer1.toString());
+  //   let offer1 = await instance_offer.getOfferByToken(1);
+  //   console.log('Offer token #1', offer1.toString());
 
-    loans = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[1]);
-    console.log('Loans: ', loans);
+  //   loans = await instance_loanext.getLoanRequestsListOfTokenOwner(accounts[1]);
+  //   console.log('Loans: ', loans);
 
-    details = await instance_loan.getLoanDetail(1);
-    console.log('Loan #1 Details: ', details);
+  //   details = await instance_loan.getLoanDetail(1);
+  //   console.log('Loan #1 Details: ', details);
 
-    let tokens = await instance_loan.getTokenListsOfLoanByTypes(1);
-    console.log('Tokens: ', tokens[0], tokens[1], tokens[2]);
-    expect(tokens[0].length,"Loan 1 should not have any tokens").to.be.equal(0);
+  //   let tokens = await instance_loan.getTokenListsOfLoanByTypes(1);
+  //   console.log('Tokens: ', tokens[0], tokens[1], tokens[2]);
+  //   expect(tokens[0].length,"Loan 1 should not have any tokens").to.be.equal(0);
 
-    let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1);
-    console.log('List of Loans: ', listOfLoans);
-    expect(listOfLoans.length,"Token #1 shoult not have any related loans").to.be.equal(0);
+  //   let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1);
+  //   console.log('List of Loans: ', listOfLoans);
+  //   expect(listOfLoans.length,"Token #1 shoult not have any related loans").to.be.equal(0);
 
-  });
+  // });
 
 });

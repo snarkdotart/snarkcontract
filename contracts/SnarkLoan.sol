@@ -3,10 +3,8 @@ pragma solidity >=0.5.0;
 import "./openzeppelin/Ownable.sol";
 import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkBaseLib.sol";
-// import "./snarklibs/SnarkCommonLib.sol";
 import "./snarklibs/SnarkLoanLib.sol";
 import "./openzeppelin/SafeMath.sol";
-// import "./snarklibs/SnarkLoanLibExt.sol";
 
 
 /// @title Contract provides a functionality to work with loans
@@ -14,14 +12,14 @@ import "./openzeppelin/SafeMath.sol";
 contract SnarkLoan is Ownable, SnarkDefinitions {
 
     using SnarkBaseLib for address;
-    // using SnarkCommonLib for address;
     using SnarkLoanLib for address;
     using SafeMath for uint256;
 
     address private _storage;
     address private _erc721;
 
-    // event LoanCreated(address indexed loanBidOwner, uint256 loanId);
+    event LoanCreated(address indexed loanBidOwner, uint256 loanId);
+    
     // event LoanStarted(uint256 loanId);
     // event LoanFinished(uint256 loanId);
     // event LoanDeleted(uint256 loanId);
@@ -125,6 +123,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         } else {
             SnarkLoanLib.setPreviousLoan(_storage, beforeLoanId, loanId);
         }
+
+        emit LoanCreated(msg.sender, loanId);
     }
 
     // function getListOfLoans

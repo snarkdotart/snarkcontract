@@ -1,9 +1,9 @@
 var SafeMath            = artifacts.require("openzeppelin/SafeMath.sol");
 var AddressUtils        = artifacts.require("openzeppelin/AddressUtils.sol");
 var SnarkCommonLib      = artifacts.require("snarklibs/SnarkCommonLib");
-var SnarkBaseLib        = artifacts.require("snarklibs/SnarkBaseLib");
 var SnarkBaseExtraLib   = artifacts.require("snarklibs/SnarkBaseExtraLib");
-var SnarkLoanLibExt     = artifacts.require("snarklibs/SnarkLoanLibExt");
+var SnarkBaseLib        = artifacts.require("snarklibs/SnarkBaseLib");
+var SnarkLoanLib        = artifacts.require("snarklibs/SnarkLoanLib");
 
 var SnarkERC721         = artifacts.require("SnarkERC721");
 var SnarkStorage        = artifacts.require("SnarkStorage");
@@ -13,9 +13,9 @@ module.exports = function(deployer) {
         await deployer.link(SafeMath, SnarkERC721);
         await deployer.link(AddressUtils, SnarkERC721);
         await deployer.link(SnarkCommonLib, SnarkERC721);
-        await deployer.link(SnarkBaseLib, SnarkERC721);
         await deployer.link(SnarkBaseExtraLib, SnarkERC721);
-        await deployer.link(SnarkLoanLibExt, SnarkERC721);
+        await deployer.link(SnarkBaseLib, SnarkERC721);
+        await deployer.link(SnarkLoanLib, SnarkERC721);
         
         let storage_instance = await SnarkStorage.deployed();
         await deployer.deploy(SnarkERC721, storage_instance.address);

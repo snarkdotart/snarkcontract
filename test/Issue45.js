@@ -73,27 +73,27 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    instance_loan.LoanDeleted({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var id = result.args.loanId;
-        console.log(`       Loan deleted !!! Id: ${id}`);
-      }
-    });
+    // instance_loan.LoanDeleted({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var id = result.args.loanId;
+    //     console.log(`       Loan deleted !!! Id: ${id}`);
+    //   }
+    // });
 
-    instance_loanlib.TokenCanceledInLoans({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var id = result.args.tokenId;
-        var loans = result.args.loanList;
-        console.log(`      Token Cancelled !!! Id: ${id} Loans: ${loans}`);
-      }
-    });
+    // instance_loanlib.TokenCanceledInLoans({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var id = result.args.tokenId;
+    //     var loans = result.args.loanList;
+    //     console.log(`      Token Cancelled !!! Id: ${id} Loans: ${loans}`);
+    //   }
+    // });
 
-    loanfinished = instance_loan.LoanFinished({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var id = result.args.loanId;
-        console.log(`       Loan finished !!! Id: ${id}`);
-      }
-    });
+    // loanfinished = instance_loan.LoanFinished({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var id = result.args.loanId;
+    //     console.log(`       Loan finished !!! Id: ${id}`);
+    //   }
+    // });
 
     instance_snarkbase.TokenCreated({ fromBlock: 'latest' }, function(error, result) {
       if (!error) {
@@ -117,36 +117,36 @@ contract('SnarkBase', async accounts => {
       }
     });
 
-    instance_loan.LoanAccepted({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var loanId = result.args.loanId;
-        var tokenId = result.args.tokenId;
-        var tokenOwner = result.args.tokenOwner;
+    // instance_loan.LoanAccepted({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var loanId = result.args.loanId;
+    //     var tokenId = result.args.tokenId;
+    //     var tokenOwner = result.args.tokenOwner;
 
-        console.log(
-          `       Loan Accepted. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
-        );
-      }
-    });
+    //     console.log(
+    //       `       Loan Accepted. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
+    //     );
+    //   }
+    // });
 
-    instance_loan.LoanStarted({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var loanId = result.args.loanId;
-        console.log(`       Loan Started. Id: ${loanId}`);
-      }
-    });
+    // instance_loan.LoanStarted({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var loanId = result.args.loanId;
+    //     console.log(`       Loan Started. Id: ${loanId}`);
+    //   }
+    // });
 
-    instance_loan.LoanDeclined({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var loanId = result.args.loanId;
-        var tokenId = result.args.tokenId;
-        var tokenOwner = result.args.tokenOwner;
+    // instance_loan.LoanDeclined({ fromBlock: 'latest' }, function(error, result) {
+    //   if (!error) {
+    //     var loanId = result.args.loanId;
+    //     var tokenId = result.args.tokenId;
+    //     var tokenOwner = result.args.tokenOwner;
 
-        console.log(
-          `       Loan Declined. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
-        );
-      }
-    });
+    //     console.log(
+    //       `       Loan Declined. Id: ${loanId} TokenId: ${tokenId} TokenOwner: ${tokenOwner}`
+    //     );
+    //   }
+    // });
 
   });
 
@@ -197,52 +197,48 @@ contract('SnarkBase', async accounts => {
     assert.equal(retval.toNumber(), 3, 'Accounts[1] should have one token');
   });
 
-  it('3. Create and start loan. Should be accepted. Loan is auto accepted.', async () => {
-    const startDateTimestamp1 = datetime.create(new Date()).getTime();
-    const duration = 1;
-    // function createLoan(uint256[] tokensIds, uint256 startDate, uint256 duration) public payable restrictedAccess {
-      let tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
-      testFunctions.showLoanTokens(tokens, "Before Loan Creation")
-      let num = await instance_testFunctions.getNumberOfLoansInTokensLoanList(1)
-      console.log('Loans for token 1: ', num.toNumber())
+  // it('3. Create and start loan. Should be accepted. Loan is auto accepted.', async () => {
+  //   const startDateTimestamp1 = datetime.create(new Date()).getTime();
+  //   const duration = 1;
+  //   // function createLoan(uint256[] tokensIds, uint256 startDate, uint256 duration) public payable restrictedAccess {
+  //     let tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
+  //     testFunctions.showLoanTokens(tokens, "Before Loan Creation")
+  //     let num = await instance_testFunctions.getNumberOfLoansInTokensLoanList(1)
+  //     console.log('Loans for token 1: ', num.toNumber())
 
-    await expect(instance_loan.createLoan([1,3], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
+  //   await expect(instance_loan.createLoan([1,3], startDateTimestamp1, duration)).to.be.eventually.fulfilled;
 
-    tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
-    testFunctions.showLoanTokens(tokens, "After Loan Creation")
-    let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1)
-    console.log('List of Loans: ', listOfLoans)
+  //   tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
+  //   testFunctions.showLoanTokens(tokens, "After Loan Creation")
+  //   let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1)
+  //   console.log('List of Loans: ', listOfLoans)
 
-    num = await instance_testFunctions.getNumberOfLoansInTokensLoanList(1)
-    console.log('Loans for token 1: ', num.toNumber())
+  //   num = await instance_testFunctions.getNumberOfLoansInTokensLoanList(1)
+  //   console.log('Loans for token 1: ', num.toNumber())
 
-    let saleType = await instance_testFunctions.getSaleTypeToToken(1)
-    console.log('Token #1 Sale Type: ', saleType.toNumber())
+  //   let saleType = await instance_testFunctions.getSaleTypeToToken(1)
+  //   console.log('Token #1 Sale Type: ', saleType.toNumber())
     
-    await expect(instance_loan.startLoan(1,{from:accounts[0]}), "It should be possible to start a Loan").to.be.eventually.fulfilled;
-    tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
-    testFunctions.showLoanTokens(tokens, "After Starting Loan")
-    listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1)
-    console.log('List of Loans: ', listOfLoans)
+  //   await expect(instance_loan.startLoan(1,{from:accounts[0]}), "It should be possible to start a Loan").to.be.eventually.fulfilled;
+  //   tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
+  //   testFunctions.showLoanTokens(tokens, "After Starting Loan")
+  //   listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1)
+  //   console.log('List of Loans: ', listOfLoans)
 
-    saleType = await instance_testFunctions.getSaleTypeToToken(1)
-    console.log('Token #1 Sale Type: ', saleType.toNumber())
+  //   saleType = await instance_testFunctions.getSaleTypeToToken(1)
+  //   console.log('Token #1 Sale Type: ', saleType.toNumber())
 
 
-  });
+  // });
   
-  it('4. Create one offer. Should be rejected because there is active loan.', async () => {
-    await expect(instance_offer.addOffer(1,web3.utils.toWei('1',"ether"),{from:accounts[1]}),"Loan is started. Should not be possible to add Offer. ").to.be.eventually.rejected
+  // it('4. Create one offer. Should be rejected because there is active loan.', async () => {
+  //   await expect(instance_offer.addOffer(1,web3.utils.toWei('1',"ether"),{from:accounts[1]}),"Loan is started. Should not be possible to add Offer. ").to.be.eventually.rejected
  
-    tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
-    testFunctions.showLoanTokens(tokens, "After Adding Offer.")
+  //   tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
+  //   testFunctions.showLoanTokens(tokens, "After Adding Offer.")
 
-    let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1)
-    console.log('List of Loans: ', listOfLoans)
-  });
-
-  
-
-
+  //   let listOfLoans = await instance_testFunctions.getListOfNotFinishedLoansForToken(1)
+  //   console.log('List of Loans: ', listOfLoans)
+  // });
 
 });
