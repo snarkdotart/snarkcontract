@@ -141,9 +141,19 @@ library SnarkLoanLib {
             .uintStorage(keccak256(abi.encodePacked("PreviousLoan", loanId)));
     }
 
-    function setPreviousLoan(address storageAddress, uint256 loanId, uint256 nextLoanId) public {
+    function setPreviousLoan(address storageAddress, uint256 loanId, uint256 previousLoanId) public {
         SnarkStorage(address(uint160(storageAddress)))
-            .setUint(keccak256(abi.encodePacked("PreviousLoan", loanId)), nextLoanId);
+            .setUint(keccak256(abi.encodePacked("PreviousLoan", loanId)), previousLoanId);
+    }
+
+    function getLoanPrice(address storageAddress, uint256 loanId) public view returns (uint256) {
+        return SnarkStorage(address(uint160(storageAddress)))
+            .uintStorage(keccak256(abi.encodePacked("LoanPrice", loanId)));
+    }
+
+    function setLoanPrice(address storageAddress, uint256 loanId, uint256 loanPrice) public {
+        SnarkStorage(address(uint160(storageAddress)))
+            .setUint(keccak256(abi.encodePacked("LoanPrice", loanId)), loanPrice);
     }
 
     function findPosition(address storageAddress, uint256 timestampStart, uint256 timestampEnd) 
@@ -153,37 +163,30 @@ library SnarkLoanLib {
         uint256 beforeLoanId = 0;
         bool isCrossedPeriod = false;
         if (isEmptyPointer(storageAddress)) {
-            // значит элемент будет первым
             require(timestampStart > getTopBoundaryOfLoansPeriod(storageAddress),
                 "Start of loan has to be bigger the last loan's end datetime");
         } else {
-            // значит уже есть лоаны, а это значит надо проверять диапазоны, чтобы понять:
-            // 1. что он ни с каким другим лоаном не пересекается 
-            // 2. и найти правильное место, куда его вставить (между какими лоанами)
-            // !!! первым делом проверим граничные диапазоны, тогда можно отделаться легким испугом
             if (timestampStart < getBottomBoundaryOfLoansPeriod(storageAddress) &&
                 timestampEnd < getBottomBoundaryOfLoansPeriod(storageAddress)) {
-                // если мы тут, то вставляемый элемент будет первым
-                // TODO: также тут надо изменить левую и правую границу - BottomBoundary и TopBoundary
                 beforeLoanId = getLoanPointer(storageAddress);
             } else if (
                 timestampStart > getTopBoundaryOfLoansPeriod(storageAddress) &&
                 timestampEnd > getTopBoundaryOfLoansPeriod(storageAddress)
             ) {
-                // если мы тут, то вставляемый элемент надо добавить в конец
-                // TODO: также тут надо изменить правую границу - TopBoundary
                 afterLoanId = getLoanPointer(storageAddress);
+                uint256 nloans = getNumberOfLoans(storageAddress);
+                if (nloans > 0) {
+                    for (uint i = 0; i < nloans - 1; i++) {
+                        afterLoanId = getNextLoan(storageAddress, afterLoanId);
+                    }
+                }
             } else {
-                // ну а если мы тут, то надо смотреть не пересекаемся ли мы с существующими
-                // и искать куда встроиться
                 uint256 loanId = getLoanPointer(storageAddress);
                 uint256 startDate;
                 uint256 endDate;
-
                 while (loanId > 0) {
                     startDate = getLoanStartDate(storageAddress, loanId);
                     endDate = getLoanEndDate(storageAddress, loanId);
-
                     if (timestampStart > startDate && timestampEnd > endDate) {
                         afterLoanId = loanId;
                     } else if (timestampStart < startDate && timestampEnd < endDate) {
@@ -192,11 +195,9 @@ library SnarkLoanLib {
                         isCrossedPeriod = true;
                         break;
                     }
-
                     loanId = getNextLoan(storageAddress, loanId);
                 }
             }
-
         }
         return (afterLoanId, beforeLoanId, isCrossedPeriod);
     }

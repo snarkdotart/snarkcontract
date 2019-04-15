@@ -70,13 +70,14 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         return SnarkLoanLib.getDefaultLoanDuration(_storage);
     }
 
-    function getLoanDetail(uint256 loanId) public view returns (address, uint256, uint256, uint256, uint256) {
+    function getLoanDetail(uint256 loanId) public view returns (address, uint256, uint256, uint256, uint256, uint256) {
         return (
             SnarkLoanLib.getOwnerOfLoan(_storage, loanId),
             SnarkLoanLib.getLoanStartDate(_storage, loanId),
             SnarkLoanLib.getLoanEndDate(_storage, loanId),
             SnarkLoanLib.getPreviousLoan(_storage, loanId),
-            SnarkLoanLib.getNextLoan(_storage, loanId)
+            SnarkLoanLib.getNextLoan(_storage, loanId),
+            SnarkLoanLib.getLoanPrice(_storage, loanId)
         );
     }
 
@@ -104,13 +105,13 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         SnarkLoanLib.setLoanEndDate(_storage, loanId, timestampEnd);
         SnarkLoanLib.setNextLoan(_storage, loanId, beforeLoanId);
         SnarkLoanLib.setPreviousLoan(_storage, loanId, afterLoanId);
+        SnarkLoanLib.setLoanPrice(_storage, loanId, msg.value);
 
         // изменяем количество лоанов
         SnarkLoanLib.setNumberOfLoans(_storage, SnarkLoanLib.getNumberOfLoans(_storage).add(1));
 
-        // 1. изменить границы, если надо 
-        // 2. ссылки у соседних элементов
-        // 3. изменить pointer, если надо
+        // TODO: необходимо вести список loan для владельца, чтобы можно было его получить
+
         if (afterLoanId == 0) { 
             SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, timestampStart); 
             SnarkLoanLib.setLoanPointer(_storage, loanId);
@@ -119,7 +120,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         }
 
         if (beforeLoanId == 0) { 
-            SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, timestampEnd); 
+            SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, timestampEnd);
         } else {
             SnarkLoanLib.setPreviousLoan(_storage, beforeLoanId, loanId);
         }
@@ -127,6 +128,65 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         emit LoanCreated(msg.sender, loanId);
     }
 
-    // function getListOfLoans
-    // function deleteLoan
+    function deleteLoan(uint256 loanId) public onlyLoanOwner(loanId) {
+        uint256 beforeLoanId = SnarkLoanLib.getPreviousLoan(_storage, loanId);
+        uint256 nextLoanId = SnarkLoanLib.getNextLoan(_storage, loanId);
+        uint256 countOfLoans = SnarkLoanLib.getNumberOfLoans(_storage);
+
+        if (beforeLoanId == 0 && nextLoanId == 0) {
+            SnarkLoanLib.setLoanPointer(_storage, 0);
+            SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, 0);
+            SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, 0);
+            SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+        }
+        if (beforeLoanId == 0 && nextLoanId > 0) {
+            SnarkLoanLib.setPreviousLoan(_storage, nextLoanId, 0);
+            uint256 pointerToLoan = SnarkLoanLib.getLoanPointer(_storage);
+            if (pointerToLoan == loanId) {
+                SnarkLoanLib.setLoanPointer(_storage, nextLoanId);
+            }
+            uint256 bottomTime = SnarkLoanLib.getLoanStartDate(_storage, nextLoanId);
+            SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, bottomTime);
+            SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+        }
+        if (beforeLoanId > 0 && nextLoanId == 0) {
+            SnarkLoanLib.setNextLoan(_storage, beforeLoanId, 0);
+            uint256 topTime = SnarkLoanLib.getLoanEndDate(_storage, beforeLoanId);
+            SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, topTime);
+            SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+        }
+        if (beforeLoanId > 0 && nextLoanId > 0) {
+            SnarkLoanLib.setNextLoan(_storage, beforeLoanId, nextLoanId);
+            SnarkLoanLib.setPreviousLoan(_storage, nextLoanId, beforeLoanId);
+            SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+        }
+        // TODO: удалить лоан из списка пользователя
+    }
+
+    function getNumberOfLoans() public view returns (uint256) {
+        return SnarkLoanLib.getNumberOfLoans(_storage);
+    }
+
+    function getListOfLoans() public view returns (uint256[] memory) {
+        uint256 numberOfLoans = getNumberOfLoans();
+        uint256[] memory loans = new uint256[](numberOfLoans);
+
+        if (numberOfLoans > 0) {
+            uint256 id = SnarkLoanLib.getLoanPointer(_storage);
+            for (uint256 i = 0; i < numberOfLoans; i++) {
+                loans[i] = id;
+                id = SnarkLoanLib.getNextLoan(_storage, id);
+            }
+        }
+
+        return loans;
+    }
+
+    // TODO:
+    // function getListOfLoansOfOwner() public view returns (uint256[] memory) {
+    // }
+    function getLoanId() public view returns (uint256) {
+        return SnarkLoanLib.getLoanPointer(_storage);
+    }
+
 }

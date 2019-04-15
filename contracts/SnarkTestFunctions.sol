@@ -76,4 +76,16 @@ contract SnarkTestFunctions {
         );
     }
 
+    /// TEST FUNCTION OF NEW LOAN
+    function getTopBoundaryOfLoansPeriod() public view returns (uint256) {
+        return SnarkLoanLib.getTopBoundaryOfLoansPeriod(_storage);
+    }
+
+    function getBottomBoundaryOfLoansPeriod() public view returns (uint256) {
+        return SnarkLoanLib.getBottomBoundaryOfLoansPeriod(_storage);
+    }
+
+    function findPosition(uint256 _start, uint256 _finish) public view returns (uint256, uint256, bool) {
+        return SnarkLoanLib.findPosition(_storage, _start, _finish);
+    }
 }
