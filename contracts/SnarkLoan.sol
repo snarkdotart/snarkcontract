@@ -18,11 +18,11 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     address private _storage;
     address private _erc721;
 
-    event LoanCreated(address indexed loanBidOwner, uint256 loanId);
+    event LoanCreated(address indexed loanOwner, uint256 loanId);
+    event LoanDeleted(uint256 loanId);
     
     // event LoanStarted(uint256 loanId);
     // event LoanFinished(uint256 loanId);
-    // event LoanDeleted(uint256 loanId);
     modifier restrictedAccess() {
         if (SnarkBaseLib.isRestrictedAccess(_storage)) {
             require(msg.sender == owner, "only Snark can perform the function");
@@ -163,6 +163,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         // удаляем лоан из списка пользователя
         address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
         SnarkLoanLib.deleteLoanFromOwnerList(_storage, loanOwner, loanId);
+        
+        emit LoanDeleted(loanId);
     }
 
     function getNumberOfLoans() public view returns (uint256) {
