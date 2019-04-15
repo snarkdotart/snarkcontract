@@ -78,6 +78,10 @@ contract('SnarkLoan', async (accounts) => {
         let findplace = await snarktest.findPosition(loan_1_start, loan_1_finish);
         console.log(`find position for loan 1: ${JSON.stringify(findplace)}`);
 
+        // проверим количество лоанов у пользователя перед добавлением. Должно быть 0
+        let numberOfOwnerLoans = await snarkloan.getCountOfOwnerLoans(accounts[0]);
+        expect(numberOfOwnerLoans.toNumber()).to.equal(0);
+
         // добавляем первый лоан
         await snarkloan.createLoan(loan_1_start, loan_1_finish, { from: accounts[0], value: valueOfLoan });
 
@@ -239,6 +243,18 @@ contract('SnarkLoan', async (accounts) => {
 
         expect(bottomBoundary.toNumber()).to.equal(loan_4_start);
         expect(topBoundary.toNumber()).to.equal(loan_5_finish);
+
+        // проверим количество лоанов у пользователя перед добавлением. Должно быть 5
+        numberOfOwnerLoans = await snarkloan.getCountOfOwnerLoans(accounts[0]);
+        expect(numberOfOwnerLoans.toNumber()).to.equal(5);
+
+        let listOfOwnerLoans = await snarkloan.getListOfLoansOfOwner(accounts[0]);
+        expect(listOfOwnerLoans).to.have.lengthOf(5);
+        expect(listOfOwnerLoans[0].toNumber()).to.equal(1);
+        expect(listOfOwnerLoans[1].toNumber()).to.equal(2);
+        expect(listOfOwnerLoans[2].toNumber()).to.equal(3);
+        expect(listOfOwnerLoans[3].toNumber()).to.equal(4);
+        expect(listOfOwnerLoans[4].toNumber()).to.equal(5);
     });
 
     it("test delete of loan", async () => {
@@ -254,6 +270,14 @@ contract('SnarkLoan', async (accounts) => {
         expect(allloans[2].toNumber()).to.equal(3);
         expect(allloans[3].toNumber()).to.equal(2);
         expect(allloans[4].toNumber()).to.equal(5);
+
+        let listOfOwnerLoans = await snarkloan.getListOfLoansOfOwner(accounts[0]);
+        expect(listOfOwnerLoans).to.have.lengthOf(5);
+        expect(listOfOwnerLoans[0].toNumber()).to.equal(1);
+        expect(listOfOwnerLoans[1].toNumber()).to.equal(2);
+        expect(listOfOwnerLoans[2].toNumber()).to.equal(3);
+        expect(listOfOwnerLoans[3].toNumber()).to.equal(4);
+        expect(listOfOwnerLoans[4].toNumber()).to.equal(5);
 
         let bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         let topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
@@ -280,6 +304,13 @@ contract('SnarkLoan', async (accounts) => {
         expect(allloans[2].toNumber()).to.equal(2);
         expect(allloans[3].toNumber()).to.equal(5);
 
+        listOfOwnerLoans = await snarkloan.getListOfLoansOfOwner(accounts[0]);
+        expect(listOfOwnerLoans).to.have.lengthOf(4);
+        expect(listOfOwnerLoans[0].toNumber()).to.equal(1);
+        expect(listOfOwnerLoans[1].toNumber()).to.equal(2);
+        expect(listOfOwnerLoans[2].toNumber()).to.equal(3);
+        expect(listOfOwnerLoans[3].toNumber()).to.equal(5);
+
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
 
@@ -303,6 +334,12 @@ contract('SnarkLoan', async (accounts) => {
         expect(allloans[1].toNumber()).to.equal(3);
         expect(allloans[2].toNumber()).to.equal(2);
 
+        listOfOwnerLoans = await snarkloan.getListOfLoansOfOwner(accounts[0]);
+        expect(listOfOwnerLoans).to.have.lengthOf(3);
+        expect(listOfOwnerLoans[0].toNumber()).to.equal(1);
+        expect(listOfOwnerLoans[1].toNumber()).to.equal(2);
+        expect(listOfOwnerLoans[2].toNumber()).to.equal(3);
+
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
 
@@ -325,6 +362,11 @@ contract('SnarkLoan', async (accounts) => {
         expect(allloans[0].toNumber()).to.equal(1);
         expect(allloans[1].toNumber()).to.equal(2);
 
+        listOfOwnerLoans = await snarkloan.getListOfLoansOfOwner(accounts[0]);
+        expect(listOfOwnerLoans).to.have.lengthOf(2);
+        expect(listOfOwnerLoans[0].toNumber()).to.equal(1);
+        expect(listOfOwnerLoans[1].toNumber()).to.equal(2);
+
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
 
@@ -346,6 +388,10 @@ contract('SnarkLoan', async (accounts) => {
         expect(allloans).to.have.lengthOf(1);
         expect(allloans[0].toNumber()).to.equal(2);
 
+        listOfOwnerLoans = await snarkloan.getListOfLoansOfOwner(accounts[0]);
+        expect(listOfOwnerLoans).to.have.lengthOf(1);
+        expect(listOfOwnerLoans[0].toNumber()).to.equal(2);
+
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
 
@@ -364,6 +410,9 @@ contract('SnarkLoan', async (accounts) => {
 
         allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.have.lengthOf(0);
+
+        listOfOwnerLoans = await snarkloan.getListOfLoansOfOwner(accounts[0]);
+        expect(listOfOwnerLoans).to.have.lengthOf(0);
 
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();

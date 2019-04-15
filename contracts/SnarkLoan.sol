@@ -109,8 +109,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
 
         // изменяем количество лоанов
         SnarkLoanLib.setNumberOfLoans(_storage, SnarkLoanLib.getNumberOfLoans(_storage).add(1));
-
-        // TODO: необходимо вести список loan для владельца, чтобы можно было его получить
+        // добавляем в список владельца
+        SnarkLoanLib.addLoanToOwnerList(_storage, msg.sender, loanId);
 
         if (afterLoanId == 0) { 
             SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, timestampStart); 
@@ -160,7 +160,9 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             SnarkLoanLib.setPreviousLoan(_storage, nextLoanId, beforeLoanId);
             SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
         }
-        // TODO: удалить лоан из списка пользователя
+        // удаляем лоан из списка пользователя
+        address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
+        SnarkLoanLib.deleteLoanFromOwnerList(_storage, loanOwner, loanId);
     }
 
     function getNumberOfLoans() public view returns (uint256) {
@@ -170,7 +172,6 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     function getListOfLoans() public view returns (uint256[] memory) {
         uint256 numberOfLoans = getNumberOfLoans();
         uint256[] memory loans = new uint256[](numberOfLoans);
-
         if (numberOfLoans > 0) {
             uint256 id = SnarkLoanLib.getLoanPointer(_storage);
             for (uint256 i = 0; i < numberOfLoans; i++) {
@@ -178,13 +179,22 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
                 id = SnarkLoanLib.getNextLoan(_storage, id);
             }
         }
-
         return loans;
     }
 
-    // TODO:
-    // function getListOfLoansOfOwner() public view returns (uint256[] memory) {
-    // }
+    function getListOfLoansOfOwner(address loanOwner) public view returns (uint256[] memory) {
+        uint256 numberOfLoans = getCountOfOwnerLoans(loanOwner);
+        uint256[] memory loansList = new uint256[](numberOfLoans);
+        for (uint256 i = 0; i < numberOfLoans; i++) {
+            loansList[i] = SnarkLoanLib.getLoanFromOwnerListByIndex(_storage, loanOwner, i);
+        }
+        return loansList;
+    }
+
+    function getCountOfOwnerLoans(address loanOwner) public view returns (uint256) {
+        return SnarkLoanLib.getTotalNumberOfLoansInOwnerList(_storage, loanOwner);
+    }
+
     function getLoanId() public view returns (uint256) {
         return SnarkLoanLib.getLoanPointer(_storage);
     }

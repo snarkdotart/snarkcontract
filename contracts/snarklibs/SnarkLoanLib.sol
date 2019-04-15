@@ -374,4 +374,85 @@ library SnarkLoanLib {
             uintStorage(keccak256(abi.encodePacked("NotApprovedTokensForLoan", tokenOwner, position)));
     }
 
+    // array of owner loans
+    function addLoanToOwnerList(address storageAddress, address loanOwner, uint256 loanId) public {
+        if (!isLoanInOwnerList(storageAddress, loanOwner, loanId)) {
+            uint256 position = getTotalNumberOfLoansInOwnerList(storageAddress, loanOwner);
+            setLoanInOwnerListToIndex(storageAddress, loanOwner, position, loanId);
+            setIndexOfLoanInOwnerList(storageAddress, loanOwner, loanId, position);
+            setLoanInOwnerList(storageAddress, loanOwner, loanId, true);
+            setTotalNumberOfLoansInOwnerList(storageAddress, loanOwner, position.add(1));
+        }
+    }
+
+    function deleteLoanFromOwnerList(address storageAddress, address loanOwner, uint256 loanId) public {
+        if (isLoanInOwnerList(storageAddress, loanOwner, loanId)) {
+            uint256 position = getIndexOfLoanInOwnerList(storageAddress, loanOwner, loanId);
+            uint256 maxPosition = getTotalNumberOfLoansInOwnerList(storageAddress, loanOwner);
+            maxPosition = maxPosition.sub(1);
+            if (position < maxPosition) {
+                uint256 maxLoanId = getLoanFromOwnerListByIndex(storageAddress, loanOwner, maxPosition);
+                setIndexOfLoanInOwnerList(storageAddress, loanOwner, maxLoanId, position);
+                setLoanInOwnerListToIndex(storageAddress, loanOwner, position, maxLoanId);
+            }
+            setIndexOfLoanInOwnerList(storageAddress, loanOwner, loanId, 0);
+            setTotalNumberOfLoansInOwnerList(storageAddress, loanOwner, maxPosition);
+            setLoanInOwnerList(storageAddress, loanOwner, loanId, false);
+        }
+    }
+
+    function getTotalNumberOfLoansInOwnerList(address storageAddress, address loanOwner) 
+        public view returns (uint256) 
+    {
+        return SnarkStorage(address(uint160(storageAddress))).
+            uintStorage(keccak256(abi.encodePacked("totalNumberOfLoansInOwnerList", loanOwner)));
+    }
+
+    function setTotalNumberOfLoansInOwnerList(address storageAddress, address loanOwner, uint256 newAmount) public {
+        SnarkStorage(address(uint160(storageAddress))).
+            setUint(keccak256(abi.encodePacked("totalNumberOfLoansInOwnerList", loanOwner)), newAmount);
+    }
+
+    function getIndexOfLoanInOwnerList(address storageAddress, address loanOwner, uint256 loanId)
+        public view returns (uint256) 
+    {
+        return SnarkStorage(address(uint160(storageAddress))).
+            uintStorage(keccak256(abi.encodePacked("IndexOfLoanInOwnerList", loanOwner, loanId)));
+    }
+
+    function setIndexOfLoanInOwnerList(address storageAddress, address loanOwner, uint256 loanId, uint256 position)
+        public 
+    {
+        SnarkStorage(address(uint160(storageAddress))).
+            setUint(keccak256(abi.encodePacked("IndexOfLoanInOwnerList", loanOwner, loanId)), position);
+    }
+
+    function isLoanInOwnerList(address storageAddress, address loanOwner, uint256 loanId)
+        public view returns (bool)
+    {
+        return SnarkStorage(address(uint160(storageAddress))).
+            boolStorage(keccak256(abi.encodePacked("isLoanInOwnerList", loanOwner, loanId)));
+    }
+
+    function setLoanInOwnerList(address storageAddress, address loanOwner, uint256 loanId, bool isInList)
+        public 
+    {
+        SnarkStorage(address(uint160(storageAddress))).
+            setBool(keccak256(abi.encodePacked("isLoanInOwnerList", loanOwner, loanId)), isInList);
+    }
+
+    function getLoanFromOwnerListByIndex(address storageAddress, address loanOwner, uint256 position)
+        public view returns (uint256)
+    {
+        return SnarkStorage(address(uint160(storageAddress))).
+            uintStorage(keccak256(abi.encodePacked("OwnerLoansList", loanOwner, position)));
+
+    }
+
+    function setLoanInOwnerListToIndex(address storageAddress, address loanOwner, uint256 position, uint256 loanId)
+        public
+    {
+        SnarkStorage(address(uint160(storageAddress))).
+            setUint(keccak256(abi.encodePacked("OwnerLoansList", loanOwner, position)), loanId);
+    }
 }
