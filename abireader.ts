@@ -4,7 +4,8 @@ const path_contractservice = '../snarkfrontend/src/app/shared/contract/contract.
 
 const dictionary = [
 	['private SnarkBaseABI =', './build/contracts/SnarkBase.json', 'abiSnarkBase: process.env.CONTRACT_ABI_SNARK_BASE'], 
-	['private SnarkOfferBidABI =', './build/contracts/SnarkOfferBid.json', 'abiSnarkOfferBid: process.env.CONTRACT_ABI_SNARK_OFFER_BID'],
+	['private SnarkOfferABI =', './build/contracts/SnarkOffer.json', 'abiSnarkOffer: process.env.CONTRACT_ABI_SNARK_OFFER'],
+	['private SnarkBidABI =', './build/contracts/SnarkBid.json', 'abiSnarkBid: process.env.CONTRACT_ABI_SNARK_BID'],
 	['private SnarkLoanABI =', './build/contracts/SnarkLoan.json', 'abiSnarkLoan: process.env.CONTRACT_ABI_SNARK_LOAN'],
 	['private SnarkERC721ABI =', './build/contracts/SnarkERC721.json', 'abiSnarkErc721: process.env.CONTRACT_ABI_SNARK_ERC721']
 ];

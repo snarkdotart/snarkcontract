@@ -5,7 +5,8 @@ const path_env = '../snarkfrontend/src/environments/environment.ts';
 
 const dict = [
 	['CONTRACT_SNARKBASE_ADDRESS', './build/contracts/SnarkBase.json', 'addressSnarkBase: process.env.CONTRACT_ADDRESS_SNARK_BASE'], 
-	['CONTRACT_SNARKOFFERBID_ADDRESS', './build/contracts/SnarkOfferBid.json', 'addressSnarkOfferBid: process.env.CONTRACT_ADDRESS_SNARK_OFFER_BID'],
+	['CONTRACT_SNARKOFFER_ADDRESS', './build/contracts/SnarkOffer.json', 'addressSnarkOffer: process.env.CONTRACT_ADDRESS_SNARK_OFFER'],
+	['CONTRACT_SNARKBID_ADDRESS', './build/contracts/SnarkBid.json', 'addressSnarkBid: process.env.CONTRACT_ADDRESS_SNARK_BID'],
 	['CONTRACT_SNARKLOAN_ADDRESS', './build/contracts/SnarkLoan.json', 'addressSnarkLoan: process.env.CONTRACT_ADDRESS_SNARK_LOAN'],
 	['CONTRACT_SNARKERC721_ADDRESS', './build/contracts/SnarkERC721.json', 'addressSnarkErc721: process.env.CONTRACT_ADDRESS_SNARK_ERC721']
 ];
