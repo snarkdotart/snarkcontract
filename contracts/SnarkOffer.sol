@@ -28,7 +28,7 @@ contract SnarkOffer is Ownable, SnarkDefinitions {
     event OfferDeleted(uint256 _offerId);
 
     modifier restrictedAccess() {
-        if (SnarkBaseLib.isRestrictedAccess(address(uint160(_storage)))) {
+        if (SnarkBaseLib.isRestrictedAccess(_storage)) {
             require(msg.sender == owner, "only Snark can perform the function");
         }
         _;
@@ -38,7 +38,7 @@ contract SnarkOffer is Ownable, SnarkDefinitions {
     /// @param _tokenId Token ID
     modifier onlyOwnerOf(uint256 _tokenId) {
         require(
-            msg.sender == SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), _tokenId), 
+            msg.sender == SnarkBaseLib.getOwnerOfToken(_storage, _tokenId), 
             "it's not a token owner"
         );
         _;
@@ -48,7 +48,7 @@ contract SnarkOffer is Ownable, SnarkDefinitions {
     /// @param _offerId Id of offer
     modifier onlyOfferOwner(uint256 _offerId) {
         require(
-            msg.sender == SnarkOfferBidLib.getOwnerOfOffer(address(uint160(_storage)), _offerId), 
+            msg.sender == SnarkOfferBidLib.getOwnerOfOffer(_storage, _offerId), 
             "it's not an offer owner"
         );
         _;
@@ -78,11 +78,11 @@ contract SnarkOffer is Ownable, SnarkDefinitions {
     /// @dev Function returns a count of offers which belong to a specific owner
     /// @param _owner Owner address
     function getOwnerOffersCount(address _owner) public view returns (uint256 offersCount) {
-        return SnarkOfferBidLib.getTotalNumberOfOwnerOffers(address(uint160(_storage)), _owner);
+        return SnarkOfferBidLib.getTotalNumberOfOwnerOffers(_storage, _owner);
     }
 
     function getOwnerOfferByIndex(address _owner, uint256 _index) public view returns (uint256 offerId) {
-        return SnarkOfferBidLib.getOfferOfOwnerByIndex(address(uint160(_storage)), _owner, _index);
+        return SnarkOfferBidLib.getOfferOfOwnerByIndex(_storage, _owner, _index);
     }
 
     /// @dev Function to create an offer for the secondary sale.
@@ -91,20 +91,20 @@ contract SnarkOffer is Ownable, SnarkDefinitions {
     function addOffer(uint256 _tokenId, uint256 _price) public onlyOwnerOf(_tokenId) {
         require(_price > 0, "Price has to be more than zero");
         require(
-            SnarkBaseLib.getSaleTypeToToken(address(uint160(_storage)), _tokenId) == uint256(SaleType.None),
+            SnarkBaseLib.getSaleTypeToToken(_storage, _tokenId) == uint256(SaleType.None),
             "Token should not be involved in sales"
         );
 
-        uint256 bidsCount = SnarkOfferBidLib.getNumberBidsOfToken(address(uint160(_storage)), _tokenId);
+        uint256 bidsCount = SnarkOfferBidLib.getNumberBidsOfToken(_storage, _tokenId);
         if (bidsCount > 0) {
             require(
-                SnarkOfferBidLib.getMaxBidPriceForToken(address(uint160(_storage)), _tokenId) < _price, 
+                SnarkOfferBidLib.getMaxBidPriceForToken(_storage, _tokenId) < _price, 
                 "Offer amount must be higher than the bid price");
         }
         // delete all loans if they exist
-        // SnarkLoanLib.cancelTokenFromAllLoans(address(uint160(_storage)), _tokenId);
+        // SnarkLoanLib.cancelTokenFromAllLoans(_storage, _tokenId);
         // Offer creation and return of the offer ID
-        uint256 offerId = SnarkOfferBidLib.addOffer(address(uint160(_storage)), msg.sender, _tokenId, _price);
+        uint256 offerId = SnarkOfferBidLib.addOffer(_storage, msg.sender, _tokenId, _price);
         // Emit an event that returns token id and offer id as well
         emit OfferAdded(msg.sender, offerId, _tokenId);
     }
@@ -114,9 +114,9 @@ contract SnarkOffer is Ownable, SnarkDefinitions {
     /// @param _offerId Offer ID
     function cancelOffer(uint256 _offerId) public correctOffer(_offerId) onlyOfferOwner(_offerId) {
         require(
-            SnarkOfferBidLib.getSaleStatusForOffer(address(uint160(_storage)), _offerId) == uint256(SaleStatus.Active),
+            SnarkOfferBidLib.getSaleStatusForOffer(_storage, _offerId) == uint256(SaleStatus.Active),
             "It's not impossible delete when the offer status is 'finished'");
-        SnarkOfferBidLib.cancelOffer(address(uint160(_storage)), _offerId);
+        SnarkOfferBidLib.cancelOffer(_storage, _offerId);
         // emit event that the offer has been deleted        
         emit OfferDeleted(_offerId);
     }
@@ -126,10 +126,10 @@ contract SnarkOffer is Ownable, SnarkDefinitions {
     function buyOffer(uint256[] memory _offerIdArray) public payable {
         uint256 sumPrice;
         for (uint256 i = 0; i < _offerIdArray.length; i++) { 
-            sumPrice += SnarkOfferBidLib.getOfferPrice(address(uint160(_storage)), _offerIdArray[i]); 
-            uint256 tokenId = SnarkOfferBidLib.getTokenByOffer(address(uint160(_storage)), _offerIdArray[i]);
-            address tokenOwner = SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokenId);
-            uint256 saleStatus = SnarkOfferBidLib.getSaleStatusForOffer(address(uint160(_storage)), _offerIdArray[i]);
+            sumPrice += SnarkOfferBidLib.getOfferPrice(_storage, _offerIdArray[i]); 
+            uint256 tokenId = SnarkOfferBidLib.getTokenByOffer(_storage, _offerIdArray[i]);
+            address tokenOwner = SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
+            uint256 saleStatus = SnarkOfferBidLib.getSaleStatusForOffer(_storage, _offerIdArray[i]);
             require(msg.sender != tokenOwner, "Token owner can't buy their own token");
             require(saleStatus == uint256(SaleStatus.Active), "Offer status must be active");
         }
@@ -139,20 +139,20 @@ contract SnarkOffer is Ownable, SnarkDefinitions {
         address(uint160(_storage)).transfer(msg.value);
 
         for (uint256 i = 0; i < _offerIdArray.length; i++) {
-            uint256 tokenId = SnarkOfferBidLib.getTokenByOffer(address(uint160(_storage)), _offerIdArray[i]);
-            address tokenOwner = SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokenId);
+            uint256 tokenId = SnarkOfferBidLib.getTokenByOffer(_storage, _offerIdArray[i]);
+            address tokenOwner = SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
             uint256 price = _storage.getOfferPrice(_offerIdArray[i]);
-            SnarkCommonLib.buy(address(uint160(_storage)), tokenId, price, tokenOwner, msg.sender);
+            SnarkCommonLib.buy(_storage, tokenId, price, tokenOwner, msg.sender);
             SnarkERC721(address(uint160(_erc721))).echoTransfer(tokenOwner, msg.sender, tokenId);
             // delete own's bid for the token if it exists
-            uint256 bidId = SnarkOfferBidLib.getBidForTokenAndBidOwner(address(uint160(_storage)), msg.sender, tokenId);
+            uint256 bidId = SnarkOfferBidLib.getBidForTokenAndBidOwner(_storage, msg.sender, tokenId);
             if (bidId > 0) {
-                SnarkOfferBidLib.deleteBid(address(uint160(_storage)), bidId);
-                if (SnarkOfferBidLib.getMaxBidForToken(address(uint160(_storage)), tokenId) == bidId) {
-                    SnarkOfferBidLib.updateMaxBidPriceForToken(address(uint160(_storage)), tokenId);
+                SnarkOfferBidLib.deleteBid(_storage, bidId);
+                if (SnarkOfferBidLib.getMaxBidForToken(_storage, tokenId) == bidId) {
+                    SnarkOfferBidLib.updateMaxBidPriceForToken(_storage, tokenId);
                 }
             }
-            SnarkOfferBidLib.cancelOffer(address(uint160(_storage)), _offerIdArray[i]);
+            SnarkOfferBidLib.cancelOffer(_storage, _offerIdArray[i]);
         }
         if (refunds > 0) {
             SnarkStorage(address(uint160(_storage))).transferFunds(address(uint160(msg.sender)), refunds);
@@ -160,30 +160,30 @@ contract SnarkOffer is Ownable, SnarkDefinitions {
     }
 
     function setLinkDropPrice(uint256 tokenId, uint256 price) public onlyOwner {
-        SnarkBaseLib.setTokenLastPrice(address(uint160(_storage)), tokenId, price);
+        SnarkBaseLib.setTokenLastPrice(_storage, tokenId, price);
     }
 
     function toGiftToken(uint256 tokenId, address to) public onlyOwnerOf(tokenId) {
         require(to != address(0), "Receiver's  address can't be equal zero");
-        SnarkOfferBidLib.prepareTokenToGift(address(uint160(_storage)), to, tokenId);
-        SnarkCommonLib.transferToken(address(uint160(_storage)), tokenId, msg.sender, to);
+        SnarkOfferBidLib.prepareTokenToGift(_storage, to, tokenId);
+        SnarkCommonLib.transferToken(_storage, tokenId, msg.sender, to);
         SnarkERC721(address(uint160(_erc721))).echoTransfer(msg.sender, to, tokenId);
     }
 
     function getSaleStatusForOffer(uint256 _offerId) public view returns (uint256) {
-        return SnarkOfferBidLib.getSaleStatusForOffer(address(uint160(_storage)), _offerId);
+        return SnarkOfferBidLib.getSaleStatusForOffer(_storage, _offerId);
     }
 
     function getTotalNumberOfOffers() public view returns (uint256) {
-        return SnarkOfferBidLib.getTotalNumberOfOffers(address(uint160(_storage)));
+        return SnarkOfferBidLib.getTotalNumberOfOffers(_storage);
     }
 
     function getTokenByOffer(uint256 _offerId) public view returns (uint256) {
-        return SnarkOfferBidLib.getTokenByOffer(address(uint160(_storage)), _offerId);
+        return SnarkOfferBidLib.getTokenByOffer(_storage, _offerId);
     }
 
     function getOfferByToken(uint256 _tokenId) public view returns (uint256) {
-        return SnarkOfferBidLib.getOfferByToken(address(uint160(_storage)), _tokenId);
+        return SnarkOfferBidLib.getOfferByToken(_storage, _tokenId);
     }
 
     function getOfferDetail(uint256 _offerId) public view returns (
@@ -194,14 +194,14 @@ contract SnarkOffer is Ownable, SnarkDefinitions {
         address tokenOwner)
     {
         offerId = _offerId;
-        offerPrice = SnarkOfferBidLib.getOfferPrice(address(uint160(_storage)), _offerId);
-        offerStatus = SnarkOfferBidLib.getSaleStatusForOffer(address(uint160(_storage)), _offerId);
-        tokenId = SnarkOfferBidLib.getTokenByOffer(address(uint160(_storage)), _offerId);
-        tokenOwner = SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokenId);
+        offerPrice = SnarkOfferBidLib.getOfferPrice(_storage, _offerId);
+        offerStatus = SnarkOfferBidLib.getSaleStatusForOffer(_storage, _offerId);
+        tokenId = SnarkOfferBidLib.getTokenByOffer(_storage, _offerId);
+        tokenOwner = SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
     }
 
     function getListOfOffersForOwner(address _offerOwner) public view returns (uint256[] memory) {
-        return SnarkOfferBidLib.getListOfOffersForOwner(address(uint160(_storage)), _offerOwner);
+        return SnarkOfferBidLib.getListOfOffersForOwner(_storage, _offerOwner);
     }
 
 }

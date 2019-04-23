@@ -7,8 +7,6 @@ var SnarkLoanLib = artifacts.require('SnarkLoanLib');
 var SnarkTestFunctions = artifacts.require('SnarkTestFunctions');
 
 var schemeId;
-var BigNumber = require('bignumber.js');
-var datetime = require('node-datetime');
 
 var chai = require('chai');
 var chaiAsPromised = require('chai-as-promised');

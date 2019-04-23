@@ -4,14 +4,9 @@ var SnarkStorage = artifacts.require("SnarkStorage");
 var SnarkTestFunctions = artifacts.require("SnarkTestFunctions");
 var SnarkOfferBid = artifacts.require("SnarkOfferBid");
 
-var datetime = require('node-datetime');
-// const BigNumber = require('bignumber.js');
-var BN = require("BN.js");
+const BN = web3.utils.BN;
 
 contract('SnarkLoan', async (accounts) => {
-    const batchSize = 15;
-    const needTokensCount = 150;
-    const borrower = accounts[10];
     const dt        = new Date();
     const _year     = dt.getFullYear();
     const _month    = dt.getMonth();

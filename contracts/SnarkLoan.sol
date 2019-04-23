@@ -201,4 +201,24 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         return SnarkLoanLib.getLoanPointer(_storage);
     }
 
+    function doUserHaveAccessToToken(address userWalletId, uint256 tokenId) public view returns (bool) {
+        address realOwner = SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
+        bool isUserHasAccess = (userWalletId == realOwner);
+        if (!isUserHasAccess) {
+            if (SnarkLoanLib.isLoanActive(_storage)) {
+                uint256 loanId = getLoanId();
+                address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
+                isUserHasAccess = (loanOwner == userWalletId);
+            }
+        }
+        return isUserHasAccess;
+    }
+
+    function isLoanActive() public view returns (bool) {
+        return SnarkLoanLib.isLoanActive(_storage);
+    }
+
+    function isLoanFinished() public view returns (bool) {
+        return SnarkLoanLib.isLoanFinished(_storage);
+    }
 }

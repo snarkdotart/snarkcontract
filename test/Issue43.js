@@ -5,10 +5,7 @@ var SnarkERC721 = artifacts.require('SnarkERC721');
 var SnarkLoan = artifacts.require('SnarkLoan');
 var SnarkTestFunctions = artifacts.require('SnarkTestFunctions');
 
-
 var schemeId;
-var BigNumber = require('bignumber.js');
-var datetime = require('node-datetime');
 
 var chai = require('chai');
 var testFunctions = require('./testFunctions.js')

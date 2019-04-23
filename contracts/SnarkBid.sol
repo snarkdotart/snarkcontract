@@ -25,7 +25,7 @@ contract SnarkBid is Ownable, SnarkDefinitions {
     event BidCanceled(uint256 _tokenId, uint256 _bidId);
 
     modifier restrictedAccess() {
-        if (SnarkBaseLib.isRestrictedAccess(address(uint160(_storage)))) {
+        if (SnarkBaseLib.isRestrictedAccess(_storage)) {
             require(msg.sender == owner, "only Snark can perform the function");
         }
         _;
@@ -35,7 +35,7 @@ contract SnarkBid is Ownable, SnarkDefinitions {
     /// @param _tokenId Token ID
     modifier onlyOwnerOf(uint256 _tokenId) {
         require(
-            msg.sender == SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), _tokenId), 
+            msg.sender == SnarkBaseLib.getOwnerOfToken(_storage, _tokenId), 
             "it's not a token owner"
         );
         _;
@@ -45,7 +45,7 @@ contract SnarkBid is Ownable, SnarkDefinitions {
     /// @param _bidId Bid ID
     modifier onlyBidOwner(uint256 _bidId) {
         require(
-            msg.sender == SnarkOfferBidLib.getOwnerOfBid(address(uint160(_storage)), _bidId), 
+            msg.sender == SnarkOfferBidLib.getOwnerOfBid(_storage, _bidId), 
             "it's not a bid owner"
         );
         _;
@@ -75,17 +75,17 @@ contract SnarkBid is Ownable, SnarkDefinitions {
     /// @dev Function to set bid for an token
     /// @param _tokenId Token token ID
     function addBid(uint256 _tokenId) public payable {
-        require(_tokenId > 0 && _tokenId <= SnarkBaseLib.getTotalNumberOfTokens(address(uint160(_storage))));
-        uint256 amountOfBids = SnarkOfferBidLib.getNumberBidsOfToken(address(uint160(_storage)), _tokenId);
+        require(_tokenId > 0 && _tokenId <= SnarkBaseLib.getTotalNumberOfTokens(_storage));
+        uint256 amountOfBids = SnarkOfferBidLib.getNumberBidsOfToken(_storage, _tokenId);
         require(amountOfBids < 10, "Token can't have more than 10 bids");
         require(
-            SnarkOfferBidLib.getBidForTokenAndBidOwner(address(uint160(_storage)), msg.sender, _tokenId) == 0, 
+            SnarkOfferBidLib.getBidForTokenAndBidOwner(_storage, msg.sender, _tokenId) == 0, 
             "You already have a bid for this token. Please cancel it before add a new one."
         );
         // it does not matter if the token is available for sale
         // it is possible to accept a bid unless
         // the token is part of a loan
-        SaleType currentSaleType = SaleType(SnarkBaseLib.getSaleTypeToToken(address(uint160(_storage)), _tokenId));
+        SaleType currentSaleType = SaleType(SnarkBaseLib.getSaleTypeToToken(_storage, _tokenId));
         require(
             currentSaleType == SaleType.Offer || 
             currentSaleType == SaleType.None, 
@@ -95,27 +95,27 @@ contract SnarkBid is Ownable, SnarkDefinitions {
         uint256 offerId;
         uint256 price;
         if (currentSaleType == SaleType.Offer) {
-            offerId = SnarkOfferBidLib.getOfferByToken(address(uint160(_storage)), _tokenId);
-            currentOwner = SnarkOfferBidLib.getOwnerOfOffer(address(uint160(_storage)), offerId);
-            price = SnarkOfferBidLib.getOfferPrice(address(uint160(_storage)), offerId);
+            offerId = SnarkOfferBidLib.getOfferByToken(_storage, _tokenId);
+            currentOwner = SnarkOfferBidLib.getOwnerOfOffer(_storage, offerId);
+            price = SnarkOfferBidLib.getOfferPrice(_storage, offerId);
             require(msg.value < price && msg.value > 0, 
                 "Bid amount must be less than the offer price but bigger than zero");
         } else {
-            currentOwner = SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), _tokenId);
+            currentOwner = SnarkBaseLib.getOwnerOfToken(_storage, _tokenId);
         }
         require(
             currentOwner != msg.sender, 
             "The token cannot belongs to the bidder"
         );
 
-        uint256 maxBidPrice = SnarkOfferBidLib.getMaxBidPriceForToken(address(uint160(_storage)), _tokenId);
+        uint256 maxBidPrice = SnarkOfferBidLib.getMaxBidPriceForToken(_storage, _tokenId);
         require(msg.value > maxBidPrice, "Price of new bid has to be bigger than previous one");
         
         address(uint160(_storage)).transfer(msg.value);
         
-        uint256 bidId = SnarkOfferBidLib.addBid(address(uint160(_storage)), msg.sender, _tokenId, msg.value);
+        uint256 bidId = SnarkOfferBidLib.addBid(_storage, msg.sender, _tokenId, msg.value);
         // adding an amount of this bid to a contract balance
-        SnarkBaseLib.addPendingWithdrawals(address(uint160(_storage)), _storage, msg.value);
+        SnarkBaseLib.addPendingWithdrawals(_storage, _storage, msg.value);
         // emit the bid creation event
         emit BidAdded(msg.sender, bidId, msg.value);
     }
@@ -130,32 +130,32 @@ contract SnarkBid is Ownable, SnarkDefinitions {
         uint256 maxBidPrice = _storage.getMaxBidPriceForToken(tokenId);
         require(price == maxBidPrice, "User has to accept the highest bid only");
 
-        SaleType saleType = SaleType(SnarkBaseLib.getSaleTypeToToken(address(uint160(_storage)), tokenId));
+        SaleType saleType = SaleType(SnarkBaseLib.getSaleTypeToToken(_storage, tokenId));
         require(
             saleType == SaleType.Offer || 
             saleType == SaleType.None,
             "Bids are not allowed while the token is in Loan status"
         );
-        address tokenOwner = SnarkBaseLib.getOwnerOfToken(address(uint160(_storage)), tokenId);
+        address tokenOwner = SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
         require(msg.sender == tokenOwner, "Only owner can accept a bid for their token");
 
-        // SnarkLoanLib.cancelTokenFromAllLoans(address(uint160(_storage)), tokenId);
+        // SnarkLoanLib.cancelTokenFromAllLoans(_storage, tokenId);
 
-        address bidOwner = SnarkOfferBidLib.getOwnerOfBid(address(uint160(_storage)), _bidId);
-        SnarkBaseLib.subPendingWithdrawals(address(uint160(_storage)), _storage, price);
-        SnarkCommonLib.buy(address(uint160(_storage)), tokenId, price, tokenOwner, bidOwner);
+        address bidOwner = SnarkOfferBidLib.getOwnerOfBid(_storage, _bidId);
+        SnarkBaseLib.subPendingWithdrawals(_storage, _storage, price);
+        SnarkCommonLib.buy(_storage, tokenId, price, tokenOwner, bidOwner);
         SnarkERC721(address(uint160(_erc721))).echoTransfer(tokenOwner, bidOwner, tokenId);
-        SnarkOfferBidLib.deleteBid(address(uint160(_storage)), _bidId);
+        SnarkOfferBidLib.deleteBid(_storage, _bidId);
 
         // deleting all bids related to the token
         _takeBackBidAmountsAndDeleteAllTokenBids(tokenId);
 
         // check if there is an offer for the token and delete it
-        uint256 offerId = SnarkOfferBidLib.getOfferByToken(address(uint160(_storage)), tokenId);
+        uint256 offerId = SnarkOfferBidLib.getOfferByToken(_storage, tokenId);
         if (offerId > 0 && 
-            offerId <= SnarkOfferBidLib.getTotalNumberOfOffers(address(uint160(_storage))) &&
-            tokenOwner == SnarkOfferBidLib.getOwnerOfOffer(address(uint160(_storage)), offerId)) {
-            SnarkOfferBidLib.cancelOffer(address(uint160(_storage)), offerId);
+            offerId <= SnarkOfferBidLib.getTotalNumberOfOffers(_storage) &&
+            tokenOwner == SnarkOfferBidLib.getOwnerOfOffer(_storage, offerId)) {
+            SnarkOfferBidLib.cancelOffer(_storage, offerId);
         }
     }
     
@@ -164,38 +164,38 @@ contract SnarkBid is Ownable, SnarkDefinitions {
     /// @param _bidId Bid ID
     function cancelBid(uint256 _bidId) public correctBid(_bidId) onlyBidOwner(_bidId) {
         require(
-            SnarkOfferBidLib.getBidSaleStatus(address(uint160(_storage)), _bidId) == uint256(SaleStatus.Active), 
+            SnarkOfferBidLib.getBidSaleStatus(_storage, _bidId) == uint256(SaleStatus.Active), 
             "Bid is already finished"
         );
-        address bidder = SnarkOfferBidLib.getOwnerOfBid(address(uint160(_storage)), _bidId);
-        uint256 tokenId = SnarkOfferBidLib.getTokenByBid(address(uint160(_storage)), _bidId);
-        uint256 price = SnarkOfferBidLib.getBidPrice(address(uint160(_storage)), _bidId);
-        SnarkBaseLib.subPendingWithdrawals(address(uint160(_storage)), _storage, price);
-        SnarkOfferBidLib.deleteBid(address(uint160(_storage)), _bidId);
-        if (SnarkOfferBidLib.getMaxBidForToken(address(uint160(_storage)), tokenId) == _bidId) {
-            SnarkOfferBidLib.updateMaxBidPriceForToken(address(uint160(_storage)), tokenId);
+        address bidder = SnarkOfferBidLib.getOwnerOfBid(_storage, _bidId);
+        uint256 tokenId = SnarkOfferBidLib.getTokenByBid(_storage, _bidId);
+        uint256 price = SnarkOfferBidLib.getBidPrice(_storage, _bidId);
+        SnarkBaseLib.subPendingWithdrawals(_storage, _storage, price);
+        SnarkOfferBidLib.deleteBid(_storage, _bidId);
+        if (SnarkOfferBidLib.getMaxBidForToken(_storage, tokenId) == _bidId) {
+            SnarkOfferBidLib.updateMaxBidPriceForToken(_storage, tokenId);
         }
         SnarkStorage(address(uint160(_storage))).transferFunds(address(uint160(bidder)), price);
         emit BidCanceled(tokenId, _bidId);
     }
 
     function getTotalNumberOfBids() public view returns (uint256) {
-        return SnarkOfferBidLib.getTotalNumberOfBids(address(uint160(_storage)));
+        return SnarkOfferBidLib.getTotalNumberOfBids(_storage);
     }
 
     function getNumberBidsOfToken(uint256 _tokenId) public view returns (uint256) {
-        return SnarkOfferBidLib.getNumberBidsOfToken(address(uint160(_storage)), _tokenId);
+        return SnarkOfferBidLib.getNumberBidsOfToken(_storage, _tokenId);
     }
 
     function getNumberBidsOfOwner(address _bidOwner) public view returns (uint256) {
-        return SnarkOfferBidLib.getNumberBidsOfOwner(address(uint160(_storage)), _bidOwner);
+        return SnarkOfferBidLib.getNumberBidsOfOwner(_storage, _bidOwner);
     }
 
     function getBidOfOwnerForToken(uint256 _tokenId) public view returns (uint256) {
         uint256 bidId = 0;
         uint256[] memory bidsList = getListOfBidsForOwner(msg.sender);
         for (uint256 i = 0; i < bidsList.length; i++) {
-            if (SnarkOfferBidLib.getTokenByBid(address(uint160(_storage)), bidsList[i]) == _tokenId) {
+            if (SnarkOfferBidLib.getTokenByBid(_storage, bidsList[i]) == _tokenId) {
                 bidId = bidsList[i];
                 break;
             }
@@ -211,23 +211,23 @@ contract SnarkBid is Ownable, SnarkDefinitions {
         uint256 tokenId) 
     {
         bidId = _bidId;
-        bidOwner = SnarkOfferBidLib.getOwnerOfBid(address(uint160(_storage)), _bidId);
-        bidPrice = SnarkOfferBidLib.getBidPrice(address(uint160(_storage)), _bidId);
-        bidStatus = SnarkOfferBidLib.getBidSaleStatus(address(uint160(_storage)), _bidId);
-        tokenId = SnarkOfferBidLib.getTokenByBid(address(uint160(_storage)), _bidId);
+        bidOwner = SnarkOfferBidLib.getOwnerOfBid(_storage, _bidId);
+        bidPrice = SnarkOfferBidLib.getBidPrice(_storage, _bidId);
+        bidStatus = SnarkOfferBidLib.getBidSaleStatus(_storage, _bidId);
+        tokenId = SnarkOfferBidLib.getTokenByBid(_storage, _bidId);
     }
 
     function getBidIdMaxPrice(uint256 _tokenId) public view returns (uint256 bidId, uint256 bidPrice) {
-        bidId = SnarkOfferBidLib.getMaxBidForToken(address(uint160(_storage)), _tokenId);
-        bidPrice = SnarkOfferBidLib.getMaxBidPriceForToken(address(uint160(_storage)), _tokenId);
+        bidId = SnarkOfferBidLib.getMaxBidForToken(_storage, _tokenId);
+        bidPrice = SnarkOfferBidLib.getMaxBidPriceForToken(_storage, _tokenId);
     }
 
     function getListOfBidsForToken(uint256 _tokenId) public view returns (uint256[] memory) {
-        return SnarkOfferBidLib.getListOfBidsForToken(address(uint160(_storage)), _tokenId);
+        return SnarkOfferBidLib.getListOfBidsForToken(_storage, _tokenId);
     }
 
     function getListOfBidsForOwner(address _bidOwner) public view returns (uint256[] memory) {
-        return SnarkOfferBidLib.getListOfBidsForOwner(address(uint160(_storage)), _bidOwner);
+        return SnarkOfferBidLib.getListOfBidsForOwner(_storage, _bidOwner);
     }
 
     function _takeBackBidAmountsAndDeleteAllTokenBids(uint256 _tokenId) internal {
@@ -235,18 +235,18 @@ contract SnarkBid is Ownable, SnarkDefinitions {
         address bidder;
         uint256 bidPrice;
         for (uint256 i = 0; i < bidsList.length; i++) {
-            bidder = SnarkOfferBidLib.getOwnerOfBid(address(uint160(_storage)), bidsList[i]);
-            bidPrice = SnarkOfferBidLib.getBidPrice(address(uint160(_storage)), bidsList[i]);
+            bidder = SnarkOfferBidLib.getOwnerOfBid(_storage, bidsList[i]);
+            bidPrice = SnarkOfferBidLib.getBidPrice(_storage, bidsList[i]);
             // Move bid amount from contract to the bidder
-            SnarkBaseLib.subPendingWithdrawals(address(uint160(_storage)), _storage, bidPrice);
+            SnarkBaseLib.subPendingWithdrawals(_storage, _storage, bidPrice);
             // _storage.addPendingWithdrawals(bidder, bidPrice);
             SnarkStorage(address(uint160(_storage))).transferFunds(address(uint160(bidder)), bidPrice);
             // Delete the bid
-            SnarkOfferBidLib.deleteBid(address(uint160(_storage)), bidsList[i]);
+            SnarkOfferBidLib.deleteBid(_storage, bidsList[i]);
         }
         // there aren't any max bid for the token now
-        SnarkOfferBidLib.setMaxBidPriceForToken(address(uint160(_storage)), _tokenId, 0);
-        SnarkOfferBidLib.setMaxBidForToken(address(uint160(_storage)), _tokenId, 0);
+        SnarkOfferBidLib.setMaxBidPriceForToken(_storage, _tokenId, 0);
+        SnarkOfferBidLib.setMaxBidForToken(_storage, _tokenId, 0);
     }
 
 }
