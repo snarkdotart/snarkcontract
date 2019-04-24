@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path_contractservice = '../snarkfrontend/src/app/shared/contract/contract.service.ts';
+const path_contractservice = '../snarkfrontend/src/app/shared/contract89Seconds/contract.service.ts';
 // const path_api = '../snarkbackend/src/config.ts';
 
 const dictionary = [
