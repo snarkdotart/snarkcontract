@@ -2,7 +2,6 @@ var SnarkLoan = artifacts.require("SnarkLoan");
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkStorage = artifacts.require("SnarkStorage");
 var SnarkTestFunctions = artifacts.require("SnarkTestFunctions");
-var SnarkOfferBid = artifacts.require("SnarkOfferBid");
 
 const BN = web3.utils.BN;
 
@@ -27,7 +26,6 @@ contract('SnarkLoan', async (accounts) => {
     before(async () => {
         snarkstorage    = await SnarkStorage.deployed();
         snarkbase       = await SnarkBase.deployed();
-        snarkofferbid   = await SnarkOfferBid.deployed();
         snarkloan       = await SnarkLoan.deployed();
         snarktest       = await SnarkTestFunctions.deployed();
 

@@ -1,5 +1,3 @@
-var SnarkOffer = artifacts.require('SnarkOffer');
-var SnarkBid = artifacts.require('SnarkBid');
 var SnarkBase = artifacts.require('SnarkBase');
 var SnarkERC721 = artifacts.require('SnarkERC721');
 var SnarkLoan = artifacts.require('SnarkLoan');
@@ -18,8 +16,6 @@ var testFunctions = require('./testFunctions.js')
 contract('SnarkBase', async accounts => {
   let instance_snarkbase = null;
   before(async () => {
-    instance_offer = await SnarkOffer.deployed();
-    instance_bid = await SnarkBid.deployed();
     instance_snarkbase = await SnarkBase.deployed();
     instance_erc = await SnarkERC721.deployed();
     instance_loan = await SnarkLoan.deployed();
@@ -46,28 +42,6 @@ contract('SnarkBase', async accounts => {
       if (!error) {
         schemeId = result.args.profitShareSchemeId.toNumber();
         console.log(`       Scheme ID: ${schemeId}`);
-      }
-    });
-
-    instance_bid.BidAdded({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var bidder = result.args._bidder;
-        var bidId = result.args._bidId;
-        var value = result.args._value;
-        console.log(
-          `       New Bid. Bidder: ${bidder} Id: ${bidId} Value: ${value}`
-        );
-      }
-    });
-
-    instance_offer.OfferAdded({ fromBlock: 'latest' }, function(error, result) {
-      if (!error) {
-        var owner = result.args._offerOwner;
-        var offerId = result.args._offerId;
-        var tokenId = result.args._tokenId;
-        console.log(
-          `       New Offer. Owner: ${owner} Id: ${offerId} Token: ${tokenId}`
-        );
       }
     });
 
@@ -230,8 +204,6 @@ contract('SnarkBase', async accounts => {
   // });
   
   // it('4. Create one offer. Should be rejected because there is active loan.', async () => {
-  //   await expect(instance_offer.addOffer(1,web3.utils.toWei('1',"ether"),{from:accounts[1]}),"Loan is started. Should not be possible to add Offer. ").to.be.eventually.rejected
- 
   //   tokens = await instance_loan.getTokenListsOfLoanByTypes(1)
   //   testFunctions.showLoanTokens(tokens, "After Adding Offer.")
 

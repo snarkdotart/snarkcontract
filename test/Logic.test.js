@@ -1,6 +1,5 @@
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkLoan = artifacts.require("SnarkLoan");
-var SnarkOfferBid = artifacts.require("SnarkOfferBid");
 var SnarkERC721 = artifacts.require("SnarkERC721");
 var SnarkTestFunctions = artifacts.require("SnarkTestFunctions");
 
@@ -9,7 +8,6 @@ contract('Snark Logic', async (accounts) => {
     before(async () => {
         snarkbase = await SnarkBase.deployed();
         snarkloan = await SnarkLoan.deployed();
-        snarkofferbid = await SnarkOfferBid.deployed();
         snarkerc721 = await SnarkERC721.deployed();
         snarktest = await SnarkTestFunctions.deployed();
     });
