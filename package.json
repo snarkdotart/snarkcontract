@@ -13,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^7.0.0",
-    "truffle-hdwallet-provider": "<1.0.7"
+    "truffle-hdwallet-provider": "^1.0.8"
   },
   "devDependencies": {
     "chai": "^4.2.0",
