@@ -106,6 +106,9 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         SnarkLoanLib.setNextLoan(_storage, loanId, beforeLoanId);
         SnarkLoanLib.setPreviousLoan(_storage, loanId, afterLoanId);
         SnarkLoanLib.setLoanPrice(_storage, loanId, msg.value);
+        
+        // сохраняем деньги на контракте storage
+        if (msg.value > 0) address(uint160(_storage)).transfer(msg.value);
 
         // изменяем количество лоанов
         SnarkLoanLib.setNumberOfLoans(_storage, SnarkLoanLib.getNumberOfLoans(_storage).add(1));

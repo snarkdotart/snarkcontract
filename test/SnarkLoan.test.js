@@ -75,8 +75,19 @@ contract('SnarkLoan', async (accounts) => {
         let numberOfOwnerLoans = await snarkloan.getCountOfOwnerLoans(accounts[0]);
         expect(numberOfOwnerLoans.toNumber()).to.equal(0);
 
+        // проверяем количество денег, хранящихся на SnarkStorage и SnarkLoan. После создания Loan-а 
+        // количество денег должно увеличиться только на SnarkStorage
+        const balanceOfSnarkStorage = await web3.eth.getBalance(snarkstorage.address);
+        const balanceOfSnarkLoan = await web3.eth.getBalance(snarkloan.address);
+
         // добавляем первый лоан
         await snarkloan.createLoan(loan_1_start, loan_1_finish, { from: accounts[0], value: valueOfLoan });
+
+        const balanceOfSnarkStorage_after = await web3.eth.getBalance(snarkstorage.address);
+        const balanceOfSnarkLoan_after = await web3.eth.getBalance(snarkloan.address);
+
+        expect(new BN(balanceOfSnarkStorage).eq(new BN(balanceOfSnarkStorage_after).sub(new BN(valueOfLoan)))).is.true;
+        expect(new BN(balanceOfSnarkLoan).eq(new BN(balanceOfSnarkLoan_after))).is.true;
 
         // убеждаемся, что количество лоанов увеличилось, стало 1
         countOfLoans = await snarkloan.getNumberOfLoans();
