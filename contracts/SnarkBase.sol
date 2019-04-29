@@ -460,4 +460,14 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     function getListOfAllArtists() public view returns (address[] memory) {
         return SnarkBaseLib.getListOfAllArtists(_storage);
     }
+
+    function setLinkDropPrice(uint256 tokenId, uint256 price) public onlyOwner {
+        SnarkBaseLib.setTokenLastPrice(address(uint160(_storage)), tokenId, price);
+    }
+
+    function toGiftToken(uint256 tokenId, address to) public onlyOwnerOf(tokenId) {
+        require(to != address(0), "Receiver's  address can't be equal zero");
+        SnarkCommonLib.transferToken(address(uint160(_storage)), tokenId, msg.sender, to);
+        SnarkERC721(address(uint160(_erc721))).echoTransfer(msg.sender, to, tokenId);
+    }    
 }
