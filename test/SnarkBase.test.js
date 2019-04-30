@@ -1,4 +1,5 @@
 var SnarkBase = artifacts.require("SnarkBase");
+const BN = web3.utils.BN;
 
 contract('SnarkBase', async (accounts) => {
 
@@ -354,4 +355,17 @@ contract('SnarkBase', async (accounts) => {
         assert.notEqual(retval, isAgreeForSnarkAndOthers, 'error for Snark');
     });
 
+    it("test setLinkDropPrice function", async () => {
+        const newPrice = web3.utils.toWei("3", "ether");
+        const tokenCount = await instance.getTokensCount();
+        expect(tokenCount.toNumber()).to.be.above(0);
+        
+        let lastPrice = await instance.getTokenDetail(1);
+        expect(new BN(lastPrice[5])).to.not.equal(newPrice);
+        
+        await instance.setLinkDropPrice(1, newPrice);
+        
+        lastPrice = await instance.getTokenDetail(1);
+        expect(new BN(lastPrice[5]).eq(new BN(newPrice))).to.be.true;
+    });
 });
