@@ -598,6 +598,16 @@ contract('SnarkLoan', async (accounts) => {
 
         tokenId = await snarktest.getTokenFromNotApprovedTokensForLoanByIndex(accounts[0], 0);
         assert.equal(tokenId, 2);
+
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 1)).is.true;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 2)).is.true;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 3)).is.false;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 4)).is.false;
+
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 1)).is.false;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 2)).is.false;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 3)).is.true;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 4)).is.true;
         
         // check account[1]
         balanceOfERC721 = await snarkerc721.balanceOf(accounts[1]);
@@ -687,6 +697,16 @@ contract('SnarkLoan', async (accounts) => {
         tokenId = await snarkerc721.tokenOfOwnerByIndex(accounts[1], 1);
         assert.equal(tokenId, 4, "wrong 3th tokenId for account1");
 
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 1)).is.true;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 2)).is.true;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 3)).is.true;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 4)).is.false;
+
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 1)).is.false;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 2)).is.false;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 3)).is.true;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 4)).is.true;
+        
         // надо дождаться остановки лоана и проверить обратно количество токенов
         pause(60000);
 
@@ -711,6 +731,16 @@ contract('SnarkLoan', async (accounts) => {
         balanceOfERC721 = await snarkerc721.balanceOf(accounts[2]);
         assert.equal(balanceOfERC721, 0, "balance of account2 is wrong");
 
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 1)).is.true;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 2)).is.true;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 3)).is.false;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[0], 4)).is.false;
+
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 1)).is.false;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 2)).is.false;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 3)).is.true;
+        expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 4)).is.true;
+        
     });
 
 });

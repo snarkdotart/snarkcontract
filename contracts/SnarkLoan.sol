@@ -211,7 +211,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             if (SnarkLoanLib.isLoanActive(_storage)) {
                 uint256 loanId = getLoanId();
                 address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
-                isUserHasAccess = (loanOwner == userWalletId);
+                bool isApproved = SnarkLoanLib.isTokenInApprovedListForLoan(_storage, tokenId);
+                isUserHasAccess = (loanOwner == userWalletId && isApproved);
             }
         }
         return isUserHasAccess;
