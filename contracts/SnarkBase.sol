@@ -154,6 +154,13 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             msg.sender == SnarkBaseLib.getOwnerOfToken(_storage, tokenId)
         );
         SnarkBaseLib.setTokenAcceptOfLoanRequest(_storage, tokenId, isAcceptForSnark);
+        if (!isAcceptForSnark) {
+            SnarkLoanLib.deleteTokenFromApprovedListForLoan(_storage, tokenId);
+            SnarkLoanLib.addTokenToNotApprovedListForLoan(_storage, msg.sender, tokenId);
+        } else {
+            SnarkLoanLib.addTokenToApprovedListForLoan(_storage, tokenId);
+            SnarkLoanLib.deleteTokenFromNotApprovedListForLoan(_storage, msg.sender, tokenId);
+        }
     }
 
     function setTokenName(string memory tokenName) public onlyOwner {
