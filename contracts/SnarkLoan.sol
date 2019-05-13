@@ -225,4 +225,10 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     function isLoanFinished() public view returns (bool) {
         return SnarkLoanLib.isLoanFinished(_storage);
     }
+
+    function toShiftPointer() public {
+        if (SnarkLoanLib.isLoanFinished(_storage)) {
+            SnarkLoanLib.toShiftPointer(_storage);
+        }
+    }
 }

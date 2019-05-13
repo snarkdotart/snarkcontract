@@ -743,4 +743,75 @@ contract('SnarkLoan', async (accounts) => {
         
     });
 
+    it("test of loan shifting by time", async () => {
+        let isActive = await snarkloan.isLoanActive();
+        assert.isFalse(isActive, "Loan is active and it's wrong");
+
+        let isFinished = await snarkloan.isLoanFinished();
+        assert.isTrue(isFinished, "Loan is not finished and it's wrong");
+
+        await snarkloan.toShiftPointer();
+
+        let loanId = await snarkloan.getLoanId();
+        expect(loanId.toNumber()).to.equal(0);
+
+        const _dt_n     = new Date();
+        const _year_n   = _dt_n.getFullYear();
+        const _month_n  = _dt_n.getMonth();
+        const _date_n   = _dt_n.getDate();
+        const _hours_n  = _dt_n.getHours();
+        const _min_n    = _dt_n.getMinutes();
+
+        // время старта и остановки первого лоана
+        const l1s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 1, 0) / 1000;
+        const l1f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
+        
+        // время старта и остановки второго лоана
+        const l2s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
+        const l2f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 3, 0) / 1000;
+    
+        // пускай цена будет одинаковой для обоих лоанов
+        const valueOfLoan = web3.utils.toWei('2', "ether");
+
+        // создаем первый лоана, который должен стартовать через минуту
+        await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
+
+        // создаем первый лоана, который должен стартовать через минуту
+        await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
+
+        // убеждаемся, что через лоан создан
+        countOfLoans = await snarkloan.getNumberOfLoans();
+        expect(countOfLoans.toNumber()).to.equal(2);
+
+        // надо выждать минуту, чтобы лоан гарантированно начал работу
+        pause(60000);
+
+        isActive = await snarkloan.isLoanActive();
+        assert.isTrue(isActive, "Loan is not active and it's wrong");
+
+        loanId = await snarkloan.getLoanId();
+        expect(loanId.toNumber()).to.equal(7);
+
+        // надо выждать минуту, чтобы лоан закончил свою работу и начал другой
+        pause(60000);
+        
+        await snarkloan.toShiftPointer();
+
+        isActive = await snarkloan.isLoanActive();
+        assert.isTrue(isActive, "Loan is not active and it's wrong");
+
+        loanId = await snarkloan.getLoanId();
+        expect(loanId.toNumber()).to.equal(8);
+
+        pause(60000);
+        
+        await snarkloan.toShiftPointer();
+
+        isActive = await snarkloan.isLoanActive();
+        assert.isFalse(isActive, "Loan is active and it's wrong");
+
+        loanId = await snarkloan.getLoanId();
+        expect(loanId.toNumber()).to.equal(0);
+    });
+
 });
