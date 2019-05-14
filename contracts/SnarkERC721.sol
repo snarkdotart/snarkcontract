@@ -96,7 +96,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         require(_index < balanceOf(_owner));
         uint256 tokenId;
         uint256 loanId = SnarkLoanLib.getLoanPointer(_storage);
-        bool isActive = SnarkLoanLib.isLoanActive(_storage);
+        bool isActive = SnarkLoanLib.isLoanActive(_storage, loanId);
         address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
         if (isActive && _owner == loanOwner) {
             uint256 countOfNotApprovedTokens = 
@@ -137,8 +137,8 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     function balanceOf(address _owner) public view returns (uint256) {
         require(_owner != address(0));
         uint256 balance = 0;
-        uint256 loanId = SnarkLoanLib.getLoanPointer(_storage);
-        if (SnarkLoanLib.isLoanActive(_storage) 
+        uint256 loanId = SnarkLoanLib.getLoanId(_storage);
+        if (SnarkLoanLib.isLoanActive(_storage, loanId) 
             && _owner == SnarkLoanLib.getOwnerOfLoan(_storage, loanId)
         ) {
             balance = SnarkLoanLib.getTotalNumberOfTokensInApprovedTokensForLoan(_storage);
@@ -236,6 +236,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         require(_from != _to, "Sender's address can't be equal receiver's  address");
 
         _clearApproval(_from, _tokenId);
+        SnarkLoanLib.toShiftPointer(_storage);
 
         if (msg.value > 0) {
             address(uint160(_storage)).transfer(msg.value);

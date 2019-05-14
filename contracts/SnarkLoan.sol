@@ -85,6 +85,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     /// @param timestampStart Contain date and time when a loan has to start
     /// @param timestampEnd Contain date and time when a loan has to end
     function createLoan(uint256 timestampStart, uint256 timestampEnd) public payable restrictedAccess {
+        require(SnarkBaseLib.getOwnedTokensCount(_storage, msg.sender) > 0, "User has to have at least one token");
         require(timestampStart > block.timestamp, "Start of loan less than current time"); // solhint-disable-line
         require(timestampEnd > timestampStart, "Datetime of a loan end has to be bigger the datetime of start one.");
         uint256 duration = (timestampEnd - timestampStart).div(86400);
@@ -201,15 +202,15 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     }
 
     function getLoanId() public view returns (uint256) {
-        return SnarkLoanLib.getLoanPointer(_storage);
+        return SnarkLoanLib.getLoanId(_storage);
     }
 
     function doUserHaveAccessToToken(address userWalletId, uint256 tokenId) public view returns (bool) {
         address realOwner = SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
         bool isUserHasAccess = (userWalletId == realOwner);
         if (!isUserHasAccess) {
-            if (SnarkLoanLib.isLoanActive(_storage)) {
-                uint256 loanId = getLoanId();
+            uint256 loanId = SnarkLoanLib.getLoanId(_storage);
+            if (SnarkLoanLib.isLoanActive(_storage, loanId)) {
                 address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
                 bool isApproved = SnarkLoanLib.isTokenInApprovedListForLoan(_storage, tokenId);
                 isUserHasAccess = (loanOwner == userWalletId && isApproved);
@@ -218,16 +219,17 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         return isUserHasAccess;
     }
 
-    function isLoanActive() public view returns (bool) {
-        return SnarkLoanLib.isLoanActive(_storage);
+    function isLoanActive(uint256 loanId) public view returns (bool) {
+        return SnarkLoanLib.isLoanActive(_storage, loanId);
     }
 
-    function isLoanFinished() public view returns (bool) {
-        return SnarkLoanLib.isLoanFinished(_storage);
+    function isLoanFinished(uint256 loanId) public view returns (bool) {
+        return SnarkLoanLib.isLoanFinished(_storage, loanId);
     }
 
     function toShiftPointer() public {
-        if (SnarkLoanLib.isLoanFinished(_storage)) {
+        uint256 loanId = SnarkLoanLib.getLoanPointer(_storage);
+        if (SnarkLoanLib.isLoanFinished(_storage, loanId)) {
             SnarkLoanLib.toShiftPointer(_storage);
         }
     }

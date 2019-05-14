@@ -51,13 +51,21 @@ library SnarkLoanLib {
         SnarkStorage(address(uint160(storageAddress))).setUint(keccak256("CurrentLoan"), loanId);
     }
 
+    function getLoanId(address storageAddress) public view returns (uint256) {
+        uint256 loanId = getLoanPointer(storageAddress);
+        while (isLoanFinished(storageAddress, loanId) && loanId > 0) {
+            loanId = getNextLoan(storageAddress, loanId);
+        }
+        return loanId;
+    }
+
     function isEmptyPointer(address storageAddress) public view returns (bool) {
         return (getLoanPointer(storageAddress) == 0);
     }
 
     function toShiftPointer(address storageAddress) public returns (uint256) {
         uint256 loanId = getLoanPointer(storageAddress);
-        while (isLoanFinished(storageAddress) && loanId > 0) {
+        while (isLoanFinished(storageAddress, loanId) && loanId > 0) {
             setNumberOfLoans(storageAddress, getNumberOfLoans(storageAddress).sub(1));
             loanId = getLoanPointer(storageAddress);
             loanId = getNextLoan(storageAddress, loanId);
@@ -66,16 +74,14 @@ library SnarkLoanLib {
         return loanId;
     }
 
-    function isLoanActive(address storageAddress) public view returns (bool) {
-        uint256 loanId = getLoanPointer(storageAddress);
+    function isLoanActive(address storageAddress, uint256 loanId) public view returns (bool) {
         uint256 startDate = getLoanStartDate(storageAddress, loanId);
         uint256 endDate = getLoanEndDate(storageAddress, loanId);
         uint256 currentTime = block.timestamp; // solhint-disable-line
         return (startDate <= currentTime && endDate > currentTime);
     }
 
-    function isLoanFinished(address storageAddress) public view returns (bool) {
-        uint256 loanId = getLoanPointer(storageAddress);
+    function isLoanFinished(address storageAddress, uint256 loanId) public view returns (bool) {
         uint256 endDate = getLoanEndDate(storageAddress, loanId);
         return (endDate < block.timestamp); // solhint-disable-line
     }

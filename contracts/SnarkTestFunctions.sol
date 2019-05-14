@@ -80,4 +80,9 @@ contract SnarkTestFunctions {
     function findPosition(uint256 _start, uint256 _finish) public view returns (uint256, uint256, bool) {
         return SnarkLoanLib.findPosition(_storage, _start, _finish);
     }
+
+    function getMaxLoanId() public view returns (uint256) {
+        return SnarkLoanLib.getMaxLoanId(_storage);
+    }
+
 }

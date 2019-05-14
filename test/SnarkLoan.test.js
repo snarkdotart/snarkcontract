@@ -90,7 +90,49 @@ contract('SnarkLoan', async (accounts) => {
         const balanceOfSnarkStorage = await web3.eth.getBalance(snarkstorage.address);
         const balanceOfSnarkLoan = await web3.eth.getBalance(snarkloan.address);
 
-        // добавляем первый лоан
+        // добавляем первый лоан. должен свалиться с ошибкой
+        try {
+            await snarkloan.createLoan(loan_1_start, loan_1_finish, { from: accounts[0], value: valueOfLoan });
+        } catch(e) {
+            expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert User has to have at least one token -- Reason given: User has to have at least one token.');
+        }
+
+        // необходимо добавить хотя бы один токен в аккаунт account[0]
+        let balanceOfERC721 = await snarkerc721.balanceOf(accounts[0]);
+        assert.equal(balanceOfERC721, 0, "balance is not equal zero before test");
+        
+        await snarkbase.createProfitShareScheme(accounts[0], [accounts[1], accounts[2]], [20, 80]);
+        let profitSchemeId = await snarkbase.getProfitShareSchemesTotalCount();
+
+        await snarkbase.addToken(
+            accounts[0],
+            web3.utils.sha3(`1-tokenHashOf_${accounts[0]}`),
+            `1-tokenUrlOf_${accounts[0]}`,
+            'ipfs://decorator.io',
+            '1-big-secret',
+            [1, 20, profitSchemeId],
+            true
+        );
+
+        await snarkbase.addToken(
+            accounts[0],
+            web3.utils.sha3(`2-tokenHashOf_${accounts[0]}`),
+            `2-tokenUrlOf_${accounts[0]}`,
+            'ipfs://decorator.io',
+            '2-big-secret',
+            [1, 20, profitSchemeId],
+            false
+        );
+
+        let totalSupply = await snarkerc721.totalSupply();
+        assert.equal(totalSupply, 2, "total supply is wrong");
+
+        let countApprovedTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
+        assert.equal(countApprovedTokens.toNumber(), 1, "wrong count of tokens in approved list");
+
+        let tokenId = await snarktest.getTokenFromApprovedTokensForLoanByIndex(0);
+        assert.equal(tokenId, 1, "tokenId should be equal 1");
+
         await snarkloan.createLoan(loan_1_start, loan_1_finish, { from: accounts[0], value: valueOfLoan });
 
         const balanceOfSnarkStorage_after = await web3.eth.getBalance(snarkstorage.address);
@@ -441,7 +483,7 @@ contract('SnarkLoan', async (accounts) => {
 
     it("test ApprovedTokensForLoan array", async () => {
         let countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
-        assert.equal(countOfTokens, 0, "error on step 1");
+        assert.equal(countOfTokens, 1, "error on step 1");
                         //  0  1  2  3  4  5  6
         const tokensList = [1, 3, 5, 8, 2, 9, 4];
 
@@ -522,34 +564,49 @@ contract('SnarkLoan', async (accounts) => {
     });
 
     it("test new logic of loan", async () => {
-        let balanceOfERC721 = await snarkerc721.balanceOf(accounts[0]);
-        assert.equal(balanceOfERC721, 0, "balance is not equal zero before test");
+        // let balanceOfERC721 = await snarkerc721.balanceOf(accounts[0]);
+        // assert.equal(balanceOfERC721, 0, "balance is not equal zero before test");
 
-        await snarkbase.createProfitShareScheme(accounts[0], [accounts[1], accounts[2]], [20, 80]);
-        let profitSchemeId = await snarkbase.getProfitShareSchemesTotalCount();
+        // await snarkbase.createProfitShareScheme(accounts[0], [accounts[1], accounts[2]], [20, 80]);
+        // let profitSchemeId = await snarkbase.getProfitShareSchemesTotalCount();
 
-        await snarkbase.addToken(
-            accounts[0],
-            web3.utils.sha3(`1-tokenHashOf_${accounts[0]}`),
-            `1-tokenUrlOf_${accounts[0]}`,
-            'ipfs://decorator.io',
-            '1-big-secret',
-            [1, 20, profitSchemeId],
-            true
-        );
+        // await snarkbase.addToken(
+        //     accounts[0],
+        //     web3.utils.sha3(`1-tokenHashOf_${accounts[0]}`),
+        //     `1-tokenUrlOf_${accounts[0]}`,
+        //     'ipfs://decorator.io',
+        //     '1-big-secret',
+        //     [1, 20, profitSchemeId],
+        //     true
+        // );
 
-        await snarkbase.addToken(
-            accounts[0],
-            web3.utils.sha3(`2-tokenHashOf_${accounts[0]}`),
-            `2-tokenUrlOf_${accounts[0]}`,
-            'ipfs://decorator.io',
-            '2-big-secret',
-            [1, 20, profitSchemeId],
-            false
-        );
+        // await snarkbase.addToken(
+        //     accounts[0],
+        //     web3.utils.sha3(`2-tokenHashOf_${accounts[0]}`),
+        //     `2-tokenUrlOf_${accounts[0]}`,
+        //     'ipfs://decorator.io',
+        //     '2-big-secret',
+        //     [1, 20, profitSchemeId],
+        //     false
+        // );
+        // до этого момента должно уже существовать 2 токена, один из которых должен быть в списке согласных
+        let totalSupply = await snarkerc721.totalSupply();
+        assert.equal(totalSupply, 2, "total supply is wrong");
 
+        let countApprovedTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
+        assert.equal(countApprovedTokens.toNumber(), 0, "wrong count of tokens in approved list");
+
+        await snarktest.addTokenToApprovedListForLoan(1);
+
+        countApprovedTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
+        assert.equal(countApprovedTokens.toNumber(), 1, "wrong count of tokens in approved list");
+
+        let tokenId = await snarktest.getTokenFromApprovedTokensForLoanByIndex(0);
+        assert.equal(tokenId, 1, "tokenId should be equal 1");
+
+        // добавляем еще 2 токена, но к другому аккаунту
         await snarkbase.createProfitShareScheme(accounts[1], [accounts[0], accounts[2]], [20, 80]);
-        profitSchemeId = await snarkbase.getProfitShareSchemesTotalCount();
+        const profitSchemeId = await snarkbase.getProfitShareSchemesTotalCount();
 
         await snarkbase.addToken(
             accounts[1],
@@ -571,13 +628,13 @@ contract('SnarkLoan', async (accounts) => {
             false
         );
 
-        let totalSupply = await snarkerc721.totalSupply();
+        totalSupply = await snarkerc721.totalSupply();
         assert.equal(totalSupply, 4, "total supply is wrong");
 
-        let countApprovedTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
+        countApprovedTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
         assert.equal(countApprovedTokens.toNumber(), 2, "wrong count of tokens in approved list");
 
-        let tokenId = await snarktest.getTokenFromApprovedTokensForLoanByIndex(0);
+        tokenId = await snarktest.getTokenFromApprovedTokensForLoanByIndex(0);
         assert.equal(tokenId, 1, "tokenId should be equal 1");
 
         tokenId = await snarktest.getTokenFromApprovedTokensForLoanByIndex(1);
@@ -631,13 +688,13 @@ contract('SnarkLoan', async (accounts) => {
 
         countNotApprovedTokens = await snarktest.getTotalNumberOfTokensInNotApprovedTokensForLoan(accounts[2]);
         assert.equal(countNotApprovedTokens, 0, "wrong number of not approved tokens for account2");
-
-        let isActive = await snarkloan.isLoanActive();
-        assert.isFalse(isActive, "Loan is active and it's wrong");
-    
+        
         // надо добавить Loan и дождаться, чтобы он начал работать
         let countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(0);
+
+        let isActive = await snarkloan.isLoanActive(countOfLoans);
+        assert.isFalse(isActive, "Loan is active and it's wrong");
 
         const _dt_n     = new Date();
         const _year_n   = _dt_n.getFullYear();
@@ -653,6 +710,8 @@ contract('SnarkLoan', async (accounts) => {
         // стартовать должен через минуту
         await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
 
+        let loanId = await snarktest.getMaxLoanId();
+
         // убеждаемся, что через лоан создан
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(1);
@@ -660,7 +719,7 @@ contract('SnarkLoan', async (accounts) => {
         // надо выждать минуту, чтобы лоан гарантированно начал работу
         pause(60000);
 
-        isActive = await snarkloan.isLoanActive();
+        isActive = await snarkloan.isLoanActive(loanId);
         assert.isTrue(isActive, "Loan is not active and it's wrong");
     
         totalSupply = await snarkerc721.totalSupply();
@@ -744,16 +803,16 @@ contract('SnarkLoan', async (accounts) => {
     });
 
     it("test of loan shifting by time", async () => {
-        let isActive = await snarkloan.isLoanActive();
+        let loanId = await snarkloan.getLoanId();
+        expect(loanId.toNumber()).to.equal(0);
+
+        let isActive = await snarkloan.isLoanActive(loanId);
         assert.isFalse(isActive, "Loan is active and it's wrong");
 
-        let isFinished = await snarkloan.isLoanFinished();
+        let isFinished = await snarkloan.isLoanFinished(loanId);
         assert.isTrue(isFinished, "Loan is not finished and it's wrong");
 
         await snarkloan.toShiftPointer();
-
-        let loanId = await snarkloan.getLoanId();
-        expect(loanId.toNumber()).to.equal(0);
 
         const _dt_n     = new Date();
         const _year_n   = _dt_n.getFullYear();
@@ -775,9 +834,11 @@ contract('SnarkLoan', async (accounts) => {
 
         // создаем первый лоана, который должен стартовать через минуту
         await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
+        const loanId_1 = await snarktest.getMaxLoanId();
 
         // создаем первый лоана, который должен стартовать через минуту
         await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
+        const loanId_2 = await snarktest.getMaxLoanId();
 
         // убеждаемся, что через лоан создан
         countOfLoans = await snarkloan.getNumberOfLoans();
@@ -786,32 +847,29 @@ contract('SnarkLoan', async (accounts) => {
         // надо выждать минуту, чтобы лоан гарантированно начал работу
         pause(60000);
 
-        isActive = await snarkloan.isLoanActive();
+        isActive = await snarkloan.isLoanActive(loanId_1);
         assert.isTrue(isActive, "Loan is not active and it's wrong");
 
         loanId = await snarkloan.getLoanId();
-        expect(loanId.toNumber()).to.equal(7);
+        expect(loanId.toNumber()).to.equal(loanId_1.toNumber());
 
         // надо выждать минуту, чтобы лоан закончил свою работу и начал другой
         pause(60000);
         
-        await snarkloan.toShiftPointer();
-
-        isActive = await snarkloan.isLoanActive();
-        assert.isTrue(isActive, "Loan is not active and it's wrong");
-
         loanId = await snarkloan.getLoanId();
-        expect(loanId.toNumber()).to.equal(8);
+        expect(loanId.toNumber()).to.equal(loanId_2.toNumber());
+
+        isActive = await snarkloan.isLoanActive(loanId);
+        assert.isTrue(isActive, "Loan is not active and it's wrong");
 
         pause(60000);
         
-        await snarkloan.toShiftPointer();
-
-        isActive = await snarkloan.isLoanActive();
-        assert.isFalse(isActive, "Loan is active and it's wrong");
-
         loanId = await snarkloan.getLoanId();
         expect(loanId.toNumber()).to.equal(0);
+
+        isActive = await snarkloan.isLoanActive(loanId);
+        assert.isFalse(isActive, "Loan is active and it's wrong");
+
     });
 
 });

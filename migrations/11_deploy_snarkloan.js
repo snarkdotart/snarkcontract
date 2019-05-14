@@ -20,6 +20,6 @@ module.exports = function(deployer) {
 
         const snarkLoan_instance = await SnarkLoan.deployed();
         await storage_instance.allowAccess(snarkLoan_instance.address);
-        await snarkLoan_instance.setDefaultLoanDuration(30);
+        await snarkLoan_instance.setDefaultLoanDuration(1);
     });
 };
