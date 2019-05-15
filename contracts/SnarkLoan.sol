@@ -97,8 +97,8 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         require(SnarkBaseLib.getOwnedTokensCount(_storage, msg.sender) > 0, "User has to have at least one token");
         require(timestampStart > block.timestamp, "Start of loan less than current time"); // solhint-disable-line
         require(timestampEnd > timestampStart, "Datetime of a loan end has to be bigger the datetime of start one.");
-        uint256 duration = (timestampEnd - timestampStart).div(86400);
-        require(duration <= getDefaultLoanDuration(), "Duration exceeds a max value");
+        uint256 duration = (timestampEnd - timestampStart);
+        require(duration <= getDefaultLoanDuration().mul(86400), "Duration exceeds a max value");
 
         SnarkLoanLib.toShiftPointer(_storage);
         uint256 afterLoanId;

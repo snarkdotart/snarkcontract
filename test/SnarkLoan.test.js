@@ -564,31 +564,6 @@ contract('SnarkLoan', async (accounts) => {
     });
 
     it("test new logic of loan", async () => {
-        // let balanceOfERC721 = await snarkerc721.balanceOf(accounts[0]);
-        // assert.equal(balanceOfERC721, 0, "balance is not equal zero before test");
-
-        // await snarkbase.createProfitShareScheme(accounts[0], [accounts[1], accounts[2]], [20, 80]);
-        // let profitSchemeId = await snarkbase.getProfitShareSchemesTotalCount();
-
-        // await snarkbase.addToken(
-        //     accounts[0],
-        //     web3.utils.sha3(`1-tokenHashOf_${accounts[0]}`),
-        //     `1-tokenUrlOf_${accounts[0]}`,
-        //     'ipfs://decorator.io',
-        //     '1-big-secret',
-        //     [1, 20, profitSchemeId],
-        //     true
-        // );
-
-        // await snarkbase.addToken(
-        //     accounts[0],
-        //     web3.utils.sha3(`2-tokenHashOf_${accounts[0]}`),
-        //     `2-tokenUrlOf_${accounts[0]}`,
-        //     'ipfs://decorator.io',
-        //     '2-big-secret',
-        //     [1, 20, profitSchemeId],
-        //     false
-        // );
         // до этого момента должно уже существовать 2 токена, один из которых должен быть в списке согласных
         let totalSupply = await snarkerc721.totalSupply();
         assert.equal(totalSupply, 2, "total supply is wrong");
@@ -872,4 +847,37 @@ contract('SnarkLoan', async (accounts) => {
 
     });
 
+    it("test duration of a loan upon creation one", async () => {
+
+        const duration = await snarkloan.getDefaultLoanDuration();
+        expect(duration.toNumber()).to.equal(1);
+
+        const _dt_n     = new Date();
+        const _year_n   = _dt_n.getFullYear();
+        const _month_n  = _dt_n.getMonth();
+        const _date_n   = _dt_n.getDate();
+        const _hours_n  = _dt_n.getHours();
+        const _min_n    = _dt_n.getMinutes();
+
+        const l1s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 10, 0) / 1000;
+        const l1f = new Date(_year_n, _month_n, _date_n + 1, _hours_n, _min_n + 10, 0) / 1000;
+
+        console.log(`1. s: ${l1s}, f: ${l1f}, f-s=${l1f - l1s}`);
+        
+        const l2s  = new Date(_year_n, _month_n, _date_n + 1, _hours_n, _min_n + 10, 0) / 1000;
+        const l2f = new Date(_year_n, _month_n, _date_n + 2, _hours_n, _min_n + 11, 0) / 1000;
+
+        console.log(`1. s: ${l2s}, f: ${l2f}, f-s=${l2f - l2s}`);
+
+        const valueOfLoan = web3.utils.toWei('2', "ether");
+
+        await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
+
+        try {
+            await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
+        } catch (e) {
+            expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert Duration exceeds a max value -- Reason given: Duration exceeds a max value.');
+        }
+
+    });
 });
