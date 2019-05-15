@@ -31,7 +31,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @param _tokenId uint256 ID of the token to validate
     modifier canTransfer(uint256 _tokenId) {
         require(
-            _isApprovedOrOwner(msg.sender, _tokenId) || msg.sender == owner,
+            _isApprovedOrOwner(msg.sender, _tokenId),
             "You have to be either token owner or be approved by owner"
         );
         _;
