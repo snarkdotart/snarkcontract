@@ -46,6 +46,15 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         _;
     }
 
+    modifier onlyLoanOwnerOrSnark(uint256 loanId) {
+        require(
+            msg.sender == SnarkLoanLib.getOwnerOfLoan(_storage, loanId) ||
+            msg.sender == owner, 
+            "Only loan owner and Snark can call this function"
+        );
+        _;
+    }
+
     /// @dev Constructor of contract
     /// @param storageAddress Address of a storage contract
     /// @param erc721Address Address of a ERC721 contract
@@ -132,7 +141,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         emit LoanCreated(msg.sender, loanId);
     }
 
-    function deleteLoan(uint256 loanId) public onlyLoanOwner(loanId) {
+    function deleteLoan(uint256 loanId) public onlyLoanOwnerOrSnark(loanId) {
         uint256 beforeLoanId = SnarkLoanLib.getPreviousLoan(_storage, loanId);
         uint256 nextLoanId = SnarkLoanLib.getNextLoan(_storage, loanId);
         uint256 countOfLoans = SnarkLoanLib.getNumberOfLoans(_storage);
