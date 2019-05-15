@@ -50,7 +50,7 @@ Next contracts will delete soon:
 `Function Name` | `Input Parameters` | `Output Parameters`
 --- | --- | ---
 *kill* | none | None
-*sendRequestForApprovalOfProfitShareRemovalForSecondarySale* | tokenId: int | None
+*sendRequestForApprovalOfProfit ShareRemovalForSecondarySale* | tokenId: int | None
 *approveRemovingProfitShareFromSecondarySale* | tokenId: int | None
 *setTokenAcceptOfLoanRequest* | tokenId: int, isAcceptForSnark: bool | None
 *setTokenName* | tokenName: string | None
