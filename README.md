@@ -23,9 +23,9 @@ Next contracts will delete soon:
 
 `Contract` | `Address`
 --- | ---
-*SnarkBase* | 0x300B7956616953E193E25dEDf525a9b4C2579CA8
-*SnarkLoan* | 0x791b8c4C43326082C038E865a53fC08E20210b07
-*SnarkERC721* | 0xa0a04D1C7D6D9D193BF975fE8dd6b6eDa812671f
+*SnarkBase* | 0x16b41cdec057D589A58e66724eF39EEbD834cdDb
+*SnarkLoan* | 0xD412315ab186A9CCe45C4c2D96a9dAbbA03cd694
+*SnarkERC721* | 0xB4c39AF29d2c65962324ee4f9d3Ac5748CAbFe5c
 
 #### **Rinkeby**
 
