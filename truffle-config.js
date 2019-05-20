@@ -12,7 +12,7 @@ module.exports = {
         main: {
             provider: new HDWalletProvider(process.env.SECRET_KEY, "https://mainnet.infura.io/v3/" + process.env.PROJECT_ID),
             gas: 7900000,
-            gasPrice: 7000000000, // 8 Gwei
+            gasPrice: 7000000000, // 7 Gwei
             network_id: 1,
             confirmations: 2,
             skipDryRun: true,
@@ -20,19 +20,19 @@ module.exports = {
         ropsten: {
             provider: new HDWalletProvider(process.env.SECRET_KEY, "https://ropsten.infura.io/v3/" + process.env.PROJECT_ID),
             gas: 7900000,
-            gasPrice: 7000000000, // 8 Gwei
+            gasPrice: 7000000000, // 7 Gwei
             network_id: 3,
             confirmations: 2,
             skipDryRun: true,
         },
         rinkeby: {
             provider: new HDWalletProvider(process.env.SECRET_KEY, "https://rinkeby.infura.io/v3/" + process.env.PROJECT_ID),
-            gas: 7900000,
-            gasPrice: 7000000000, // 8 Gwei
+            gas: 6900000,
+            gasPrice: 7000000000, // 7 Gwei
             network_id: 4,
             confirmations: 2,
             skipDryRun: true,
-        }        
+        }
     },
     compilers: {
         solc: {
