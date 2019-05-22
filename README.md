@@ -31,9 +31,9 @@ Next contracts will delete soon:
 
 `Contract` | `Address`
 --- | ---
-*SnarkBase* | 0xa6facdc6d2f95203ad9833137ba36205e87843f9
-*SnarkLoan* | 0x162d108e9efd1fb00a699206b862470558a75794
-*SnarkERC721* | 0xc42102a9a9baacd94667d51ace6e5a7dbabb884d
+*SnarkBase* | 0x5C84309Ad9648CcA8c4dB6F7E41e65CafA9f1b6F
+*SnarkLoan* | 0x835933673a03673E563826a48a81ACACBd472e2d
+*SnarkERC721* | 0xe75164C7f0391D48a08FF06d02600A64501D6007
 
 ### **SnarkBase contract**
 
