@@ -21,8 +21,8 @@ contract SnarkBase is Ownable, SnarkDefinitions {
 
     /*** STORAGE ***/
 
-    address private _storage;
-    address private _erc721;
+    address payable private _storage;
+    address payable private _erc721;
 
     /*** EVENTS ***/
 
@@ -105,7 +105,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     /// @dev Constructor of contract
     /// @param storageAddress Address of a storage contract
     /// @param erc721Address Address of a ERC721 contract
-    constructor(address storageAddress, address erc721Address) public {
+    constructor(address payable storageAddress, address payable erc721Address) public {
         _storage = storageAddress;
         _erc721 = erc721Address;
     }
@@ -298,7 +298,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
             SnarkBaseLib.setOwnerOfToken(_storage, tokenId, artistAddress);
             SnarkBaseLib.addTokenToOwner(_storage, artistAddress, tokenId);
             emit TokenCreated(artistAddress, hashOfToken, tokenId);
-            SnarkERC721(address(uint160(_erc721))).echoTransfer(address(0), artistAddress, tokenId);
+            SnarkERC721(_erc721).echoTransfer(address(0), artistAddress, tokenId);
         }
     }
 
@@ -405,7 +405,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         uint256 balance = SnarkBaseLib.getPendingWithdrawals(_storage, msg.sender);
         require(balance > 0);
         SnarkBaseLib.subPendingWithdrawals(_storage, msg.sender, balance);
-        SnarkStorage(address(uint160(_storage))).transferFunds(msg.sender, balance);
+        SnarkStorage(_storage).transferFunds(msg.sender, balance);
     }
 
     function setSnarkWalletAddress(address snarkWalletAddr) public onlyOwner {
@@ -426,9 +426,9 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         public 
         onlyOwner 
     {
-        SnarkStorage(address(uint160(_storage))).setString(
+        SnarkStorage(_storage).setString(
             keccak256(abi.encodePacked("token", "hashOfToken", tokenId)), hashOfToken);
-        SnarkStorage(address(uint160(_storage))).setString(
+        SnarkStorage(_storage).setString(
             keccak256(abi.encodePacked("token", "url", tokenId)), tokenUrl);
 
         SnarkBaseLib.setDecorationUrl(_storage, tokenId, decorationUrl);
@@ -469,12 +469,12 @@ contract SnarkBase is Ownable, SnarkDefinitions {
     }
 
     function setLinkDropPrice(uint256 tokenId, uint256 price) public onlyOwner {
-        SnarkBaseLib.setTokenLastPrice(address(uint160(_storage)), tokenId, price);
+        SnarkBaseLib.setTokenLastPrice(_storage, tokenId, price);
     }
 
     function toGiftToken(uint256 tokenId, address to) public onlyOwnerOf(tokenId) {
         require(to != address(0), "Receiver's  address can't be equal zero");
-        SnarkCommonLib.transferToken(address(uint160(_storage)), tokenId, msg.sender, to);
-        SnarkERC721(address(uint160(_erc721))).echoTransfer(msg.sender, to, tokenId);
+        SnarkCommonLib.transferToken(_storage, tokenId, msg.sender, to);
+        SnarkERC721(_erc721).echoTransfer(msg.sender, to, tokenId);
     }    
 }

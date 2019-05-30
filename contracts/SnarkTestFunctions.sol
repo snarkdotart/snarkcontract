@@ -9,9 +9,9 @@ contract SnarkTestFunctions {
     using SnarkLoanLib for address;
     using SnarkBaseLib for address;
 
-    address private _storage;
+    address payable private _storage;
 
-    constructor(address storageAddress) public {
+    constructor(address payable storageAddress) public {
         _storage = storageAddress;
     }
 

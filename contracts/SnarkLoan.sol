@@ -15,7 +15,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     using SnarkLoanLib for address;
     using SafeMath for uint256;
 
-    address private _storage;
+    address payable private _storage;
     address private _erc721;
 
     event LoanCreated(address indexed loanOwner, uint256 loanId);
@@ -58,7 +58,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     /// @dev Constructor of contract
     /// @param storageAddress Address of a storage contract
     /// @param erc721Address Address of a ERC721 contract
-    constructor(address storageAddress, address erc721Address) public {
+    constructor(address payable storageAddress, address erc721Address) public {
         _storage = storageAddress;
         _erc721 = erc721Address;
     }
@@ -118,7 +118,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         SnarkLoanLib.setLoanPrice(_storage, loanId, msg.value);
         
         // сохраняем деньги на контракте storage
-        if (msg.value > 0) address(uint160(_storage)).transfer(msg.value);
+        if (msg.value > 0) _storage.transfer(msg.value);
 
         // изменяем количество лоанов
         SnarkLoanLib.setNumberOfLoans(_storage, SnarkLoanLib.getNumberOfLoans(_storage).add(1));

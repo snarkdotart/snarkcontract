@@ -23,7 +23,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     using SnarkCommonLib for address;
     using SnarkLoanLib for address;
 
-    address private _storage;
+    address payable private _storage;
 
     bytes4 private constant ERC721_RECEIVED = 0x150b7a02;
 
@@ -45,7 +45,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         _;
     }
 
-    constructor(address storageAddress) public {
+    constructor(address payable storageAddress) public {
         // get an address of a storage
         _storage = storageAddress;
         // register the supported interfaces to conform to ERC721 via ERC165
@@ -239,7 +239,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         SnarkLoanLib.toShiftPointer(_storage);
 
         if (msg.value > 0) {
-            address(uint160(_storage)).transfer(msg.value);
+            _storage.transfer(msg.value);
             SnarkCommonLib.buy(_storage, _tokenId, msg.value, _from, _to);
         } else {
             SnarkCommonLib.transferToken(_storage, _tokenId, _from, _to);
