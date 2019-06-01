@@ -207,7 +207,7 @@ contract('SnarkLoan', async (accounts) => {
         findplace = await snarktest.findPosition(loan_3_start, loan_3_finish);
         console.log(`find position for loan 3: ${JSON.stringify(findplace)}`);
 
-        // добавляем второй лоан
+        // добавляем третий лоан
         await snarkloan.createLoan(loan_3_start, loan_3_finish, { from: accounts[0], value: valueOfLoan });
 
         // убеждаемся, что теперь у нас именно 3 лоана
@@ -801,35 +801,87 @@ contract('SnarkLoan', async (accounts) => {
         const l1f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
         
         // время старта и остановки второго лоана
-        const l2s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
-        const l2f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 3, 0) / 1000;
+        const l2s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 3, 0) / 1000;
+        const l2f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 4, 0) / 1000;
     
         // пускай цена будет одинаковой для обоих лоанов
         const valueOfLoan = web3.utils.toWei('2', "ether");
 
-        // создаем первый лоана, который должен стартовать через минуту
+        // создаем первый лоан, который должен стартовать через минуту
+        bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
+        topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
+        console.log(`before, Bottom boundary: ${bottomBoundary}, Top boundary: ${topBoundary}`);
+        console.log(`Find position: ${ JSON.stringify(await snarktest.findPosition(l1s, l1f)) }`);
+
         await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
         const loanId_1 = await snarktest.getMaxLoanId();
+        console.log(`LoanId of 1st loan: ${ loanId_1 }`);
 
-        // создаем первый лоана, который должен стартовать через минуту
+        pointer = await snarktest.getLoanPointer();
+        console.log(`Loan Pointer before start loan 1: ${ pointer }`);
+        
+        bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
+        topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
+        console.log(`after, Bottom boundary: ${bottomBoundary}, Top boundary: ${topBoundary}`);
+
+        isLoanFinished = await snarkloan.isLoanFinished(loanId_1);
+        assert.isFalse(isLoanFinished, "Loan 1 is finished now and it's wrong");
+
+        loanDetail = await snarkloan.getLoanDetail(loanId_1);
+        console.log(`
+            Start date: ${ new BN(loanDetail[1]).toNumber() },
+            End date: ${ new BN(loanDetail[2]).toNumber() },
+            Previous loanId: ${ loanDetail[3] },
+            Next loanId: ${ loanDetail[4] },
+        `);
+
+        // проверим, что поиск позиции правильный
+        console.log(`Find position: ${ JSON.stringify(await snarktest.findPosition(l2s, l2f)) }`);
+        
+        // создаем первый лоан, который должен стартовать через минуту
         await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
         const loanId_2 = await snarktest.getMaxLoanId();
+        console.log(`LoanId of 2nd loan: ${ loanId_2 }`);
 
-        // убеждаемся, что через лоан создан
+        pointer = await snarktest.getLoanPointer();
+        console.log(`Loan Pointer before start loan 2: ${ pointer }`);
+
+        bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
+        topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
+        console.log(`after, Bottom boundary: ${bottomBoundary}, Top boundary: ${topBoundary}`);
+
+        isLoanFinished = await snarkloan.isLoanFinished(loanId_2);
+        assert.isFalse(isLoanFinished, "Loan 2 is finished now and it's wrong");
+
+        loanDetail = await snarkloan.getLoanDetail(loanId_2);
+        console.log(`
+            Start date: ${ new BN(loanDetail[1]).toNumber() },
+            End date: ${ new BN(loanDetail[2]).toNumber() },
+            Previous loanId: ${ loanDetail[3] },
+            Next loanId: ${ loanDetail[4] }
+        `);
+
+        // убеждаемся, что лоан создан
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(2);
 
-        // надо выждать минуту, чтобы лоан гарантированно начал работу
+        // надо выждать минуту, чтобы первый лоан гарантированно начал работу
         pause(60000);
+
+        isLoanFinished = await snarkloan.isLoanFinished(loanId_1);
+        assert.isFalse(isLoanFinished, "Loan is finished now and it's wrong");
 
         isActive = await snarkloan.isLoanActive(loanId_1);
         assert.isTrue(isActive, "Loan is not active and it's wrong");
+
+        pointer = await snarktest.getLoanPointer();
+        console.log(`Loan Pointer after start loan: ${ pointer }`);
 
         loanId = await snarkloan.getLoanId();
         expect(loanId.toNumber()).to.equal(loanId_1.toNumber());
 
         // надо выждать минуту, чтобы лоан закончил свою работу и начал другой
-        pause(60000);
+        pause(120000);
         
         loanId = await snarkloan.getLoanId();
         expect(loanId.toNumber()).to.equal(loanId_2.toNumber());

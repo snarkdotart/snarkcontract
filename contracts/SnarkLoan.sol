@@ -101,12 +101,13 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         require(duration <= getDefaultLoanDuration().mul(86400), "Duration exceeds a max value");
 
         SnarkLoanLib.toShiftPointer(_storage);
+
         uint256 afterLoanId;
         uint256 beforeLoanId;
         bool isCrossedPeriod;
         (afterLoanId, beforeLoanId, isCrossedPeriod) = 
             SnarkLoanLib.findPosition(_storage, timestampStart, timestampEnd);
-        require(isCrossedPeriod == false, "Selected period has not to crossed with existing loans");
+        require(!isCrossedPeriod, "Selected period has not to crossed with existing loans");
 
         // а тут уже добавляем сам лоан в систему и настраиваем поинтер
         uint256 loanId = SnarkLoanLib.increaseMaxLoanId(_storage);
@@ -126,7 +127,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         SnarkLoanLib.addLoanToOwnerList(_storage, msg.sender, loanId);
 
         if (afterLoanId == 0) { 
-            SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, timestampStart); 
+            // SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, timestampStart); 
             SnarkLoanLib.setLoanPointer(_storage, loanId);
         } else {
             SnarkLoanLib.setNextLoan(_storage, afterLoanId, loanId);

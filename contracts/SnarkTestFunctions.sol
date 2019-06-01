@@ -85,4 +85,7 @@ contract SnarkTestFunctions {
         return SnarkLoanLib.getMaxLoanId(_storage);
     }
 
+    function getLoanPointer() public view returns (uint256) {
+        return SnarkLoanLib.getLoanPointer(_storage);
+    }
 }
