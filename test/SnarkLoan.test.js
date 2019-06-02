@@ -930,6 +930,63 @@ contract('SnarkLoan', async (accounts) => {
         } catch (e) {
             expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert Duration exceeds a max value -- Reason given: Duration exceeds a max value.');
         }
+    });
 
+    it("test overlapping of loans", async () => {
+        const _dt_n     = new Date();
+        const _year_n   = _dt_n.getFullYear();
+        const _month_n  = _dt_n.getMonth();
+        const _date_n   = _dt_n.getDate();
+        const _hours_n  = _dt_n.getHours();
+        const _min_n    = _dt_n.getMinutes();
+
+        const l1s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
+        const l1f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 3, 0) / 1000;
+        
+        const l2s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 5, 0) / 1000;
+        const l2f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 6, 0) / 1000;
+
+        const l3s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 8, 0) / 1000;
+        const l3f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 9, 0) / 1000;
+
+        const l4s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 1, 0) / 1000;
+        const l4f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
+
+        const l5s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 7, 0) / 1000;
+        const l5f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 10, 0) / 1000;
+
+        const l6s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 1, 0) / 1000;
+        const l6f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 10, 0) / 1000;
+
+        const valueOfLoan = web3.utils.toWei('2', "ether");
+
+        await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
+        console.log(`Loan #1 was successfully created`);
+        await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
+        console.log(`Loan #2 was successfully created`);
+        await snarkloan.createLoan(l3s, l3f, { from: accounts[0], value: valueOfLoan });
+        console.log(`Loan #3 was successfully created`);
+        
+        try {
+            await snarkloan.createLoan(l4s, l4f, { from: accounts[0], value: valueOfLoan });
+        } catch (e) {
+            console.log(`An exception occurred upon creation of Loan #4`);
+            expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert Selected period has not to crossed with existing loans -- Reason given: Selected period has not to crossed with existing loans.');
+        }
+
+        try {
+            await snarkloan.createLoan(l5s, l5f, { from: accounts[0], value: valueOfLoan });
+        } catch (e) {
+            console.log(`An exception occurred upon creation of Loan #5`);
+            expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert Selected period has not to crossed with existing loans -- Reason given: Selected period has not to crossed with existing loans.');
+        }
+
+        try {
+            await snarkloan.createLoan(l6s, l6f, { from: accounts[0], value: valueOfLoan });
+        } catch (e) {
+            console.log(`An exception occurred upon creation of Loan #6`);
+            expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert Selected period has not to crossed with existing loans -- Reason given: Selected period has not to crossed with existing loans.');
+        }
+        
     });
 });

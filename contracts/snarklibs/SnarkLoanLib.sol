@@ -164,40 +164,50 @@ library SnarkLoanLib {
             require(timestampStart > topBoundary,
                 "Start of loan has to be bigger the last loan's end datetime");
         } else {
-            if (timestampStart < bottomBoundary && timestampEnd < bottomBoundary) {
-                beforeLoanId = getLoanPointer(storageAddress);
-            } else if (timestampStart > topBoundary && timestampEnd > topBoundary) {
-                afterLoanId = getLoanPointer(storageAddress);
-                uint256 nloans = getNumberOfLoans(storageAddress);
-                if (nloans > 0) {
-                    for (uint i = 0; i < nloans - 1; i++) {
-                        afterLoanId = getNextLoan(storageAddress, afterLoanId);
-                    }
-                }
+            if ((timestampStart < bottomBoundary && timestampEnd > topBoundary) ||
+                (timestampStart < bottomBoundary && timestampEnd > bottomBoundary && timestampEnd < topBoundary) ||
+                (timestampEnd > topBoundary && timestampStart > bottomBoundary && timestampStart < topBoundary)
+            ) {
+                isCrossedPeriod = true;
             } else {
-                uint256 loanId = getLoanPointer(storageAddress);
-                uint256 startDate;
-                uint256 endDate;
-                while (loanId > 0) {
-                    startDate = getLoanStartDate(storageAddress, loanId);
-                    endDate = getLoanEndDate(storageAddress, loanId);
-
-                    if ((timestampStart >= startDate && timestampStart <= endDate) || 
-                        (timestampEnd >= startDate && timestampEnd <= endDate)) {
-                        isCrossedPeriod = true;
-                        break;
+                if (timestampStart < bottomBoundary && timestampEnd < bottomBoundary) {
+                    beforeLoanId = getLoanPointer(storageAddress);
+                } else if (timestampStart > topBoundary && timestampEnd > topBoundary) {
+                    afterLoanId = getLoanPointer(storageAddress);
+                    uint256 nloans = getNumberOfLoans(storageAddress);
+                    if (nloans > 0) {
+                        for (uint i = 0; i < nloans - 1; i++) {
+                            afterLoanId = getNextLoan(storageAddress, afterLoanId);
+                        }
                     }
+                } else {
+                    uint256 loanId = getLoanPointer(storageAddress);
+                    uint256 startDate;
+                    uint256 endDate;
+                    while (loanId > 0) {
+                        startDate = getLoanStartDate(storageAddress, loanId);
+                        endDate = getLoanEndDate(storageAddress, loanId);
 
-                    if (timestampEnd < startDate) {
-                        beforeLoanId = loanId;
-                        break;
+                        if ((timestampStart >= startDate && timestampStart <= endDate) || 
+                            (timestampEnd >= startDate && timestampEnd <= endDate) ||
+                            (timestampStart <= startDate && timestampEnd >= startDate)) {
+                            beforeLoanId = 0;
+                            afterLoanId = 0;
+                            isCrossedPeriod = true;
+                            break;
+                        }
+
+                        if (timestampEnd < startDate) {
+                            beforeLoanId = loanId;
+                            break;
+                        }
+
+                        if (timestampStart > endDate) {
+                            afterLoanId = loanId;
+                        }
+                        
+                        loanId = getNextLoan(storageAddress, loanId);
                     }
-
-                    if (timestampStart > endDate) {
-                        afterLoanId = loanId;
-                    } 
-                    
-                    loanId = getNextLoan(storageAddress, loanId);
                 }
             }
         }
