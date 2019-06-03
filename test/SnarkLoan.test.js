@@ -59,19 +59,19 @@ contract('SnarkLoan', async (accounts) => {
     it("test create loan", async () => {
         const valueOfLoan = web3.utils.toWei('1', "ether");
 
-        // проверяем, что нет лоанов
+        // check that there are not any loans
         let countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(0);
 
-        // а также возвращается пустой список лоанов
+        // check that list of loans is empty
         let allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.be.empty;
 
-        // указатель на лоан должен быть пустой
+        // pointer to a loan has to be empty
         let pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(0);
 
-        // проверяем как установлены верхния и нижняя граница
+        // check if settled the top and bottom boundaries up
         let topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
         let bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
 
@@ -81,23 +81,23 @@ contract('SnarkLoan', async (accounts) => {
         let findplace = await snarktest.findPosition(loan_1_start, loan_1_finish);
         console.log(`find position for loan 1: ${JSON.stringify(findplace)}`);
 
-        // проверим количество лоанов у пользователя перед добавлением. Должно быть 0
+        // check a number of loans in the owner list before adding a new one
         let numberOfOwnerLoans = await snarkloan.getCountOfOwnerLoans(accounts[0]);
         expect(numberOfOwnerLoans.toNumber()).to.equal(0);
 
-        // проверяем количество денег, хранящихся на SnarkStorage и SnarkLoan. После создания Loan-а 
-        // количество денег должно увеличиться только на SnarkStorage
+        // check the amount of ether on SnarkLoan and SnarkStorage contracts. 
+        // An increasing of ether should be in SnarkStorage only.
         const balanceOfSnarkStorage = await web3.eth.getBalance(snarkstorage.address);
         const balanceOfSnarkLoan = await web3.eth.getBalance(snarkloan.address);
 
-        // добавляем первый лоан. должен свалиться с ошибкой
+        // Adding a new loan should throw an exception
         try {
             await snarkloan.createLoan(loan_1_start, loan_1_finish, { from: accounts[0], value: valueOfLoan });
         } catch(e) {
             expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert User has to have at least one token -- Reason given: User has to have at least one token.');
         }
 
-        // необходимо добавить хотя бы один токен в аккаунт account[0]
+        // we have to add at least one loan to account[0]
         let balanceOfERC721 = await snarkerc721.balanceOf(accounts[0]);
         assert.equal(balanceOfERC721, 0, "balance is not equal zero before test");
         
@@ -141,22 +141,20 @@ contract('SnarkLoan', async (accounts) => {
         expect(new BN(balanceOfSnarkStorage).eq(new BN(balanceOfSnarkStorage_after).sub(new BN(valueOfLoan)))).is.true;
         expect(new BN(balanceOfSnarkLoan).eq(new BN(balanceOfSnarkLoan_after))).is.true;
 
-        // убеждаемся, что количество лоанов увеличилось, стало 1
+        // check if the number of loans equals 1
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(1);
 
-        // получаем указатель на лоан и смотрим куда он указывает
-        // пока должен указывать на первый лоан
+        // the pointer has to point to the first loan
         pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(1);
 
-        // проверяем сколько будет возвращать лоанов в списке
-        // список должен состоять из одного элемента и содержать лоан с id 1, т.к. он первый
+        // check the return number of loans in the list. It should equal to 1.
         allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.have.lengthOf(1);
         expect(allloans[0].toNumber()).to.equal(1);
 
-        // проверяем, что данные по лоану записались как положено
+        // check if the detail of loan saved properly
         const loanDetail = await snarkloan.getLoanDetail(countOfLoans);
         expect(loanDetail[0].toUpperCase()).to.equal(accounts[0].toUpperCase());
         expect(loanDetail[1].toNumber()).to.equal(loan_1_start);
@@ -165,88 +163,80 @@ contract('SnarkLoan', async (accounts) => {
         expect(loanDetail[4].toNumber()).to.equal(0);
         expect(loanDetail[5].eq(new BN(valueOfLoan))).to.be.true;
 
-        // проверяем как установлены верхния и нижняя граница
-        // ожидаем, что будут соответствовать первому лоану
+        // check if settled the top and bottom boundaries up
+        // we expect that they will equal data of the first loan
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
 
         expect(bottomBoundary.toNumber()).to.equal(loan_1_start);
         expect(topBoundary.toNumber()).to.equal(loan_1_finish);
 
-        // готовимся к созданию второго лоана, который гарантированно не пересекается с первым
+        // prepare to add of the second loan which will not overlap with the first one
         findplace = await snarktest.findPosition(loan_2_start, loan_2_finish);
         console.log(`find position for loan 2: ${JSON.stringify(findplace)}`);
 
-        // добавляем второй лоан
         await snarkloan.createLoan(loan_2_start, loan_2_finish, { from: accounts[0], value: valueOfLoan });
 
-        // убеждаемся, что теперь у нас именно 2 лоана
+        // check if there are 2 loans now
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(2);
 
-        // проверяем, что список содержит именно 2 лоана
+        // check lint of loans
         allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.have.lengthOf(2);
         expect(allloans[0].toNumber()).to.equal(1);
         expect(allloans[1].toNumber()).to.equal(2);
 
-        // проверяем, что указатель на лоан не сбился
+        // check the pointer
         pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(1);
 
-        // проверяем как установлены верхния и нижняя граница
-        // ожидаем, что старт будет соответствовать первому лоану, а финиш - второму
+        // we expect that the bottom of the boundary will equal the start of the 
+        // first loan and the top boundary will equal the end of the second loan
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
 
         expect(bottomBoundary.toNumber()).to.equal(loan_1_start);
         expect(topBoundary.toNumber()).to.equal(loan_2_finish);
 
-        // добавляем 3-й лоан, который должен попасть во временной промежуток между 1-м и 2-м.
-        // При получении списка должны получить в отсортированном по времени следования - 1,3,2
+        // add 3rd loan which should be between 2nd and 1st loans
         findplace = await snarktest.findPosition(loan_3_start, loan_3_finish);
         console.log(`find position for loan 3: ${JSON.stringify(findplace)}`);
 
-        // добавляем третий лоан
         await snarkloan.createLoan(loan_3_start, loan_3_finish, { from: accounts[0], value: valueOfLoan });
 
-        // убеждаемся, что теперь у нас именно 3 лоана
+        // check if there are 3 loans now
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(3);
 
-        // проверяем, что список содержит именно 3 лоана
         allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.have.lengthOf(3);
         expect(allloans[0].toNumber()).to.equal(1);
         expect(allloans[1].toNumber()).to.equal(3);
         expect(allloans[2].toNumber()).to.equal(2);
 
-        // проверяем, что указатель на лоан не сбился
+        // check if the pointer is correct
         pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(1);
 
-        // проверяем как установлены верхния и нижняя граница
-        // ожидаем, что ничего не изменится
-        // старт будет соответствовать первому лоану, а финиш - второму
+        // we expect that the bottom of the boundary will equal the start of the 
+        // first loan and the top boundary will equal the end of the second loan
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
 
         expect(bottomBoundary.toNumber()).to.equal(loan_1_start);
         expect(topBoundary.toNumber()).to.equal(loan_2_finish);
 
-        // добавляем 4-й лоан, который должен стать на первое место
-        // при этом указатель должен переместиться
+        // add 4th loan which has to become the first in the list
+        // and the pointer has to shift to it
         findplace = await snarktest.findPosition(loan_4_start, loan_4_finish);
         console.log(`find position for loan 4: ${JSON.stringify(findplace)}`);
 
-        // добавляем второй лоан
         await snarkloan.createLoan(loan_4_start, loan_4_finish, { from: accounts[0], value: valueOfLoan });
 
-        // убеждаемся, что теперь у нас именно 4 лоана
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(4);
 
-        // проверяем, что список содержит именно 4 лоана
         allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.have.lengthOf(4);
         expect(allloans[0].toNumber()).to.equal(4);
@@ -254,31 +244,28 @@ contract('SnarkLoan', async (accounts) => {
         expect(allloans[2].toNumber()).to.equal(3);
         expect(allloans[3].toNumber()).to.equal(2);
 
-        // проверяем, что указатель на лоан не сбился
         pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(4);
 
-        // проверяем как установлены верхния и нижняя граница
-        // ожидаем, что ничего не изменится
-        // старт будет соответствовать четвертому лоану, а финиш - второму
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
 
         expect(bottomBoundary.toNumber()).to.equal(loan_4_start);
         expect(topBoundary.toNumber()).to.equal(loan_2_finish);
 
-        // добавляем 5-й лоан, который должен стать на последнее место
-        // при этом указатель должен остаться прежним
+        // add 5th loan to the last position
+        // despite that, the pointer has not to be changed
         findplace = await snarktest.findPosition(loan_5_start, loan_5_finish);
         console.log(`find position for loan 5: ${JSON.stringify(findplace)}`);
-        // добавляем второй лоан
+        
+        // add a second loan
         await snarkloan.createLoan(loan_5_start, loan_5_finish, { from: accounts[0], value: valueOfLoan });
 
-        // убеждаемся, что теперь у нас именно 5 лоана
+        // check if the number of loans is 5
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(5);
 
-        // проверяем, что список содержит именно 5 лоана
+        // check if the list contains 5 loans
         allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.have.lengthOf(5);
         expect(allloans[0].toNumber()).to.equal(4);
@@ -287,20 +274,20 @@ contract('SnarkLoan', async (accounts) => {
         expect(allloans[3].toNumber()).to.equal(2);
         expect(allloans[4].toNumber()).to.equal(5);
 
-        // проверяем, что указатель на лоан не сбился
+        // check if the pointer is correct
         pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(4);
 
-        // проверяем как установлены верхния и нижняя граница
-        // ожидаем, что ничего не изменится
-        // старт будет соответствовать четвертому лоану, а финиш - пятому
+        // check the top and the bottom of boundaries
+        // expect that nothing was changed
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
 
         expect(bottomBoundary.toNumber()).to.equal(loan_4_start);
         expect(topBoundary.toNumber()).to.equal(loan_5_finish);
 
-        // проверим количество лоанов у пользователя перед добавлением. Должно быть 5
+        // // check the quantity of loan in the list of the owner before adding of a new one. 
+        // The amount of loans has to be 5.
         numberOfOwnerLoans = await snarkloan.getCountOfOwnerLoans(accounts[0]);
         expect(numberOfOwnerLoans.toNumber()).to.equal(5);
 
@@ -314,11 +301,11 @@ contract('SnarkLoan', async (accounts) => {
     });
 
     it("test delete of loan", async () => {
-        // убеждаемся, что у нас до сих пор 5 лоанов
+        // check if we still have 5 loans
         let countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(5);
 
-        // и что они находятся в той же самой последовательности
+        // they have to be in the same order
         let allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.have.lengthOf(5);
         expect(allloans[0].toNumber()).to.equal(4);
@@ -344,15 +331,14 @@ contract('SnarkLoan', async (accounts) => {
         let pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(4);
 
-        // проверить удаление лоана, находящегося в списке на первой позиции
+        // check if the first loan was deleted (first position)
         await snarkloan.deleteLoan(4);
        
-        // проверяем параметры
-        // количество лоанов должно стать 4
+        // number of loans has to be 4
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(4);
 
-        // и что они находятся в той же самой последовательности
+        // they have to be in the same order
         allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.have.lengthOf(4);
         expect(allloans[0].toNumber()).to.equal(1);
@@ -376,14 +362,14 @@ contract('SnarkLoan', async (accounts) => {
         pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(1);
 
-        // проверить удаление лоана, находящегося в списке на последней позиции
+        // check of deleting the loan which is at the last of the list
         await snarkloan.deleteLoan(5);
        
-        // количество лоанов должно стать 3
+        // number of loans has to be 3
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(3);
 
-        // и что они находятся в той же самой последовательности
+        // they have to be in the same order
         allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.have.lengthOf(3);
         expect(allloans[0].toNumber()).to.equal(1);
@@ -405,14 +391,14 @@ contract('SnarkLoan', async (accounts) => {
         pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(1);
 
-        // проверить удаление лоана, находящегося в списке посередине
+        // check of deleting the loan which is at the middle of the list
         await snarkloan.deleteLoan(3);
        
-        // количество лоанов должно стать 2
+        // number of loans has to be 2
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(2);
 
-        // и что они находятся в той же самой последовательности
+        // they have to be in the same order
         allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.have.lengthOf(2);
         expect(allloans[0].toNumber()).to.equal(1);
@@ -432,14 +418,14 @@ contract('SnarkLoan', async (accounts) => {
         pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(1);
 
-        // проверить удаление лоана, находящегося в начале
+        // check of deleting the loan which is at the beginning of the list
         await snarkloan.deleteLoan(1);
        
-        // количество лоанов должно стать 1
+        // number of loans has to be 1
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(1);
 
-        // и что они находятся в той же самой последовательности
+        // they have to be in the same order
         allloans = await snarkloan.getListOfLoans();
         expect(allloans).to.have.lengthOf(1);
         expect(allloans[0].toNumber()).to.equal(2);
@@ -457,10 +443,10 @@ contract('SnarkLoan', async (accounts) => {
         pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(2);
 
-        // проверить удаление последнего лоана
+        // check of deleting the last loan
         await snarkloan.deleteLoan(2);
        
-        // количество лоанов должно стать 0
+        // number of loans has to be 0
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(0);
 
@@ -564,7 +550,7 @@ contract('SnarkLoan', async (accounts) => {
     });
 
     it("test new logic of loan", async () => {
-        // до этого момента должно уже существовать 2 токена, один из которых должен быть в списке согласных
+        // until this time here has to exist 2 tokens where one of them has to be in a list of approve
         let totalSupply = await snarkerc721.totalSupply();
         assert.equal(totalSupply, 2, "total supply is wrong");
 
@@ -579,7 +565,7 @@ contract('SnarkLoan', async (accounts) => {
         let tokenId = await snarktest.getTokenFromApprovedTokensForLoanByIndex(0);
         assert.equal(tokenId, 1, "tokenId should be equal 1");
 
-        // добавляем еще 2 токена, но к другому аккаунту
+        // add 2 tokens to another account
         await snarkbase.createProfitShareScheme(accounts[1], [accounts[0], accounts[2]], [20, 80]);
         const profitSchemeId = await snarkbase.getProfitShareSchemesTotalCount();
 
@@ -664,7 +650,6 @@ contract('SnarkLoan', async (accounts) => {
         countNotApprovedTokens = await snarktest.getTotalNumberOfTokensInNotApprovedTokensForLoan(accounts[2]);
         assert.equal(countNotApprovedTokens, 0, "wrong number of not approved tokens for account2");
         
-        // надо добавить Loan и дождаться, чтобы он начал работать
         let countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(0);
 
@@ -682,16 +667,15 @@ contract('SnarkLoan', async (accounts) => {
     
         const valueOfLoan = web3.utils.toWei('2', "ether");
 
-        // стартовать должен через минуту
         await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
 
         let loanId = await snarktest.getMaxLoanId();
 
-        // убеждаемся, что через лоан создан
+        // check if the loan was created
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(1);
 
-        // надо выждать минуту, чтобы лоан гарантированно начал работу
+        // wait a minute to loan start
         pause(60000);
 
         isActive = await snarkloan.isLoanActive(loanId);
@@ -700,12 +684,12 @@ contract('SnarkLoan', async (accounts) => {
         totalSupply = await snarkerc721.totalSupply();
         assert.equal(totalSupply, 4, "total supply is wrong");
         
-        // для account[0] было: token 1 - true, token 2 - false
-        // для account[1] было: token 3 - true, token 4 - false
+        // for account[0] was: token 1 - true, token 2 - false
+        // for account[1] was: token 3 - true, token 4 - false
 
-        // после старта лоана ожидаем (при loanowner - account[0]):
-        // для account[0] видим 3 токена: 3, 1, 2
-        // для account[1] видим 2 токена: 3, 4
+        // after starting of loan we expecting:
+        // for account[0] we have to see 3 tokens: 3, 1, 2
+        // for account[1] we have to see 2 tokens: 3, 4
 
         balanceOfERC721 = await snarkerc721.balanceOf(accounts[0]);
         assert.equal(balanceOfERC721, 3, "balance of account0 is wrong");
@@ -741,7 +725,7 @@ contract('SnarkLoan', async (accounts) => {
         expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 3)).is.true;
         expect(await snarkloan.doUserHaveAccessToToken(accounts[1], 4)).is.true;
         
-        // надо дождаться остановки лоана и проверить обратно количество токенов
+        // wait for loan stopping and check the number of loans
         pause(60000);
 
         balanceOfERC721 = await snarkerc721.balanceOf(accounts[0]);
@@ -796,18 +780,18 @@ contract('SnarkLoan', async (accounts) => {
         const _hours_n  = _dt_n.getHours();
         const _min_n    = _dt_n.getMinutes();
 
-        // время старта и остановки первого лоана
+        // time of starting and finishing of the first loan
         const l1s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 1, 0) / 1000;
         const l1f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
         
-        // время старта и остановки второго лоана
+        // time of starting and finishing of second loan
         const l2s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 3, 0) / 1000;
         const l2f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 4, 0) / 1000;
     
-        // пускай цена будет одинаковой для обоих лоанов
+        // let the price of loans will be the same for both of them
         const valueOfLoan = web3.utils.toWei('2', "ether");
 
-        // создаем первый лоан, который должен стартовать через минуту
+        // create a first loan which has to start in a minute
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
         console.log(`before, Bottom boundary: ${bottomBoundary}, Top boundary: ${topBoundary}`);
@@ -835,10 +819,10 @@ contract('SnarkLoan', async (accounts) => {
             Next loanId: ${ loanDetail[4] },
         `);
 
-        // проверим, что поиск позиции правильный
+        // check if a position is right\
         console.log(`Find position: ${ JSON.stringify(await snarktest.findPosition(l2s, l2f)) }`);
         
-        // создаем первый лоан, который должен стартовать через минуту
+        // create a second loan which has to start in 3 minutes
         await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
         const loanId_2 = await snarktest.getMaxLoanId();
         console.log(`LoanId of 2nd loan: ${ loanId_2 }`);
@@ -861,11 +845,11 @@ contract('SnarkLoan', async (accounts) => {
             Next loanId: ${ loanDetail[4] }
         `);
 
-        // убеждаемся, что лоан создан
+        // check if the loan was created
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(2);
 
-        // надо выждать минуту, чтобы первый лоан гарантированно начал работу
+        // wait a minute to start loan work
         pause(60000);
 
         isLoanFinished = await snarkloan.isLoanFinished(loanId_1);
@@ -880,7 +864,7 @@ contract('SnarkLoan', async (accounts) => {
         loanId = await snarkloan.getLoanId();
         expect(loanId.toNumber()).to.equal(loanId_1.toNumber());
 
-        // надо выждать минуту, чтобы лоан закончил свою работу и начал другой
+        // wait a minute to sure the loan stopped and started a new one
         pause(120000);
         
         loanId = await snarkloan.getLoanId();

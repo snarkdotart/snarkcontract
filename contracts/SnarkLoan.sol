@@ -109,7 +109,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             SnarkLoanLib.findPosition(_storage, timestampStart, timestampEnd);
         require(!isCrossedPeriod, "Selected period has not to crossed with existing loans");
 
-        // а тут уже добавляем сам лоан в систему и настраиваем поинтер
+        // here we add a loan and set a pointer
         uint256 loanId = SnarkLoanLib.increaseMaxLoanId(_storage);
         SnarkLoanLib.setOwnerOfLoan(_storage, loanId, msg.sender);
         SnarkLoanLib.setLoanStartDate(_storage, loanId, timestampStart);
@@ -118,16 +118,15 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         SnarkLoanLib.setPreviousLoan(_storage, loanId, afterLoanId);
         SnarkLoanLib.setLoanPrice(_storage, loanId, msg.value);
         
-        // сохраняем деньги на контракте storage
+        // keep the ether in the storage contract
         if (msg.value > 0) _storage.transfer(msg.value);
 
-        // изменяем количество лоанов
+        // change number of loans
         SnarkLoanLib.setNumberOfLoans(_storage, SnarkLoanLib.getNumberOfLoans(_storage).add(1));
-        // добавляем в список владельца
+        // add the loan to the owner list
         SnarkLoanLib.addLoanToOwnerList(_storage, msg.sender, loanId);
 
         if (afterLoanId == 0) { 
-            // SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, timestampStart); 
             SnarkLoanLib.setLoanPointer(_storage, loanId);
         } else {
             SnarkLoanLib.setNextLoan(_storage, afterLoanId, loanId);
@@ -174,7 +173,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             SnarkLoanLib.setPreviousLoan(_storage, nextLoanId, beforeLoanId);
             SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
         }
-        // удаляем лоан из списка пользователя
+        // remove the loan from the owner list
         address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
         SnarkLoanLib.deleteLoanFromOwnerList(_storage, loanOwner, loanId);
         
