@@ -55,7 +55,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         _;
     }
 
-    /// @dev Constructor of contract
+    /// @dev Contract Constructor
     /// @param storageAddress Address of a storage contract
     /// @param erc721Address Address of a ERC721 contract
     constructor(address payable storageAddress, address erc721Address) public {
@@ -66,7 +66,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     /// @notice Will receive any eth sent to the contract
     function() external payable {} // solhint-disable-line
 
-    /// @dev Function to destroy the contract in the blockchain
+    /// @dev Function to destroy the contract on the blockchain
     function kill() external onlyOwner {
         selfdestruct(msg.sender);
     }
@@ -90,9 +90,9 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         );
     }
 
-    /// @dev attributes of timestamp_start and timestamp_end should contain 10 digits only
-    /// @param timestampStart Contain date and time when a loan has to start
-    /// @param timestampEnd Contain date and time when a loan has to end
+    /// @dev Attributes of timestamp_start and timestamp_end should contain 10 digits only
+    /// @param timestampStart Contains date and time of loan start
+    /// @param timestampEnd Contain date and time of loan end
     function createLoan(uint256 timestampStart, uint256 timestampEnd) public payable restrictedAccess {
         require(SnarkBaseLib.getOwnedTokensCount(_storage, msg.sender) > 0, "User has to have at least one token");
         require(timestampStart > block.timestamp, "Start of loan less than current time"); // solhint-disable-line
@@ -109,7 +109,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             SnarkLoanLib.findPosition(_storage, timestampStart, timestampEnd);
         require(!isCrossedPeriod, "Selected period has not to crossed with existing loans");
 
-        // here we add a loan and set a pointer
+        // Add loan and set pointer
         uint256 loanId = SnarkLoanLib.increaseMaxLoanId(_storage);
         SnarkLoanLib.setOwnerOfLoan(_storage, loanId, msg.sender);
         SnarkLoanLib.setLoanStartDate(_storage, loanId, timestampStart);
@@ -118,12 +118,12 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
         SnarkLoanLib.setPreviousLoan(_storage, loanId, afterLoanId);
         SnarkLoanLib.setLoanPrice(_storage, loanId, msg.value);
         
-        // keep the ether in the storage contract
+        // Keep the ether in the storage contract
         if (msg.value > 0) _storage.transfer(msg.value);
 
-        // change number of loans
+        // Update number of loans
         SnarkLoanLib.setNumberOfLoans(_storage, SnarkLoanLib.getNumberOfLoans(_storage).add(1));
-        // add the loan to the owner list
+        // Add loan to the owner list
         SnarkLoanLib.addLoanToOwnerList(_storage, msg.sender, loanId);
 
         if (afterLoanId == 0) { 
@@ -173,7 +173,7 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             SnarkLoanLib.setPreviousLoan(_storage, nextLoanId, beforeLoanId);
             SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
         }
-        // remove the loan from the owner list
+        // Remove loan from the owner list
         address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
         SnarkLoanLib.deleteLoanFromOwnerList(_storage, loanOwner, loanId);
         
