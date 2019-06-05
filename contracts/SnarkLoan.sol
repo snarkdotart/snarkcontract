@@ -7,7 +7,7 @@ import "./snarklibs/SnarkLoanLib.sol";
 import "./openzeppelin/SafeMath.sol";
 
 
-/// @title Contract provides a functionality to work with loans
+/// @title Contract creates the functionality to loans tokens
 /// @author Vitali Hurski
 contract SnarkLoan is Ownable, SnarkDefinitions {
 
