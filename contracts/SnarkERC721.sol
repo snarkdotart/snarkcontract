@@ -27,7 +27,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
 
     bytes4 private constant ERC721_RECEIVED = 0x150b7a02;
 
-    /// @dev Checks msg.sender can transfer a token, by being owner, approved, or operator
+    /// @dev Checks msg.sender can transfer a token - limited to owner or those approved by owner, an operator
     /// @param _tokenId uint256 ID of the token to validate
     modifier canTransfer(uint256 _tokenId) {
         require(
@@ -58,7 +58,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @notice Will receive any eth sent to the contract
     function() external payable {} // solhint-disable-line
 
-    /// @dev Function to destroy a contract in the blockchain
+    /// @dev Function to destroy the contract on the blockchain
     function kill() external onlyOwner {
         selfdestruct(msg.sender);
     }
@@ -113,7 +113,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         return tokenId;
     }
 
-    // for the case when a loan is active
+    // Considers case when loan is active
     function tokenOfRealOwnerByIndex(address _owner, uint256 _index) 
         public view returns (uint256 _tokenId, address _realOwner) 
     {
@@ -303,7 +303,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
     /// @param _spender address of the spender to query
     /// @param _tokenId uint256 ID of the token to be transferred
     /// @return bool whether the msg.sender is approved for the given token ID,
-    ///  is an operator of the owner, or is the owner of the token
+    /// the owner or an operator of the owner of the token
     function _isApprovedOrOwner(address _spender, uint256 _tokenId) internal view returns (bool) {
         address tokenOwner = ownerOf(_tokenId);
         return (

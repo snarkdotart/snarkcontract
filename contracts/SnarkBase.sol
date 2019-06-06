@@ -102,7 +102,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         _;
     }
 
-    /// @dev Constructor of contract
+    /// @dev Contract Constructor 
     /// @param storageAddress Address of a storage contract
     /// @param erc721Address Address of a ERC721 contract
     constructor(address payable storageAddress, address payable erc721Address) public {
@@ -110,7 +110,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         _erc721 = erc721Address;
     }
 
-    /// @dev Function to destroy a contract in the blockchain
+    /// @dev Function to destroy the contract on the blockchain
     function kill() external onlyOwner {
         selfdestruct(msg.sender);
     }
@@ -232,7 +232,7 @@ contract SnarkBase is Ownable, SnarkDefinitions {
         return SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
     }
 
-    /// @dev Function to add a new digital token to blockchain. Only Snark can call this function.
+    /// @dev Function to add a new digital token to the blockchain. Only Snark can call this function.
     /// @param artistAddress Address of artist
     /// @param hashOfToken Unique hash of the token
     /// @param tokenUrl IPFS URL to digital work
