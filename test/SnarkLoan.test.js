@@ -175,6 +175,12 @@ contract('SnarkLoan', async (accounts) => {
         findplace = await snarktest.findPosition(loan_2_start, loan_2_finish);
         console.log(`find position for loan 2: ${JSON.stringify(findplace)}`);
 
+        let busyDates = await snarkloan.getListOfBusyDates();
+        expect(busyDates[0]).to.have.lengthOf(1);
+        expect(busyDates[1]).to.have.lengthOf(1);
+        expect(busyDates[0][0].eq(new BN(loan_1_start))).to.be.true;
+        expect(busyDates[1][0].eq(new BN(loan_1_finish))).to.be.true;
+
         await snarkloan.createLoan(loan_2_start, loan_2_finish, { from: accounts[0], value: valueOfLoan });
 
         // check if there are 2 loans now
@@ -202,6 +208,14 @@ contract('SnarkLoan', async (accounts) => {
         // add 3rd loan which should be between 2nd and 1st loans
         findplace = await snarktest.findPosition(loan_3_start, loan_3_finish);
         console.log(`find position for loan 3: ${JSON.stringify(findplace)}`);
+
+        busyDates = await snarkloan.getListOfBusyDates();
+        expect(busyDates[0]).to.have.lengthOf(2);
+        expect(busyDates[1]).to.have.lengthOf(2);
+        expect(busyDates[0][0].eq(new BN(loan_1_start))).to.be.true;
+        expect(busyDates[1][0].eq(new BN(loan_1_finish))).to.be.true;
+        expect(busyDates[0][1].eq(new BN(loan_2_start))).to.be.true;
+        expect(busyDates[1][1].eq(new BN(loan_2_finish))).to.be.true;
 
         await snarkloan.createLoan(loan_3_start, loan_3_finish, { from: accounts[0], value: valueOfLoan });
 
@@ -232,6 +246,16 @@ contract('SnarkLoan', async (accounts) => {
         findplace = await snarktest.findPosition(loan_4_start, loan_4_finish);
         console.log(`find position for loan 4: ${JSON.stringify(findplace)}`);
 
+        busyDates = await snarkloan.getListOfBusyDates();
+        expect(busyDates[0]).to.have.lengthOf(3);
+        expect(busyDates[1]).to.have.lengthOf(3);
+        expect(busyDates[0][0].eq(new BN(loan_1_start))).to.be.true;
+        expect(busyDates[1][0].eq(new BN(loan_1_finish))).to.be.true;
+        expect(busyDates[0][1].eq(new BN(loan_3_start))).to.be.true;
+        expect(busyDates[1][1].eq(new BN(loan_3_finish))).to.be.true;
+        expect(busyDates[0][2].eq(new BN(loan_2_start))).to.be.true;
+        expect(busyDates[1][2].eq(new BN(loan_2_finish))).to.be.true;
+
         await snarkloan.createLoan(loan_4_start, loan_4_finish, { from: accounts[0], value: valueOfLoan });
 
         countOfLoans = await snarkloan.getNumberOfLoans();
@@ -257,7 +281,19 @@ contract('SnarkLoan', async (accounts) => {
         // despite that, the pointer has not to be changed
         findplace = await snarktest.findPosition(loan_5_start, loan_5_finish);
         console.log(`find position for loan 5: ${JSON.stringify(findplace)}`);
-        
+
+        busyDates = await snarkloan.getListOfBusyDates();
+        expect(busyDates[0]).to.have.lengthOf(4);
+        expect(busyDates[1]).to.have.lengthOf(4);
+        expect(busyDates[0][0].eq(new BN(loan_4_start))).to.be.true;
+        expect(busyDates[1][0].eq(new BN(loan_4_finish))).to.be.true;
+        expect(busyDates[0][1].eq(new BN(loan_1_start))).to.be.true;
+        expect(busyDates[1][1].eq(new BN(loan_1_finish))).to.be.true;
+        expect(busyDates[0][2].eq(new BN(loan_3_start))).to.be.true;
+        expect(busyDates[1][2].eq(new BN(loan_3_finish))).to.be.true;
+        expect(busyDates[0][3].eq(new BN(loan_2_start))).to.be.true;
+        expect(busyDates[1][3].eq(new BN(loan_2_finish))).to.be.true;
+
         // add a second loan
         await snarkloan.createLoan(loan_5_start, loan_5_finish, { from: accounts[0], value: valueOfLoan });
 
@@ -298,6 +334,20 @@ contract('SnarkLoan', async (accounts) => {
         expect(listOfOwnerLoans[2].toNumber()).to.equal(3);
         expect(listOfOwnerLoans[3].toNumber()).to.equal(4);
         expect(listOfOwnerLoans[4].toNumber()).to.equal(5);
+
+        busyDates = await snarkloan.getListOfBusyDates();
+        expect(busyDates[0]).to.have.lengthOf(5);
+        expect(busyDates[1]).to.have.lengthOf(5);
+        expect(busyDates[0][0].eq(new BN(loan_4_start))).to.be.true;
+        expect(busyDates[1][0].eq(new BN(loan_4_finish))).to.be.true;
+        expect(busyDates[0][1].eq(new BN(loan_1_start))).to.be.true;
+        expect(busyDates[1][1].eq(new BN(loan_1_finish))).to.be.true;
+        expect(busyDates[0][2].eq(new BN(loan_3_start))).to.be.true;
+        expect(busyDates[1][2].eq(new BN(loan_3_finish))).to.be.true;
+        expect(busyDates[0][3].eq(new BN(loan_2_start))).to.be.true;
+        expect(busyDates[1][3].eq(new BN(loan_2_finish))).to.be.true;
+        expect(busyDates[0][4].eq(new BN(loan_5_start))).to.be.true;
+        expect(busyDates[1][4].eq(new BN(loan_5_finish))).to.be.true;
     });
 
     it("test delete of loan", async () => {
@@ -331,9 +381,17 @@ contract('SnarkLoan', async (accounts) => {
         let pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(4);
 
+        let busyDates = await snarkloan.getListOfBusyDates();
+        expect(busyDates[0]).to.have.lengthOf(5);
+        expect(busyDates[1]).to.have.lengthOf(5);
+
         // check if the first loan was deleted (first position)
         await snarkloan.deleteLoan(4);
-       
+
+        busyDates = await snarkloan.getListOfBusyDates();
+        expect(busyDates[0]).to.have.lengthOf(4);
+        expect(busyDates[1]).to.have.lengthOf(4);
+
         // number of loans has to be 4
         countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(4);
@@ -465,6 +523,9 @@ contract('SnarkLoan', async (accounts) => {
         pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(0);
 
+        busyDates = await snarkloan.getListOfBusyDates();
+        expect(busyDates[0]).to.have.lengthOf(0);
+        expect(busyDates[1]).to.have.lengthOf(0);
     });
 
     it("test ApprovedTokensForLoan array", async () => {

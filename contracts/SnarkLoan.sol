@@ -242,4 +242,27 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
             SnarkLoanLib.toShiftPointer(_storage);
         }
     }
+
+    function getListOfBusyDates() public view returns(uint256[] memory, uint256[] memory) {
+        uint256 loanId = getLoanId();
+        uint256 countOfLoans;
+        while (loanId > 0) {
+            countOfLoans++;
+            loanId = SnarkLoanLib.getNextLoan(_storage, loanId);
+        }
+        uint256[] memory startBusyDate = new uint256[](countOfLoans);
+        uint256[] memory endBusyDate = new uint256[](countOfLoans);
+        uint256 startTimestamp;
+        uint256 endTimestamp;
+        uint256 index;
+        loanId = getLoanId();
+        while (loanId > 0) {
+            (, startTimestamp, endTimestamp, , ,) = getLoanDetail(loanId);
+            startBusyDate[index] = startTimestamp;
+            endBusyDate[index] = endTimestamp;
+            loanId = SnarkLoanLib.getNextLoan(_storage, loanId);
+            index = index.add(1);
+        }
+        return (startBusyDate, endBusyDate);
+    }
 }
