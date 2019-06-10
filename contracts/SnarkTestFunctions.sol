@@ -92,4 +92,22 @@ contract SnarkTestFunctions {
     function getOwnerOfLoan(uint256 loanId) public view returns (address) {
         return SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
     }
+
+    function deleteAllLoans(uint256 countOfLoans) public {
+        SnarkLoanLib.setNumberOfLoans(_storage, 0);
+        SnarkLoanLib.setMaxLoanId(_storage, 0);
+        SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, 0);
+        SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, 0);
+        SnarkLoanLib.setLoanPointer(_storage, 0);
+
+        address loanOwner;
+        for (uint256 i = 1; i < countOfLoans; i++) {
+            SnarkStorage(_storage).setBool(keccak256(abi.encodePacked("isLoanDeleted", i)), false);
+            loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, i);
+            if (loanOwner != address(0)) {
+                SnarkLoanLib.deleteLoanFromOwnerList(_storage, loanOwner, i);
+            }
+        }
+
+    }
 }

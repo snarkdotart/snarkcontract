@@ -387,7 +387,7 @@ contract('SnarkLoan', async (accounts) => {
 
         // check if the first loan was deleted (first position)
         await snarkloan.deleteLoan(4);
-        
+
         // check if it's possible to delete the loan twice
         try {
             await snarkloan.deleteLoan(4);
@@ -1040,5 +1040,9 @@ contract('SnarkLoan', async (accounts) => {
             expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert Selected period has not to crossed with existing loans -- Reason given: Selected period has not to crossed with existing loans.');
         }
         
+    });
+
+    it("test deleteAllLoans", async () => {
+        await snarktest.deleteAllLoans(100);
     });
 });
