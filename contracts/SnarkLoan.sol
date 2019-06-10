@@ -139,6 +139,9 @@ contract SnarkLoan is Ownable {
     }
 
     function deleteLoan(uint256 loanId) public onlyLoanOwnerOrSnark(loanId) {
+        bool isDeleted = SnarkLoanLib.isLoanDeleted(_storage, loanId);
+        require(isDeleted == false, "Loan does not exist");
+
         uint256 beforeLoanId = SnarkLoanLib.getPreviousLoan(_storage, loanId);
         uint256 nextLoanId = SnarkLoanLib.getNextLoan(_storage, loanId);
         uint256 countOfLoans = SnarkLoanLib.getNumberOfLoans(_storage);
@@ -173,6 +176,8 @@ contract SnarkLoan is Ownable {
         // Remove loan from the owner list
         address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
         SnarkLoanLib.deleteLoanFromOwnerList(_storage, loanOwner, loanId);
+        
+        SnarkLoanLib.markLoanAsDeleted(_storage, loanId);
         
         emit LoanDeleted(loanId);
     }

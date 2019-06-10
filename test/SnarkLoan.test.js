@@ -387,6 +387,13 @@ contract('SnarkLoan', async (accounts) => {
 
         // check if the first loan was deleted (first position)
         await snarkloan.deleteLoan(4);
+        
+        // check if it's possible to delete the loan twice
+        try {
+            await snarkloan.deleteLoan(4);
+        } catch(e) {
+            expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert Loan does not exist -- Reason given: Loan does not exist.');
+        }
 
         busyDates = await snarkloan.getListOfBusyDates();
         expect(busyDates[0]).to.have.lengthOf(4);

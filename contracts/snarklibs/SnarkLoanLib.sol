@@ -491,4 +491,14 @@ library SnarkLoanLib {
         SnarkStorage(storageAddress)
             .setUint(keccak256(abi.encodePacked("OwnerLoansList", loanOwner, position)), loanId);
     }
+
+    function markLoanAsDeleted(address payable storageAddress, uint256 loanId) public {
+        SnarkStorage(storageAddress)
+            .setBool(keccak256(abi.encodePacked("isLoanDeleted", loanId)), true);
+    }
+
+    function isLoanDeleted(address payable storageAddress, uint256 loanId) public view returns (bool) {
+        return SnarkStorage(storageAddress)
+            .boolStorage(keccak256(abi.encodePacked("isLoanDeleted", loanId)));
+    }
 }

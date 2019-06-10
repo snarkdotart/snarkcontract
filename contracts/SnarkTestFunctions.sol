@@ -88,4 +88,8 @@ contract SnarkTestFunctions {
     function getLoanPointer() public view returns (uint256) {
         return SnarkLoanLib.getLoanPointer(_storage);
     }
+
+    function getOwnerOfLoan(uint256 loanId) public view returns (address) {
+        return SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
+    }
 }
