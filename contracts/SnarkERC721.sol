@@ -10,11 +10,10 @@ import "./openzeppelin/AddressUtils.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 import "./snarklibs/SnarkBaseExtraLib.sol";
 import "./snarklibs/SnarkCommonLib.sol";
-import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkLoanLib.sol";
 
 
-contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC721, SnarkDefinitions {
+contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC721 {
 
     using SafeMath for uint256;
     using AddressUtils for address;
@@ -227,10 +226,6 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         correctToken(_tokenId) 
         payable 
     {
-        require(
-            SnarkBaseLib.getSaleTypeToToken(_storage, _tokenId) == uint256(SaleType.None), 
-            "Token has to be free from different obligations on Snark platform"
-        );
         require(_from != address(0), "Sender's address can't be equal zero");
         require(_to != address(0), "Receiver's  address can't be equal zero");
         require(_from != _to, "Sender's address can't be equal receiver's  address");

@@ -4,14 +4,13 @@ pragma solidity >=0.5.0;
 
 import "./openzeppelin/Ownable.sol";
 import "./openzeppelin/SafeMath.sol";
-import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkBaseExtraLib.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 import "./snarklibs/SnarkCommonLib.sol";
 import "./snarklibs/SnarkLoanLib.sol";
 
 
-contract SnarkBase is Ownable, SnarkDefinitions { 
+contract SnarkBase is Ownable { 
     
     using SafeMath for uint256;
     using SnarkBaseExtraLib for address;

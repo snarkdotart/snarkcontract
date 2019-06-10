@@ -1,10 +1,9 @@
 pragma solidity >=0.5.0;
 
-import "./ISnarkStorage.sol";
 import "./openzeppelin/Ownable.sol";
 
 
-contract SnarkStorage is Ownable, ISnarkStorage {
+contract SnarkStorage is Ownable {
 
     mapping (bytes32 => bool)       public boolStorage;
     mapping (bytes32 => string)     public stringStorage;

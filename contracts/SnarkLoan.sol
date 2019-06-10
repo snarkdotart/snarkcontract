@@ -1,7 +1,6 @@
 pragma solidity >=0.5.0;
 
 import "./openzeppelin/Ownable.sol";
-import "./SnarkDefinitions.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 import "./snarklibs/SnarkLoanLib.sol";
 import "./openzeppelin/SafeMath.sol";
@@ -9,7 +8,7 @@ import "./openzeppelin/SafeMath.sol";
 
 /// @title Contract creates the functionality to loans tokens
 /// @author Vitali Hurski
-contract SnarkLoan is Ownable, SnarkDefinitions {
+contract SnarkLoan is Ownable {
 
     using SnarkBaseLib for address;
     using SnarkLoanLib for address;
@@ -21,8 +20,6 @@ contract SnarkLoan is Ownable, SnarkDefinitions {
     event LoanCreated(address indexed loanOwner, uint256 loanId);
     event LoanDeleted(uint256 loanId);
     
-    // event LoanStarted(uint256 loanId);
-    // event LoanFinished(uint256 loanId);
     modifier restrictedAccess() {
         if (SnarkBaseLib.isRestrictedAccess(_storage)) {
             require(msg.sender == owner, "only Snark can perform the function");
