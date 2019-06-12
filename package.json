@@ -13,9 +13,11 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^8.0.0",
-    "truffle-hdwallet-provider": "^1.0.9"
+    "truffle-hdwallet-provider": "^1.0.10"
   },
   "devDependencies": {
+    "@machinomy/types-truffle": "0.0.6",
+    "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1"
   }
