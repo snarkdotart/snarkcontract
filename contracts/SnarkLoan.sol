@@ -150,7 +150,9 @@ contract SnarkLoan is Ownable {
             SnarkLoanLib.setLoanPointer(_storage, 0);
             SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, 0);
             SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, 0);
-            SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+            if (countOfLoans > 0) {
+                SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+            }
         }
         if (beforeLoanId == 0 && nextLoanId > 0) {
             SnarkLoanLib.setPreviousLoan(_storage, nextLoanId, 0);
@@ -160,18 +162,24 @@ contract SnarkLoan is Ownable {
             }
             uint256 bottomTime = SnarkLoanLib.getLoanStartDate(_storage, nextLoanId);
             SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, bottomTime);
-            SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+            if (countOfLoans > 0) {
+                SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+            }
         }
         if (beforeLoanId > 0 && nextLoanId == 0) {
             SnarkLoanLib.setNextLoan(_storage, beforeLoanId, 0);
             uint256 topTime = SnarkLoanLib.getLoanEndDate(_storage, beforeLoanId);
             SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, topTime);
-            SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+            if (countOfLoans > 0) {
+                SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+            }
         }
         if (beforeLoanId > 0 && nextLoanId > 0) {
             SnarkLoanLib.setNextLoan(_storage, beforeLoanId, nextLoanId);
             SnarkLoanLib.setPreviousLoan(_storage, nextLoanId, beforeLoanId);
-            SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+            if (countOfLoans > 0) {
+                SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
+            }
         }
         // Remove loan from the owner list
         address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
