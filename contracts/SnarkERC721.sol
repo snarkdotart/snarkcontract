@@ -13,7 +13,7 @@ import "./snarklibs/SnarkCommonLib.sol";
 import "./snarklibs/SnarkLoanLib.sol";
 
 
-contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC721 {
+contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
 
     using SafeMath for uint256;
     using AddressUtils for address;
