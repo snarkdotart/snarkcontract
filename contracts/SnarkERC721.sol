@@ -232,6 +232,10 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
 
         _clearApproval(_from, _tokenId);
         SnarkLoanLib.toShiftPointer(_storage);
+        if (SnarkLoanLib.isTokenInNotApprovedListForLoan(_storage, _from, _tokenId)) {
+            SnarkLoanLib.deleteTokenFromNotApprovedListForLoan(_storage, _from, _tokenId);
+            SnarkLoanLib.addTokenToNotApprovedListForLoan(_storage, _to, _tokenId);
+        }
 
         if (msg.value > 0) {
             _storage.transfer(msg.value);
@@ -239,6 +243,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721Basic, ERC72
         } else {
             SnarkCommonLib.transferToken(_storage, _tokenId, _from, _to);
         }
+
         emit Transfer(_from, _to, _tokenId);
     }
 

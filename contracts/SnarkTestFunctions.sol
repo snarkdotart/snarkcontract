@@ -108,6 +108,18 @@ contract SnarkTestFunctions {
                 SnarkLoanLib.deleteLoanFromOwnerList(_storage, loanOwner, i);
             }
         }
+    }
 
+    function restoreAutoLoan(uint256 fromTokenId, uint256 toTokenId) public {
+        bool isAutoLoan;
+        for (uint256 i = fromTokenId; i <= toTokenId; i++) {
+            isAutoLoan = SnarkBaseLib.isTokenAcceptOfLoanRequest(_storage, i);
+            if (isAutoLoan) {
+                isAutoLoan = SnarkLoanLib.isTokenInApprovedListForLoan(_storage, i);
+                if (!isAutoLoan) {
+                    SnarkLoanLib.addTokenToApprovedListForLoan(_storage, i);
+                }
+            }
+        }
     }
 }

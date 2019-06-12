@@ -148,17 +148,15 @@ contract SnarkBase is Ownable {
     }
 
     function setTokenAcceptOfLoanRequest(uint256 tokenId, bool isAcceptForSnark) public {
-        require(
-            msg.sender == owner || 
-            msg.sender == SnarkBaseLib.getOwnerOfToken(_storage, tokenId)
-        );
+        address tokenOwner = SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
+        require(msg.sender == owner || msg.sender == tokenOwner);
         SnarkBaseLib.setTokenAcceptOfLoanRequest(_storage, tokenId, isAcceptForSnark);
         if (!isAcceptForSnark) {
             SnarkLoanLib.deleteTokenFromApprovedListForLoan(_storage, tokenId);
-            SnarkLoanLib.addTokenToNotApprovedListForLoan(_storage, msg.sender, tokenId);
+            SnarkLoanLib.addTokenToNotApprovedListForLoan(_storage, tokenOwner, tokenId);
         } else {
             SnarkLoanLib.addTokenToApprovedListForLoan(_storage, tokenId);
-            SnarkLoanLib.deleteTokenFromNotApprovedListForLoan(_storage, msg.sender, tokenId);
+            SnarkLoanLib.deleteTokenFromNotApprovedListForLoan(_storage, tokenOwner, tokenId);
         }
     }
 

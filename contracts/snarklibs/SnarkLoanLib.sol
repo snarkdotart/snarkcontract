@@ -67,8 +67,12 @@ library SnarkLoanLib {
 
     function toShiftPointer(address payable storageAddress) public returns (uint256) {
         uint256 loanId = getLoanPointer(storageAddress);
+        uint256 numberOfLoans;
         while (isLoanFinished(storageAddress, loanId) && (loanId > 0)) {
-            setNumberOfLoans(storageAddress, getNumberOfLoans(storageAddress).sub(1));
+            numberOfLoans = getNumberOfLoans(storageAddress);
+            if (numberOfLoans > 0) {
+                setNumberOfLoans(storageAddress, numberOfLoans.sub(1));
+            }
             loanId = getLoanPointer(storageAddress);
             loanId = getNextLoan(storageAddress, loanId);
             setLoanPointer(storageAddress, loanId);
@@ -323,10 +327,10 @@ library SnarkLoanLib {
                         maxTokenId);
             }
             SnarkStorage(storageAddress).
-                setUint(keccak256(abi.encodePacked("ApprovedTokensForLoan", maxPosition)), 0);
-            setTotalNumberOfTokensInApprovedTokensForLoan(storageAddress, maxPosition);
+                setUint(keccak256(abi.encodePacked("NotApprovedTokensForLoan", maxPosition)), 0);
+            setTotalNumberOfTokensInNotApprovedTokensForLoan(storageAddress, tokenOwner, maxPosition);
             SnarkStorage(storageAddress).
-                setBool(keccak256(abi.encodePacked("isTokenInApprovedTokensForLoan", tokenId)), false);
+                setBool(keccak256(abi.encodePacked("isTokenInNotApprovedTokensForLoan", tokenId)), false);
         }
     }
 
