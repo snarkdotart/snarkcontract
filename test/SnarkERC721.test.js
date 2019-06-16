@@ -72,7 +72,7 @@ contract('SnarkERC721', async (accounts) => {
         const decorUrl = 'ipfs://decorator.io';
         const profitShareSchemeId = 1;
 
-        retval = await instance_snarkbase.getTokensCount();
+        retval = await instance_erc721.totalSupply();
         assert.equal(retval.toNumber(), 0, "error on step 3");
 
         await instance_snarkbase.addToken(
@@ -89,7 +89,7 @@ contract('SnarkERC721', async (accounts) => {
             [true, true]
         );
 
-        retval = await instance_snarkbase.getTokensCount();
+        retval = await instance_erc721.totalSupply();
         assert.equal(retval.toNumber(), 10, "error on step 4");
 
         // ------ TESTING ------

@@ -105,7 +105,6 @@ library SnarkCommonLib {
         takePlatformProfitShare(_storageAddress, profit);
         incomeDistribution(_storageAddress, price, _tokenId, _from);
         SnarkBaseLib.setTokenLastPrice(_storageAddress, _tokenId, _value);
-        SnarkBaseLib.setSaleTypeToToken(_storageAddress, _tokenId, 0);
         transferToken(_storageAddress, _tokenId, _from, _to);
     }
 

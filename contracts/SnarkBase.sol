@@ -225,10 +225,6 @@ contract SnarkBase is Ownable {
         return SnarkBaseExtraLib.getListOfUniqueParticipantsForOwner(_storage, schemeOwner);
     }
 
-    function getOwnerOfToken(uint256 tokenId) public view returns (address) {
-        return SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
-    }
-
     /// @dev Function to add a new digital token to the blockchain. Only Snark can call this function.
     /// @param artistAddress Address of artist
     /// @param hashOfToken Unique hash of the token
@@ -307,10 +303,6 @@ contract SnarkBase is Ownable {
         return SnarkBaseLib.getTokenDecryptionKey(_storage, tokenId);
     }
 
-    function getTokensCount() public view returns (uint256) {
-        return SnarkBaseLib.getTotalNumberOfTokens(_storage);
-    }
-
     function getTokensCountByArtist(address artist) public view returns (uint256) {
         return SnarkBaseLib.getNumberOfArtistTokens(_storage, artist);
     }
@@ -322,10 +314,6 @@ contract SnarkBase is Ownable {
             _retarray[i] = SnarkBaseLib.getTokenIdForArtist(_storage, artist, i);
         }
         return _retarray;
-    }
-
-    function getTokensCountByOwner(address tokenOwner) public view returns (uint256) {
-        return SnarkBaseLib.getOwnedTokensCount(_storage, tokenOwner);
     }
 
     function getTokenListForOwner(address tokenOwner) public view returns (uint256[] memory) {
@@ -441,10 +429,6 @@ contract SnarkBase is Ownable {
         return SnarkBaseLib.getPlatformProfitShare(_storage);
     }
 
-    function getSaleTypeToToken(uint256 tokenId) public view returns (uint256) {
-        return SnarkBaseLib.getSaleTypeToToken(_storage, tokenId);
-    }
-
     function getTokenHashAsInUse(string memory tokenHash) public view returns (bool) {
         return SnarkBaseLib.getTokenHashAsInUse(_storage, tokenHash);
     }
@@ -469,9 +453,4 @@ contract SnarkBase is Ownable {
         SnarkBaseLib.setTokenLastPrice(_storage, tokenId, price);
     }
 
-    function toGiftToken(uint256 tokenId, address to) public onlyOwnerOf(tokenId) {
-        require(to != address(0), "Receiver's  address can't be equal zero");
-        SnarkCommonLib.transferToken(_storage, tokenId, msg.sender, to);
-        SnarkERC721(_erc721).echoTransfer(msg.sender, to, tokenId);
-    }    
 }

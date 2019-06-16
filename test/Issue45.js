@@ -165,7 +165,7 @@ contract('SnarkBase', async accounts => {
       { from: accounts[0] }
   );
 
-    retval = await instance_snarkbase.getTokensCountByOwner(accounts[1]);
+    retval = await instance_erc.balanceOf(accounts[1]);
     assert.equal(retval.toNumber(), 3, 'Accounts[1] should have one token');
   });
 

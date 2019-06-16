@@ -1,4 +1,5 @@
 var SnarkBase = artifacts.require("SnarkBase");
+var SnarkERC721 = artifacts.require("SnarkERC721");
 const BN = web3.utils.BN;
 
 contract('SnarkBase', async (accounts) => {
@@ -7,6 +8,7 @@ contract('SnarkBase', async (accounts) => {
 
     before(async () => {
         instance = await SnarkBase.deployed();
+        instanceERC721 = await SnarkERC721.deployed();
     });
 
     it("1. get size of the SnarkBase contract", async () => {
@@ -75,10 +77,10 @@ contract('SnarkBase', async (accounts) => {
         let retval = await instance.getProfitShareSchemesTotalCount();
         assert.equal(retval.toNumber(), 1, "error on step 1");
 
-        retval = await instance.getTokensCount();
+        retval = await instanceERC721.totalSupply();
         assert.equal(retval.toNumber(), 0, "error on step 2");
 
-        retval = await instance.getTokensCountByOwner(artist);
+        retval = await instanceERC721.balanceOf(artist);
         assert.equal(retval.toNumber(), 0, "error on step 3");
 
         retval = await instance.getNumberOfProfitShareSchemesForOwner(artist);
@@ -124,10 +126,10 @@ contract('SnarkBase', async (accounts) => {
             b
         );
 
-        retval = await instance.getTokensCount();
+        retval = await instanceERC721.totalSupply();
         assert.equal(retval.toNumber(), 10, "error on step 6");
 
-        retval = await instance.getTokensCountByOwner(artist);
+        retval = await instanceERC721.balanceOf(artist);
         assert.equal(retval.toNumber(), 10, "error on step 7");
 
         retval = await instance.getTokensCountByArtist(artist);
@@ -164,7 +166,7 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getProfitShareSchemeCountByAddress(artist);
         assert.equal(retval.toNumber(), 3, "error on step 3");
 
-        retval = await instance.getTokensCountByOwner(artist);
+        retval = await instanceERC721.balanceOf(artist);
         assert.equal(retval.toNumber(), 10, "error on step 4");
 
         // check if it allows to set 0 
@@ -266,7 +268,7 @@ contract('SnarkBase', async (accounts) => {
         retval = await instance.getListOfAllArtists();
         const numberOfArtists = retval.length;
 
-        retval = await instance.getTokensCount();
+        retval = await instanceERC721.totalSupply();
         assert.equal(retval.toNumber(), 10, "error on step 9");
 
         retval = await instance.getTokensCountByArtist(artist1);
@@ -329,7 +331,7 @@ contract('SnarkBase', async (accounts) => {
             ]
         );
 
-        retval = await instance.getTokensCount();
+        retval = await instanceERC721.totalSupply();
         assert.equal(retval.toNumber(), 13, "error on step 5");
 
         retval = await instance.getTokensCountByArtist(artist1);
@@ -357,7 +359,7 @@ contract('SnarkBase', async (accounts) => {
 
     it("test setLinkDropPrice function", async () => {
         const newPrice = web3.utils.toWei("3", "ether");
-        const tokenCount = await instance.getTokensCount();
+        const tokenCount = await instanceERC721.totalSupply();
         expect(tokenCount.toNumber()).to.be.above(0);
         
         let lastPrice = await instance.getTokenDetail(1);

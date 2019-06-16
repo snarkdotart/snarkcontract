@@ -255,13 +255,6 @@ library SnarkBaseLib {
         );
     }
 
-    function setSaleTypeToToken(address payable storageAddress, uint256 tokenId, uint256 saleType) public {
-        SnarkStorage(storageAddress).setUint(
-            keccak256(abi.encodePacked("saleTypeToToken", tokenId)),
-            saleType
-        );
-    }
-
     function setSaleStatusToToken(address payable storageAddress, uint256 tokenId, uint256 saleStatus) public {
         SnarkStorage(storageAddress).setUint(
             keccak256(abi.encodePacked("saleStatusToToken", tokenId)),
@@ -510,11 +503,6 @@ library SnarkBaseLib {
     function getPendingWithdrawals(address payable storageAddress, address owner) public view returns (uint256) {
         return SnarkStorage(storageAddress)
             .uintStorage(keccak256(abi.encodePacked("pendingWithdrawals", owner)));
-    }
-
-    function getSaleTypeToToken(address payable storageAddress, uint256 tokenId) public view returns (uint256) {
-        return SnarkStorage(storageAddress)
-            .uintStorage(keccak256(abi.encodePacked("saleTypeToToken", tokenId)));
     }
 
     function getSaleStatusToToken(address payable storageAddress, uint256 tokenId) public view returns (uint256) {
