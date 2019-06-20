@@ -186,6 +186,7 @@ contract SnarkLoan is Ownable {
         SnarkLoanLib.deleteLoanFromOwnerList(_storage, loanOwner, loanId);
         
         SnarkLoanLib.markLoanAsDeleted(_storage, loanId);
+        toShiftPointer();
         
         emit LoanDeleted(loanId);
     }
@@ -246,9 +247,14 @@ contract SnarkLoan is Ownable {
         return SnarkLoanLib.isLoanFinished(_storage, loanId);
     }
 
+    function isLoanDeleted(uint256 loanId) public view returns (bool) {
+        return SnarkLoanLib.isLoanDeleted(_storage, loanId);
+    }
+
     function toShiftPointer() public {
         uint256 loanId = SnarkLoanLib.getLoanPointer(_storage);
-        if (SnarkLoanLib.isLoanFinished(_storage, loanId)) {
+        if (SnarkLoanLib.isLoanFinished(_storage, loanId) || 
+            SnarkLoanLib.isLoanDeleted(_storage, loanId)) {
             SnarkLoanLib.toShiftPointer(_storage);
         }
     }

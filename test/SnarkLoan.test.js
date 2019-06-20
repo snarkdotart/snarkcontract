@@ -535,6 +535,103 @@ contract('SnarkLoan', async (accounts) => {
         expect(busyDates[1]).to.have.lengthOf(0);
     });
 
+    it('test creating a loan with the same data as a deleted one', async () => {
+        pointer = await snarkloan.getLoanId();
+        expect(pointer.toNumber()).to.equal(0);
+
+        await snarkloan.createLoan(
+            loan_1_start, 
+            loan_5_finish, 
+            { 
+                from: accounts[0], 
+                value: web3.utils.toWei('1', "ether") 
+            }
+        );
+
+        countOfLoans = await snarkloan.getNumberOfLoans();
+        expect(countOfLoans.toNumber()).to.equal(1);
+
+        allloans = await snarkloan.getListOfLoans();
+        expect(allloans).to.have.lengthOf(1);
+
+        loanId = allloans[0];
+        maxLoanId = await snarktest.getMaxLoanId();
+        expect(loanId.toNumber()).to.equal(maxLoanId.toNumber());
+
+        await snarkloan.deleteLoan(loanId);
+
+        countOfLoans = await snarkloan.getNumberOfLoans();
+        expect(countOfLoans.toNumber()).to.equal(0);
+
+        allloans = await snarkloan.getListOfLoans();
+        expect(allloans).to.have.lengthOf(0);
+
+        loanId = await snarkloan.getLoanId();
+        expect(loanId.toNumber()).to.equal(0);
+    });
+
+    it("test deleting the last loan when a pointer to points on it", async () => {
+        const _dt_n     = new Date();
+        const _year_n   = _dt_n.getFullYear();
+        const _month_n  = _dt_n.getMonth();
+        const _date_n   = _dt_n.getDate();
+        const _hours_n  = _dt_n.getHours();
+        const _min_n    = _dt_n.getMinutes();
+        
+        const l1s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 1, 0) / 1000;
+        const l1f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
+        const l2s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 3, 0) / 1000;
+        const l2f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 4, 0) / 1000;
+    
+        const valueOfLoan = web3.utils.toWei('2', "ether");
+
+        await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
+        let loanId1 = await snarktest.getMaxLoanId();
+
+        await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
+        let loanId2 = await snarktest.getMaxLoanId();
+
+        countOfLoans = await snarkloan.getNumberOfLoans();
+        expect(countOfLoans.toNumber()).to.equal(2);
+
+        loanId = await snarkloan.getLoanId();
+        expect(loanId.toNumber()).to.equal(loanId1.toNumber());
+
+        pause(70000);
+
+        isActive = await snarkloan.isLoanActive(loanId1);
+        assert.isTrue(isActive, "Loan is not active and it's wrong");
+
+        loanId = await snarkloan.getLoanId();
+        expect(loanId.toNumber()).to.equal(loanId1.toNumber());
+
+        pause(60000);
+
+        isActive = await snarkloan.isLoanActive(loanId1);
+        assert.isFalse(isActive, "Loan is still active and it's wrong");
+
+        isFinished = await snarkloan.isLoanFinished(loanId1);
+        assert.isTrue(isFinished, "Loan is not finished and it's wrong");
+
+        loanId = await snarkloan.getLoanId();
+        expect(loanId.toNumber()).to.equal(loanId2.toNumber());
+
+        isActive = await snarkloan.isLoanActive(loanId2);
+        assert.isFalse(isActive, "Loan is active and it's wrong");
+
+        isFinished = await snarkloan.isLoanFinished(loanId2);
+        assert.isFalse(isFinished, "Loan is not finished and it's wrong");
+
+        await snarkloan.deleteLoan(loanId2);
+
+        countOfLoans = await snarkloan.getNumberOfLoans();
+        expect(countOfLoans.toNumber()).to.equal(0);
+
+        loanId = await snarkloan.getLoanId();
+        expect(loanId.toNumber()).to.equal(0);
+
+    });
+
     it("test ApprovedTokensForLoan array", async () => {
         let countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
         assert.equal(countOfTokens, 1, "error on step 1");
