@@ -1,10 +1,11 @@
 pragma solidity >=0.5.0;
 
+import "./openzeppelin/Ownable.sol";
 import "./snarklibs/SnarkLoanLib.sol";
 import "./snarklibs/SnarkBaseLib.sol";
 
 
-contract SnarkTestFunctions {
+contract SnarkTestFunctions is Ownable {
 
     using SnarkLoanLib for address;
     using SnarkBaseLib for address;
@@ -15,11 +16,15 @@ contract SnarkTestFunctions {
         _storage = storageAddress;
     }
 
-    function addTokenToApprovedListForLoan(uint256 tokenId) public {
+    function kill() external onlyOwner {
+        selfdestruct(msg.sender);
+    }
+
+    function addTokenToApprovedListForLoan(uint256 tokenId) public onlyOwner {
         SnarkLoanLib.addTokenToApprovedListForLoan(_storage, tokenId);
     }
 
-    function deleteTokenFromApprovedListForLoan(uint256 tokenId) public {
+    function deleteTokenFromApprovedListForLoan(uint256 tokenId) public onlyOwner {
         SnarkLoanLib.deleteTokenFromApprovedListForLoan(_storage, tokenId);
     }
 
@@ -40,11 +45,11 @@ contract SnarkTestFunctions {
     }
 
     //// NOT APPROVED LIST
-    function addTokenToNotApprovedListForLoan(address tokenOwner, uint256 tokenId) public {
+    function addTokenToNotApprovedListForLoan(address tokenOwner, uint256 tokenId) public onlyOwner {
         SnarkLoanLib.addTokenToNotApprovedListForLoan(_storage, tokenOwner, tokenId);
     }
 
-    function deleteTokenFromNotApprovedListForLoan(address tokenOwner, uint256 tokenId) public {
+    function deleteTokenFromNotApprovedListForLoan(address tokenOwner, uint256 tokenId) public onlyOwner {
         SnarkLoanLib.deleteTokenFromNotApprovedListForLoan(_storage, tokenOwner, tokenId);
     }
 
@@ -93,7 +98,7 @@ contract SnarkTestFunctions {
         return SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
     }
 
-    function deleteAllLoans(uint256 countOfLoans) public {
+    function deleteAllLoans(uint256 countOfLoans) public onlyOwner {
         SnarkLoanLib.setNumberOfLoans(_storage, 0);
         SnarkLoanLib.setMaxLoanId(_storage, 0);
         SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, 0);
@@ -110,14 +115,22 @@ contract SnarkTestFunctions {
         }
     }
 
-    function restoreAutoLoan(uint256 fromTokenId, uint256 toTokenId) public {
+    function updateTokens(uint256 fromTokenId, uint256 toTokenId) public onlyOwner {
+        // каждый из указанных токенов нужно поместить либо 
         bool isAutoLoan;
+        address tokenOwner;
         for (uint256 i = fromTokenId; i <= toTokenId; i++) {
             isAutoLoan = SnarkBaseLib.isTokenAcceptOfLoanRequest(_storage, i);
             if (isAutoLoan) {
-                isAutoLoan = SnarkLoanLib.isTokenInApprovedListForLoan(_storage, i);
+                isAutoLoan = isTokenInApprovedListForLoan(i);
                 if (!isAutoLoan) {
-                    SnarkLoanLib.addTokenToApprovedListForLoan(_storage, i);
+                    addTokenToApprovedListForLoan(i);
+                }
+            } else {
+                tokenOwner = SnarkBaseLib.getOwnerOfToken(_storage, i);
+                isAutoLoan = isTokenInNotApprovedListForLoan(tokenOwner, i);
+                if (!isAutoLoan) {
+                    addTokenToNotApprovedListForLoan(tokenOwner, i);
                 }
             }
         }
