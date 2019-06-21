@@ -1,93 +1,84 @@
-# Snark Contracts
+# Snark Blockchain Contracts
 
-> ## *89seconds*
+## Source Code
 
-### Addresses of contracts
+> Note: All of the Snark contract scripts are open source and documented with inline running commentary.
 
-#### **Mainnet**
+Project contains several logic contracts where each of them performs certain functionality. It also allows to satisfy a restriction requirement of size contract.
 
-`Contract` | `Address`
+You can find contracts in Etherscan at the following addresses:
+
+### 89seconds
+
+Contract | Address
 --- | ---
-*SnarkBase* | 0x7619df10aACF0B806EC2094081AC98968C9E71E9
-*SnarkLoan* | 0xA933eB239D9c860d52dCa20340eE46d0d925844D
-*SnarkERC721* | 0x125Ac71f194CDE29E8F2a104A04EA67779c91751
+SnarkBase | [0xc1539693B0Abddcc0FD49Be0050835AeD6f67A50](https://etherscan.io/address/0xc1539693B0Abddcc0FD49Be0050835AeD6f67A50#code)
+SnarkLoan | [0x98514a7063393436076dB6a4E40f7fe181d4AA87](https://etherscan.io/address/0x98514a7063393436076dB6a4E40f7fe181d4AA87#code)
+SnarkERC721 | [0x27C8bba278aCa587772cfA91028363ae301b1A72](https://etherscan.io/address/0x27C8bba278aCa587772cfA91028363ae301b1A72#code)
+SnarkStorage | [0x3007b07667826a4a4aa17a7619e46dd0f0e75157](https://etherscan.io/address/0x3007b07667826a4a4aa17a7619e46dd0f0e75157#code)
 
-Next contracts will delete soon:
+### OldTestament
 
-`Contract` | `Address`
+Contract | Address
 --- | ---
-*SnarkLoanExt* | 0xAe998FF9a0d5Ab0612ddee643D2D9D1fEEa4dEaa
-*SnarkOfferBid* | 0x7622A961E89D84bC113b67838f08DF1B92a60f92
+SnarkBase | [](https://etherscan.io/address/#code)
+SnarkLoan | [](https://etherscan.io/address/#code)
+SnarkERC721 | [](https://etherscan.io/address/#code)
+SnarkStorage | [](https://etherscan.io/address/#code)
 
-#### **Ropsten**
+[Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) is required to run tests of contracts.
 
-`Contract` | `Address`
---- | ---
-*SnarkBase* | 0x16b41cdec057D589A58e66724eF39EEbD834cdDb
-*SnarkLoan* | 0xD412315ab186A9CCe45C4c2D96a9dAbbA03cd694
-*SnarkERC721* | 0xB4c39AF29d2c65962324ee4f9d3Ac5748CAbFe5c
+## Overview
 
-#### **Rinkeby**
+When developing contracts the [openzeppelin](https://openzeppelin.org) library was used.\
+The contract of inheritance is as follows:
 
-`Contract` | `Address`
---- | ---
-*SnarkBase* | 0x5C84309Ad9648CcA8c4dB6F7E41e65CafA9f1b6F
-*SnarkLoan* | 0x835933673a03673E563826a48a81ACACBd472e2d
-*SnarkERC721* | 0xe75164C7f0391D48a08FF06d02600A64501D6007
+``` solidity
+contract SnarkBase is Ownable
+contract SnarkLoan is Ownable
+contract SnarkStorage is Ownable
+contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721
+```
 
-### **SnarkBase contract**
+Most of an auxiliary functions were moved to libraries which work with data for each contract separately. You can find them into a 'snarklibs' folder.
 
-#### Available Events
+Contract | Description
+-- | --
+[SnarkStorage](contracts/SnarkStorage.sol) | The contract contains functions of writing and reading various types data to a storage.
+[SnarkBase](contracts/SnarkBase.sol) | This contract contains such functions as a creation, getting detail and update properties of tokens.
+[SnarkLoan](contracts/SnarkLoan.sol) | This contract allows create and delete loans and read their properties as well.
+[SnarkERC721](contracts/SnarkERC721.sol) | As you can guess from the title the contract just realize functions of ERC721 specification.
 
-`Event Name` | `Input Parameters` | `Output Parameters`
---- | --- | ---
-*TokenCreated* | tokenOwner: string, hashOfToken: string, tokenId: int | None
-*ProfitShareSchemeAdded* | tokenOwner: string, profitShareSchemeId: int | None
-*NeedApproveProfitShareRemoving* | participant: string, tokenId: int | None
+> Note: the secondary sale works on [OpenSea](https://opensea.io/assets/89secondsatomized) platform.
 
-#### Available Functions
+You can explore contracts by yourself. All function names are self-explanatory to understand their usage.\
+Here we put a couple of remarks which can be not obvious at first glance.
 
-`Function Name` | `Input Parameters` | `Output Parameters`
---- | --- | ---
-*kill* | none | None
-*sendRequestForApprovalOfProfit ShareRemovalForSecondarySale* | tokenId: int | None
-*approveRemovingProfitShareFromSecondarySale* | tokenId: int | None
-*setTokenAcceptOfLoanRequest* | tokenId: int, isAcceptForSnark: bool | None
-*setTokenName* | tokenName: string | None
-*setTokenSymbol* | tokenSymbol: string | None
-*changeRestrictAccess* | isRestrict: bool | None
-*createProfitShareScheme* | artistAddress: address, participants: address[], percentAmount: int[] | profitId: int
-*getProfitShareSchemesTotalCount* | None | count: int
-*getProfitShareSchemeCountByAddress* | schemeOwner: address | count: int
-*getProfitShareSchemeIdByIndex* | schemeOwner: address, index: int | schemeId: int
-*getProfitShareParticipantsCount* | schemeOwner: address | count: int
-*getProfitShareParticipantsList* | schemeOwner: address | participants: string[]
-*getOwnerOfToken* | tokenId: int | owner: address
-*addToken* | artistAddress: address, hashOfToken: string, tokenUrl: string, decorationUrl: string, decriptionKey: string, limitedEditionProfitSFSSProfitSSID: int[], isAcceptOfLoanRequest: int | None
-*getTokenDecryptionKey* | tokenId: int | description: string
-*getTokensCount* | None | count: int
-*getTokensCountByArtist* | artist: address | count: int
-*getTokenListForArtist* | artist: address | tokens: int[]
-*getTokensCountByOwner* | tokenOwner: address | count: int
-*getTokenListForOwner* | tokenOwner: address | tokens: int[]
-*isTokenAcceptOfLoanRequest* | tokenId: int | isAccept: bool
-*getTokenDetail* | tokenId: int | currentOwner: address, artist: address, hashOfToken: string, limitedEdition: int, editionNumber: int, lastPrice: int, profitShareSchemeId: int, profitShareFromSecondarySale: int, tokenUrl: string, decorationUrl: string, isAcceptOfLoanRequest: bool
-*changeProfitShareSchemeForToken* | tokenId: int, newProfitShareSchemeId: int | None
-*getWithdrawBalance* | tokenOwner: address | balance: int
-*getNumberOfParticipantsForProfitShareScheme* | schemeId: int | number: int
-*getParticipantOfProfitShareScheme* | schemeId: int, index: int | participant: address, profit: int
-*withdrawFunds* | None | None
-*setSnarkWalletAddress* | snarkWalletAddr: address | None
-*setPlatformProfitShare* | profit: int | None
-*changeTokenData* | tokenId: int, hashOfToken: string, tokenUrl: string, decorationUrl: string, descriptionKey: string | None
-*getSnarkWalletAddressAndProfit* | None | wallet: address, profit: int
-*getPlatformProfitShare* | None | profit: int
-*getSaleTypeToToken* | tokenId: int | saleType: int
-*getTokenHashAsInUse* | tokenHash: string | isUse: bool
-*getNumberOfProfitShareSchemesForOwner* | schemeOwner: address | number: int
-*getProfitShareSchemeIdForOwner* | schemeOwner: address, index: int | schemeId: int
-*getListOfAllArtists* | None | artists: address[]
-*setLinkDropPrice* | tokenId: int, price: int | None
-*toGiftToken* | tokenId: int, to: address | None
+- function **addToken**() of *SnarkBase contract* creates a new token and moves it to an artist wallet as soon as it created. You have to be aware of a profit share scheme has to exist before a token creation;
+- function **setTokenAcceptOfLoanRequest**() of *SnarkBase contract* sets agree of participation in future loans or cancel this participation. Pay attention that the agreement doesn't change upon moving a token from one wallet to another. Owner of the token has to change it manually if he wishes;
+- function **getTokenListForOwner**() of *SnarkBase contract* always returns owner's tokens despite active loans;
+- function **createLoan**() of *SnarkLoan contract* creates a loan. Pay your attention period of the loan has not to crossed with existing loans. Otherwise, the transaction fails;
+- function **getLoanId**() of *SnarkLoan contract* always returns either the current active loan id or the next future loan id.
 
-## *OldStatement*
+SnarkERC721 contract is based on Non Fungible Token (NFT) Standard (ERC-721)
+
+_Snark provides a practical use case for digital collectibles by pioneering ERC-721, a non-fungible token protocol._
+
+A standard interface allows any Non Fungible Token (NFTs) on Ethereum
+to be handled by general-purpose applications.
+In particular, it will allow for Non Fungible Token (NFTs)
+to be tracked in standardized wallets and traded on exchanges.
+
+There are two functions of ERC721 which work differently depends on conditions.
+
+- function **balanceOf**(address _owner) returns a balance of owner's tokens. If any loan is active then the algorithm of balance calculation changes and it lets you see all tokens which were agreed for a participating in loan.
+- function **transferFrom**(address _to, uint256 _tokenId). This function declared as payable which means that if you send ether upon calling it then it will split the ether according to a profit share scheme if the last one were set up by an artist.
+- function **tokenOfOwnerByIndex**(address _owner, uint256 _index) returns the owner's tokens by index. But in a case when a loan is active it also returns tokens which were agreed to participate in loans.
+
+(Source: [Ethereum, Non Fungible Token (NFT) Standard #721](https://github.com/ethereum/EIPs/issues/721))
+
+## License
+
+Solidity is licensed under [GNU General Public License v3.0.](https://github.com/ethereum/solidity/blob/develop/LICENSE.txt)
+
+Some third-party code has its [own licensing terms.](https://github.com/ethereum/solidity/blob/develop/cmake/templates/license.h.in)
