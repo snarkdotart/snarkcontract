@@ -46,7 +46,7 @@ contract('Snark Logic', async (accounts) => {
             }
             retval = await snarkerc721.balanceOf(accounts[i]);
             assert.equal(retval.toNumber(), 3, `Balance of accounts[${i}] has to be equal 3`);
-            // проверям, что у каждого пользователя 1 токен с автолоаном, а 2 - нет
+            // check that each user has 1 token with autoLoan property and 2 token - without
             for (j = 0; j < 3; j++) {
                 let tokenId = await snarkerc721.tokenOfOwnerByIndex(accounts[i], j);
                 let details = await snarkbase.getTokenDetail(tokenId);
@@ -64,11 +64,10 @@ contract('Snark Logic', async (accounts) => {
                         break;
                 }
             }
-            // проверяем количество токенов не автолоане для пользователя
+            // check amount of tokens in the user's autoLoan list
             retval = await snarktest.getTotalNumberOfTokensInNotApprovedTokensForLoan(accounts[i]);
             assert.equal(retval.toNumber(), 2, `number of token with not autoloan for accounts[${i}] is wrong`);
 
-            // проверяем список AutoLoan по правильному содержанию токенов
             retval = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
             assert.equal(retval.toNumber(), i+1, "number of tokens in autoloan list is wrong");
         }
