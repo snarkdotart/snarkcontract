@@ -1,0 +1,26 @@
+@startuml
+
+title Sequence Diagram: LinkDrop
+
+actor Buyer
+participant SnarkAPI
+participant SnarkERC721
+participant SnarkOfferBid
+participant LinkDrop
+
+Buyer -> SnarkAPI: 1. buy by credit
+SnarkAPI -> SnarkAPI: 2. get random token number
+SnarkAPI -> SnarkERC721: 3. freeTrasfer 
+note right: from artist to Snark wallet
+SnarkAPI -> SnarkAPI: 4. generate link
+SnarkAPI -> Buyer: 5. send link by email
+Buyer -> LinkDrop: 6. open link
+LinkDrop -> SnarkERC721: 7. freeTransfer
+note right: from Snark wallet to buyer
+LinkDrop -> SnarkAPI: 8. emit LogWithdraw
+SnarkAPI -> SnarkAPI: 9. convert USD to Ether by current rate
+SnarkAPI -> SnarkOfferBid: 10. finishLinkDropSelling
+note right: just save price of token like a last price
+
+|||
+@enduml

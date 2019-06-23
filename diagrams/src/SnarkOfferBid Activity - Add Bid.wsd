@@ -1,0 +1,34 @@
+@startuml
+title Activity Diagram: Add Bid
+start
+
+:check if token id is correct;
+note right: token id has to be in a range, otherwise an exception
+:check if token SaleType is Offer or None;
+note right: bids are not allowed while the token is in Loan status
+:check if bid price < offer price;
+note right: in case if saleType == Offer
+:check if sender == token's owner;
+note right: token cannot belongs to the bidder
+:check if bid price > max bid price;
+note right: if there are others bids.\nMax bid price is equal 0 by default
+
+:get new bid id;
+:save new a total number of bids;
+
+:save max bid price for token 
+:save max bid id for token;
+
+:mapping bid owner to bidId;
+:mapping tokenId to bidId;
+:mapping bidPrice to bidId;
+:sat bid status = Active;
+
+:save bid to a list of active bids for bid owner;
+:increase total number of active bids for bid owner;
+
+:save bid to a token's bid list;
+:increase a number of token bids;
+
+end
+@enduml
