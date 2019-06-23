@@ -94,7 +94,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
     function tokenOfOwnerByIndex(address _owner, uint256 _index) public view returns (uint256 _tokenId) {
         require(_index < balanceOf(_owner));
         uint256 tokenId;
-        uint256 loanId = SnarkLoanLib.getLoanPointer(_storage);
+        uint256 loanId = SnarkLoanLib.getLoanId(_storage);
         bool isActive = SnarkLoanLib.isLoanActive(_storage, loanId);
         address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
         if (isActive && _owner == loanOwner) {
