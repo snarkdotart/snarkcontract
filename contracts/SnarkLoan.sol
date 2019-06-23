@@ -199,7 +199,7 @@ contract SnarkLoan is Ownable {
         uint256 numberOfLoans = getNumberOfLoans();
         uint256[] memory loans = new uint256[](numberOfLoans);
         if (numberOfLoans > 0) {
-            uint256 id = SnarkLoanLib.getLoanPointer(_storage);
+            uint256 id = SnarkLoanLib.getLoanId(_storage);
             for (uint256 i = 0; i < numberOfLoans; i++) {
                 loans[i] = id;
                 id = SnarkLoanLib.getNextLoan(_storage, id);
