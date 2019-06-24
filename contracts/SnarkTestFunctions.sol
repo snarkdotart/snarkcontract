@@ -98,6 +98,14 @@ contract SnarkTestFunctions is Ownable {
         return SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
     }
 
+    function getTotalNumberOfLoansInOwnerList(address loanOwner) public view returns (uint256) {
+        return SnarkLoanLib.getTotalNumberOfLoansInOwnerList(_storage, loanOwner);
+    }
+
+    function getLoanFromOwnerListByIndex(address loanOwner, uint256 index) public view returns (uint256) {
+        return SnarkLoanLib.getLoanFromOwnerListByIndex(_storage, loanOwner, index);
+    }
+
     function deleteAllLoans(uint256 countOfLoans) public onlyOwner {
         SnarkLoanLib.setNumberOfLoans(_storage, 0);
         SnarkLoanLib.setMaxLoanId(_storage, 0);
