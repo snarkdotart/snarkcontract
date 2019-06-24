@@ -225,10 +225,12 @@ contract SnarkLoan is Ownable {
         uint256 amountOfAllOwnerLoans = SnarkLoanLib.getTotalNumberOfLoansInOwnerList(_storage, loanOwner);
         uint256 amountOfActiveOwnerLoans;
         uint256 loanId;
+        bool isActive;
         for (uint256 i = 0; i < amountOfAllOwnerLoans; i++) {
             loanId = SnarkLoanLib.getLoanFromOwnerListByIndex(_storage, loanOwner, i);
-            if (!isLoanFinished(loanId)) {
-                amountOfActiveOwnerLoans.add(1);
+            isActive = isLoanFinished(loanId);
+            if (!isActive) {
+                amountOfActiveOwnerLoans++;
             }
         }
         return amountOfActiveOwnerLoans;
