@@ -211,14 +211,29 @@ contract SnarkLoan is Ownable {
     function getListOfLoansOfOwner(address loanOwner) public view returns (uint256[] memory) {
         uint256 numberOfLoans = getCountOfOwnerLoans(loanOwner);
         uint256[] memory loansList = new uint256[](numberOfLoans);
+        uint256 loanId;
         for (uint256 i = 0; i < numberOfLoans; i++) {
-            loansList[i] = SnarkLoanLib.getLoanFromOwnerListByIndex(_storage, loanOwner, i);
+            loanId = SnarkLoanLib.getLoanFromOwnerListByIndex(_storage, loanOwner, i);
+            if (!isLoanFinished(loanId)) {
+                loansList[i] = loanId;
+            }
         }
         return loansList;
     }
 
     function getCountOfOwnerLoans(address loanOwner) public view returns (uint256) {
-        return SnarkLoanLib.getTotalNumberOfLoansInOwnerList(_storage, loanOwner);
+        uint256 amountOfAllOwnerLoans = SnarkLoanLib.getTotalNumberOfLoansInOwnerList(_storage, loanOwner);
+        uint256 amountOfActiveOwnerLoans;
+        uint256 loanId;
+        bool isActive;
+        for (uint256 i = 0; i < amountOfAllOwnerLoans; i++) {
+            loanId = SnarkLoanLib.getLoanFromOwnerListByIndex(_storage, loanOwner, i);
+            isActive = isLoanFinished(loanId);
+            if (!isActive) {
+                amountOfActiveOwnerLoans++;
+            }
+        }
+        return amountOfActiveOwnerLoans;
     }
 
     function getLoanId() public view returns (uint256) {

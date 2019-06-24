@@ -188,7 +188,34 @@ contract('Snark Logic', async (accounts) => {
         retval = await snarktest.getTokenFromApprovedTokensForLoanByIndex(2);
         assert.equal(retval.toNumber(), 8, "token id in autoloan list is wrong in position 2");
 
+        retval = await snarktest.getTotalNumberOfLoansInOwnerList(accounts[0]);
+        assert.equal(retval, 1, "count of owner's loans is wrong");
+
+        loanId = await snarktest.getLoanFromOwnerListByIndex(accounts[0], 0);
+        retval = await snarkloan.isLoanFinished(loanId);
+        assert.isFalse(retval, "loan is finished and it's wrong");
+
+        retval = await snarkloan.getCountOfOwnerLoans(accounts[0]);
+        assert.equal(retval, 1, "count of owner's loans is wrong");
+
+        retval = await snarkloan.getListOfLoansOfOwner(accounts[0]);
+        assert.equal(retval.length, 1, "length of owner's loan list is wrong");
+        assert.equal(retval[0].toNumber(), loanId.toNumber(), "owner's loan id is wrong");
+
         pause(60000);
+
+        retval = await snarktest.getTotalNumberOfLoansInOwnerList(accounts[0]);
+        assert.equal(retval, 1, "count of owner's loans is wrong");
+
+        retval = await snarkloan.isLoanFinished(loanId);
+        assert.isFalse(retval, "loan is finished and it's wrong");
+ 
+        retval = await snarkloan.getCountOfOwnerLoans(accounts[0]);
+        assert.equal(retval, 1, "count of owner's loans is wrong");
+
+        retval = await snarkloan.getListOfLoansOfOwner(accounts[0]);
+        assert.equal(retval.length, 1, "length of owner's loan list is wrong");
+        assert.equal(retval[0].toNumber(), loanId.toNumber(), "owner's loan id is wrong");
 
         retval = await snarktest.getTotalNumberOfTokensInNotApprovedTokensForLoan(accounts[0]);
         assert.equal(retval.toNumber(), 1, `number of token with not autoloan for accounts[0] is wrong`);
@@ -206,7 +233,7 @@ contract('Snark Logic', async (accounts) => {
         retval = await snarktest.getTokenFromApprovedTokensForLoanByIndex(2);
         assert.equal(retval.toNumber(), 8, "token id in autoloan list is wrong in position 2");
 
-        // accounts[0] have to see next tokens: 2, 5, 8, 3
+        // accounts[0] has to see next tokens: 2, 5, 8, 3
         retval = await snarkerc721.balanceOf(accounts[0]);
         assert.equal(retval.toNumber(), 4, `Balance of accounts[0] has to be 4`);
         retval = await snarkerc721.tokenOfOwnerByIndex(accounts[0], 0);
@@ -291,6 +318,18 @@ contract('Snark Logic', async (accounts) => {
         assert.equal(retval.toNumber(), 9, "wrong tokenId for accounts[2]");
 
         pause(60000);
+
+        retval = await snarktest.getTotalNumberOfLoansInOwnerList(accounts[0]);
+        assert.equal(retval, 1, "count of owner's loans is wrong");
+
+        retval = await snarkloan.isLoanFinished(loanId);
+        assert.isTrue(retval, "loan is finished and it's wrong");
+
+        retval = await snarkloan.getCountOfOwnerLoans(accounts[0]);
+        assert.equal(retval, 0, "count of owner's loans is wrong");
+
+        retval = await snarkloan.getListOfLoansOfOwner(accounts[0]);
+        assert.equal(retval.length, 0, "length of owner's loan list is wrong");
 
         // check what ids every accounts see
         retval = await snarkerc721.balanceOf(accounts[0]);
