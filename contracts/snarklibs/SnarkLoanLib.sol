@@ -55,7 +55,7 @@ library SnarkLoanLib {
 
     function getLoanId(address payable storageAddress) public view returns (uint256) {
         uint256 loanId = getLoanPointer(storageAddress);
-        while (isLoanFinished(storageAddress, loanId) && loanId > 0) {
+        while ((isLoanFinished(storageAddress, loanId) || isLoanDeleted(storageAddress, loanId)) && loanId > 0) {
             loanId = getNextLoan(storageAddress, loanId);
         }
         return loanId;
@@ -68,7 +68,7 @@ library SnarkLoanLib {
     function toShiftPointer(address payable storageAddress) public returns (uint256) {
         uint256 loanId = getLoanPointer(storageAddress);
         uint256 numberOfLoans;
-        while (isLoanFinished(storageAddress, loanId) && (loanId > 0)) {
+        while ((isLoanFinished(storageAddress, loanId) || isLoanDeleted(storageAddress, loanId)) && (loanId > 0)) {
             numberOfLoans = getNumberOfLoans(storageAddress);
             if (numberOfLoans > 0) {
                 setNumberOfLoans(storageAddress, numberOfLoans.sub(1));
