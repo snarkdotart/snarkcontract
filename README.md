@@ -4,17 +4,26 @@
 
 89 seconds Atomized shatters the final artist's proof of Eve Sussman's acclaimed video 89 seconds at Alcazár into 2,304 video fragments, tokenized using ERC721 standard, to create a new artwork on the blockchain. Each token is tied to a 20 by 20 px fragment of the video. An experiment in ownership and collective interaction, the piece can be reassembled and screened at will by the community of collectors.
 
-# Snark Blockchain Contracts
+The repository contains the Ethereum contract to manage the ownership and transfer of fragmented artwork and for owners of the fragments to lend their framents to one another in order to give each owner a time-shared access to all fragments that have the necessary permissions from their owners.
+
+# Snark Ethereum Contract
 
 ## Source Code
 
 > Note: All of the Snark contract scripts are open source and documented with inline running commentary.
 
-Project contains several logic contracts where each of them performs certain functionality. It also allows to satisfy a restriction requirement of size contract.
+The project contains several contracts with their respective functionalities and allows us to satisfy a contract size restriction requirement.
 
-You can find contracts in Etherscan at the following addresses:
+### 89seconds Contracts
 
-### 89seconds
+The project is divided into the following contracts:
+
+Contract | Description
+-- | --
+[SnarkStorage](contracts/SnarkStorage.sol) | The contract contains functions that facilitate writing and reading various types of data elements from storage.
+[SnarkBase](contracts/SnarkBase.sol) | This contract contains such functions as a allow for the minting, burning, reading and updating various properties of the artwork tokens.
+[SnarkLoan](contracts/SnarkLoan.sol) | This contract allows for the creation and deletion of token loans between the artwork token owners.  The contract also allows for reading of individual loan properties. 
+[SnarkERC721](contracts/SnarkERC721.sol) | This contract allows for main functionality of ERC721 token standard.
 
 Contract | Address
 --- | ---
@@ -23,21 +32,10 @@ SnarkLoan | [0x98514a7063393436076dB6a4E40f7fe181d4AA87](https://etherscan.io/ad
 SnarkERC721 | [0x27C8bba278aCa587772cfA91028363ae301b1A72](https://etherscan.io/address/0x27C8bba278aCa587772cfA91028363ae301b1A72#code)
 SnarkStorage | [0x3007b07667826a4a4aa17a7619e46dd0f0e75157](https://etherscan.io/address/0x3007b07667826a4a4aa17a7619e46dd0f0e75157#code)
 
-### OldTestament
-
-Contract | Address
---- | ---
-SnarkBase | [](https://etherscan.io/address/#code)
-SnarkLoan | [](https://etherscan.io/address/#code)
-SnarkERC721 | [](https://etherscan.io/address/#code)
-SnarkStorage | [](https://etherscan.io/address/#code)
-
-[Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) is required to run tests of contracts.
-
-## Overview
+[Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) is required to run tests of the contracts.
 
 When developing contracts the [openzeppelin](https://openzeppelin.org) library was used.\
-The contract of inheritance is as follows:
+The contract inheritance is as follows:
 
 ``` solidity
 contract SnarkBase is Ownable
@@ -46,25 +44,18 @@ contract SnarkStorage is Ownable
 contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721
 ```
 
-Most of an auxiliary functions were moved to libraries which work with data for each contract separately. You can find them into a 'snarklibs' folder.
-
-Contract | Description
--- | --
-[SnarkStorage](contracts/SnarkStorage.sol) | The contract contains functions of writing and reading various types data to a storage.
-[SnarkBase](contracts/SnarkBase.sol) | This contract contains such functions as a creation, getting detail and update properties of tokens.
-[SnarkLoan](contracts/SnarkLoan.sol) | This contract allows create and delete loans and read their properties as well.
-[SnarkERC721](contracts/SnarkERC721.sol) | As you can guess from the title the contract just realize functions of ERC721 specification.
+Most of an auxiliary functions were moved to libraries which work with data for each contract individually. They are located in the 'snarklibs' folder.
 
 > Note: the secondary sale works on [OpenSea](https://opensea.io/assets/89secondsatomized) platform.
 
-You can explore contracts by yourself. All function names are self-explanatory to understand their usage.\
-Here we put a couple of remarks which can be not obvious at first glance.
+Feel free to explore our contracts. Most function names are self-explanatory to imply their usage.\
+See the following remarks regarding several functions that require additional explanation:
 
-- function **addToken**() of *SnarkBase contract* creates a new token and moves it to an artist wallet as soon as it created. You have to be aware of a profit share scheme has to exist before a token creation;
-- function **setTokenAcceptOfLoanRequest**() of *SnarkBase contract* sets agree of participation in future loans or cancel this participation. Pay attention that the agreement doesn't change upon moving a token from one wallet to another. Owner of the token has to change it manually if he wishes;
-- function **getTokenListForOwner**() of *SnarkBase contract* always returns owner's tokens despite active loans;
-- function **createLoan**() of *SnarkLoan contract* creates a loan. Pay your attention period of the loan has not to crossed with existing loans. Otherwise, the transaction fails;
-- function **getLoanId**() of *SnarkLoan contract* always returns either the current active loan id or the next future loan id.
+- function **addToken**() of *SnarkBase contract* creates a new token and moves it to the artist's wallet as soon as it created. A profit share scheme has to exist before the token minting begins;
+- function **setTokenAcceptOfLoanRequest**() of *SnarkBase contract* sets or cancels the owner's agreement to participate in lending of their tokens to other owners. Note that the owner's agreement doesn't revise automatically during a token transfer from one owner to another. Owner of the token has to change it manually if he wishes to update their agreement participation;
+- function **getTokenListForOwner**() of *SnarkBase contract*  returns owner's tokens regardless of the presense of an active loan;
+- function **createLoan**() of *SnarkLoan contract* creates a loan. Note that period of the loan cannot overlap with existing loans. 
+- function **getLoanId**() of *SnarkLoan contract*  returns either the current active loan id or the next future loan id.
 
 SnarkERC721 contract is based on Non Fungible Token (NFT) Standard (ERC-721)
 
@@ -88,3 +79,5 @@ There are two functions of ERC721 which work differently depends on conditions.
 Solidity is licensed under [GNU General Public License v3.0.](https://github.com/ethereum/solidity/blob/develop/LICENSE.txt)
 
 Some third-party code has its [own licensing terms.](https://github.com/ethereum/solidity/blob/develop/cmake/templates/license.h.in)
+
+![89seconds](https://snark.art/assets/artworks/eve.png)
