@@ -22,14 +22,16 @@ Contract | Description
 -- | --
 [SnarkStorage](contracts/SnarkStorage.sol) | The contract contains functions that facilitate writing and reading various types of data elements from storage.
 [SnarkBase](contracts/SnarkBase.sol) | This contract contains such functions as a allow for the minting, burning, reading and updating various properties of the artwork tokens.
-[SnarkLoan](contracts/SnarkLoan.sol) | This contract allows for the creation and deletion of token loans between the artwork token owners.  The contract also allows for reading of individual loan properties. 
+[SnarkLoan](contracts/SnarkLoan.sol) | This contract allows for the creation and deletion of token loans between the artwork token owners.  The contract also allows for reading of individual loan properties.
 [SnarkERC721](contracts/SnarkERC721.sol) | This contract allows for main functionality of ERC721 token standard.
+
+</br>
 
 Contract | Address
 --- | ---
-SnarkBase | [0xc1539693B0Abddcc0FD49Be0050835AeD6f67A50](https://etherscan.io/address/0xc1539693B0Abddcc0FD49Be0050835AeD6f67A50#code)
-SnarkLoan | [0x98514a7063393436076dB6a4E40f7fe181d4AA87](https://etherscan.io/address/0x98514a7063393436076dB6a4E40f7fe181d4AA87#code)
-SnarkERC721 | [0x27C8bba278aCa587772cfA91028363ae301b1A72](https://etherscan.io/address/0x27C8bba278aCa587772cfA91028363ae301b1A72#code)
+SnarkBase | [0x7558B1733eAc2a9320A2B9900f1752dbF689f6A6](https://etherscan.io/address/0x7558B1733eAc2a9320A2B9900f1752dbF689f6A6#code)
+SnarkLoan | [0x035BDDD14F8E92f0070A5d23E8B1F0Db043951fc](https://etherscan.io/address/0x035BDDD14F8E92f0070A5d23E8B1F0Db043951fc#code)
+SnarkERC721 | [0x7237e6d335BF0158888Ace73F64Aa3b8c8140F93](https://etherscan.io/address/0x7237e6d335BF0158888Ace73F64Aa3b8c8140F93#code)
 SnarkStorage | [0x3007b07667826a4a4aa17a7619e46dd0f0e75157](https://etherscan.io/address/0x3007b07667826a4a4aa17a7619e46dd0f0e75157#code)
 
 [Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) is required to run tests of the contracts.
@@ -66,7 +68,7 @@ to be handled by general-purpose applications.
 In particular, it will allow for Non Fungible Token (NFTs)
 to be tracked in standardized wallets and traded on exchanges.
 
-There are two functions of ERC721 which work differently depends on conditions.
+There are functions of ERC721 which work differently depends on conditions.
 
 - function **balanceOf**(address _owner) returns a balance of owner's tokens. If any loan is active then the algorithm of balance calculation changes and it lets you see all tokens which were agreed for a participating in loan.
 - function **transferFrom**(address _to, uint256 _tokenId). This function declared as payable which means that if you send ether upon calling it then it will split the ether according to a profit share scheme if the last one were set up by an artist.
