@@ -1,5 +1,9 @@
 ![89seconds](https://snark.art/assets/artworks/eve.png)
 
+# 89 seconds Atomized: Experiment in collective ownership on the Ethereum Blockchain
+
+89 seconds Atomized shatters the final artist's proof of Eve Sussman's acclaimed video 89 seconds at Alcazár into 2,304 video fragments, tokenized using ERC721 standard, to create a new artwork on the blockchain. Each token is tied to a 20 by 20 px fragment of the video. An experiment in ownership and collective interaction, the piece can be reassembled and screened at will by the community of collectors.
+
 # Snark Blockchain Contracts
 
 ## Source Code
