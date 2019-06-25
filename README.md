@@ -34,11 +34,7 @@ SnarkLoan | [0x035BDDD14F8E92f0070A5d23E8B1F0Db043951fc](https://etherscan.io/ad
 SnarkERC721 | [0x7237e6d335BF0158888Ace73F64Aa3b8c8140F93](https://etherscan.io/address/0x7237e6d335BF0158888Ace73F64Aa3b8c8140F93#code)
 SnarkStorage | [0x3007b07667826a4a4aa17a7619e46dd0f0e75157](https://etherscan.io/address/0x3007b07667826a4a4aa17a7619e46dd0f0e75157#code)
 
-[Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) is required to run tests of the contracts.
-
-When developing contracts the [openzeppelin](https://openzeppelin.org) library was used.\
 The contract inheritance is as follows:
-
 ``` solidity
 contract SnarkBase is Ownable
 contract SnarkLoan is Ownable
@@ -46,11 +42,10 @@ contract SnarkStorage is Ownable
 contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721
 ```
 
-Most of an auxiliary functions were moved to libraries which work with data for each contract individually. They are located in the 'snarklibs' folder.
+[Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) are required to run tests on the contracts.  Contracts from the [openzeppelin](https://openzeppelin.org) library were used during development. The secondary sale transactions rely on [OpenSea](https://opensea.io/assets/89secondsatomized) platform.\
 
-> Note: the secondary sale works on [OpenSea](https://opensea.io/assets/89secondsatomized) platform.
+Feel free to explore our contracts. Most function names are self-explanatory to imply their usage. Most of an auxiliary functions were moved to libraries which work with data for each contract individually. They are located in the 'snarklibs' folder.\
 
-Feel free to explore our contracts. Most function names are self-explanatory to imply their usage.\
 See the following remarks regarding several functions that require additional explanation:
 
 - function **addToken**() of *SnarkBase contract* creates a new token and moves it to the artist's wallet as soon as it created. A profit share scheme has to exist before the token minting begins;
