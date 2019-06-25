@@ -21,9 +21,9 @@ The project is divided into the following contracts:
 Contract | Description
 -- | --
 [SnarkStorage](contracts/SnarkStorage.sol) | The contract contains functions that facilitate writing and reading various types of data elements from storage.
-[SnarkBase](contracts/SnarkBase.sol) | This contract contains such functions as a allow for the minting, burning, reading and updating various properties of the artwork tokens.
-[SnarkLoan](contracts/SnarkLoan.sol) | This contract allows for the creation and deletion of token loans between the artwork token owners.  The contract also allows for reading of individual loan properties.
-[SnarkERC721](contracts/SnarkERC721.sol) | This contract allows for main functionality of ERC721 token standard.
+[SnarkBase](contracts/SnarkBase.sol) | This contract contains functions that facilitate minting, burning, reading and updating various properties of the artwork tokens.
+[SnarkLoan](contracts/SnarkLoan.sol) | This contract contains functions that facilitate creation and deletion of token loans between the artwork token owners.  The contract also allows for reading of individual loan properties.
+[SnarkERC721](contracts/SnarkERC721.sol) | This contract contains ERC721 token standard functions.  It has been modified to allow for token loans between token owners.
 
 </br>
 
