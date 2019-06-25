@@ -42,9 +42,9 @@ contract SnarkStorage is Ownable
 contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721
 ```
 
-[Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) are required to run tests on the contracts.  Contracts from the [openzeppelin](https://openzeppelin.org) library were used during development. The secondary sale transactions utilize [OpenSea](https://opensea.io/assets/89secondsatomized).\
+[Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) are required to run tests on the contracts.  Contracts from the [openzeppelin](https://openzeppelin.org) library were used during development. The secondary sale transactions utilize [OpenSea](https://opensea.io/assets/89secondsatomized).
 
-Feel free to explore our contracts. Most function names are self-explanatory to imply their usage. Most of an auxiliary functions were moved to libraries which work with data for each contract individually. They are located in the 'snarklibs' folder.\
+Feel free to explore our contracts. Most function names are self-explanatory to imply their usage. Most of an auxiliary functions were moved to libraries which work with data for each contract individually. They are located in the 'snarklibs' folder.
 
 See the following remarks regarding several functions that require additional explanation:
 
