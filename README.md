@@ -14,7 +14,7 @@ The repository contains the Ethereum contract to manage the ownership and transf
 
 The project contains several contracts with their respective functionalities and allows us to satisfy a contract size restriction requirement.
 
-### 89seconds Contracts
+### 89 seconds Atomized - Contracts
 
 The project is divided into the following contracts:
 
@@ -42,7 +42,7 @@ contract SnarkStorage is Ownable
 contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721
 ```
 
-[Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) are required to run tests on the contracts.  Contracts from the [openzeppelin](https://openzeppelin.org) library were used during development. The secondary sale transactions rely on [OpenSea](https://opensea.io/assets/89secondsatomized) platform.\
+[Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) are required to run tests on the contracts.  Contracts from the [openzeppelin](https://openzeppelin.org) library were used during development. The secondary sale transactions utilize [OpenSea](https://opensea.io/assets/89secondsatomized).\
 
 Feel free to explore our contracts. Most function names are self-explanatory to imply their usage. Most of an auxiliary functions were moved to libraries which work with data for each contract individually. They are located in the 'snarklibs' folder.\
 
@@ -63,7 +63,7 @@ to be handled by general-purpose applications.
 In particular, it will allow for Non Fungible Token (NFTs)
 to be tracked in standardized wallets and traded on exchanges.
 
-There are functions of ERC721 which work differently depends on conditions.
+There are functions of ERC721 which work differently depending on conditions.
 
 - function **balanceOf**(address _owner) returns a balance of owner's tokens. If any loan is active then the algorithm of balance calculation changes and it lets you see all tokens which were agreed for a participating in loan.
 - function **transferFrom**(address _to, uint256 _tokenId). This function declared as payable which means that if you send ether upon calling it then it will split the ether according to a profit share scheme if the last one were set up by an artist.
