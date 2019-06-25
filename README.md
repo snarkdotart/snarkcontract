@@ -14,16 +14,16 @@ The repository contains the Ethereum contract to manage the ownership and transf
 
 The project contains several contracts with their respective functionalities and allows us to satisfy a contract size restriction requirement.
 
-### 89seconds Contracts
+### 89 seconds Atomized - Contracts
 
 The project is divided into the following contracts:
 
 Contract | Description
 -- | --
 [SnarkStorage](contracts/SnarkStorage.sol) | The contract contains functions that facilitate writing and reading various types of data elements from storage.
-[SnarkBase](contracts/SnarkBase.sol) | This contract contains such functions as a allow for the minting, burning, reading and updating various properties of the artwork tokens.
-[SnarkLoan](contracts/SnarkLoan.sol) | This contract allows for the creation and deletion of token loans between the artwork token owners.  The contract also allows for reading of individual loan properties.
-[SnarkERC721](contracts/SnarkERC721.sol) | This contract allows for main functionality of ERC721 token standard.
+[SnarkBase](contracts/SnarkBase.sol) | This contract contains functions that facilitate minting, burning, reading and updating various properties of the artwork tokens.
+[SnarkLoan](contracts/SnarkLoan.sol) | This contract contains functions that facilitate creation and deletion of token loans between the artwork token owners.  The contract also allows for reading of individual loan properties.
+[SnarkERC721](contracts/SnarkERC721.sol) | This contract contains ERC721 token standard functions.  It has been modified to allow for token loans between token owners.
 
 </br>
 
@@ -34,11 +34,7 @@ SnarkLoan | [0x92AdF2a22fA9332fFc70e105924fD85990cCab40](https://etherscan.io/ad
 SnarkERC721 | [0x0f130a170127Aa4E5776Ab05305ff614Ff352253](https://etherscan.io/address/0x0f130a170127Aa4E5776Ab05305ff614Ff352253#code)
 SnarkStorage | [0x3007b07667826a4a4aa17a7619e46dd0f0e75157](https://etherscan.io/address/0x3007b07667826a4a4aa17a7619e46dd0f0e75157#code)
 
-[Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) is required to run tests of the contracts.
-
-When developing contracts the [openzeppelin](https://openzeppelin.org) library was used.\
 The contract inheritance is as follows:
-
 ``` solidity
 contract SnarkBase is Ownable
 contract SnarkLoan is Ownable
@@ -46,33 +42,25 @@ contract SnarkStorage is Ownable
 contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721
 ```
 
-Most of an auxiliary functions were moved to libraries which work with data for each contract individually. They are located in the 'snarklibs' folder.
+[Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) are required to run tests on the contracts.  Contracts from the [openzeppelin](https://openzeppelin.org) library were used during development. The secondary sale transactions utilize [OpenSea](https://opensea.io/assets/89secondsatomized).
 
-> Note: the secondary sale works on [OpenSea](https://opensea.io/assets/89secondsatomized) platform.
+Feel free to explore our contracts. Most function names are self-explanatory to imply their usage. Most of an auxiliary functions were moved to libraries which work with data for each contract individually. They are located in the 'snarklibs' folder.
 
-Feel free to explore our contracts. Most function names are self-explanatory to imply their usage.\
 See the following remarks regarding several functions that require additional explanation:
 
-- function **addToken**() of *SnarkBase contract* creates a new token and moves it to the artist's wallet as soon as it created. A profit share scheme has to exist before the token minting begins;
-- function **setTokenAcceptOfLoanRequest**() of *SnarkBase contract* sets or cancels the owner's agreement to participate in lending of their tokens to other owners. Note that the owner's agreement doesn't revise automatically during a token transfer from one owner to another. Owner of the token has to change it manually if he wishes to update their agreement participation;
-- function **getTokenListForOwner**() of *SnarkBase contract*  returns owner's tokens regardless of the presense of an active loan;
+- function **addToken**() of *SnarkBase contract* creates a new token and moves it to the artist's wallet as soon as it is minted. A profit share scheme has to exist before the token minting begins;
+- function **setTokenAcceptOfLoanRequest**() of *SnarkBase contract* sets or cancels the owner's agreement to participate in loans of their tokens to other owners. Note that the owner's agreement doesn't revise automatically during a token transfer from one owner to another. Owner of the token has to change it manually if he wishes to update their agreement participation;
+- function **getTokenListForOwner**() of *SnarkBase contract*  returns owner's tokens regardless of the presence of an active loan;
 - function **createLoan**() of *SnarkLoan contract* creates a loan. Note that period of the loan cannot overlap with existing loans. 
 - function **getLoanId**() of *SnarkLoan contract*  returns either the current active loan id or the next future loan id.
 
 SnarkERC721 contract is based on Non Fungible Token (NFT) Standard (ERC-721)
 
-_Snark provides a practical use case for digital collectibles by pioneering ERC-721, a non-fungible token protocol._
+There are functions of ERC721 contract that were modified from the ERC-721 standard to fit the project requirements.
 
-A standard interface allows any Non Fungible Token (NFTs) on Ethereum
-to be handled by general-purpose applications.
-In particular, it will allow for Non Fungible Token (NFTs)
-to be tracked in standardized wallets and traded on exchanges.
-
-There are functions of ERC721 which work differently depends on conditions.
-
-- function **balanceOf**(address _owner) returns a balance of owner's tokens. If any loan is active then the algorithm of balance calculation changes and it lets you see all tokens which were agreed for a participating in loan.
-- function **transferFrom**(address _to, uint256 _tokenId). This function declared as payable which means that if you send ether upon calling it then it will split the ether according to a profit share scheme if the last one were set up by an artist.
-- function **tokenOfOwnerByIndex**(address _owner, uint256 _index) returns the owner's tokens by index. But in a case when a loan is active it also returns tokens which were agreed to participate in loans.
+- function **balanceOf**(address _owner) returns a balance of owner's tokens. If there is an active loan present, the balance calculation lets the loan creator, during the duration of the loan, see the tokens whose owners agreed to participate in loans. 
+- function **transferFrom**(address _to, uint256 _tokenId). This function is declared as payable which means that if you send ether upon calling it then it will split the ether according to a profit share scheme set up by an artist.
+- function **tokenOfOwnerByIndex**(address _owner, uint256 _index) returns the owner's tokens by index. If there is an active loan present, during the duration of such a loan, the function also returns the tokens whose owners agreed to participate in the loan. 
 
 (Source: [Ethereum, Non Fungible Token (NFT) Standard #721](https://github.com/ethereum/EIPs/issues/721))
 
@@ -80,6 +68,6 @@ There are functions of ERC721 which work differently depends on conditions.
 
 Solidity is licensed under [GNU General Public License v3.0.](https://github.com/ethereum/solidity/blob/develop/LICENSE.txt)
 
-Some third-party code has its [own licensing terms.](https://github.com/ethereum/solidity/blob/develop/cmake/templates/license.h.in)
+Third-party is licensed under its [own licensing terms.](https://github.com/ethereum/solidity/blob/develop/cmake/templates/license.h.in)
 
 ![89seconds](https://snark.art/assets/artworks/eve.png)
