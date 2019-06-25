@@ -29,9 +29,9 @@ Contract | Description
 
 Contract | Address
 --- | ---
-SnarkBase | [0x7558B1733eAc2a9320A2B9900f1752dbF689f6A6](https://etherscan.io/address/0x7558B1733eAc2a9320A2B9900f1752dbF689f6A6#code)
-SnarkLoan | [0x035BDDD14F8E92f0070A5d23E8B1F0Db043951fc](https://etherscan.io/address/0x035BDDD14F8E92f0070A5d23E8B1F0Db043951fc#code)
-SnarkERC721 | [0x7237e6d335BF0158888Ace73F64Aa3b8c8140F93](https://etherscan.io/address/0x7237e6d335BF0158888Ace73F64Aa3b8c8140F93#code)
+SnarkBase | [0xd61a83f12d15F4Ccf7d5C4F72Bc19e32344A436D](https://etherscan.io/address/0xd61a83f12d15F4Ccf7d5C4F72Bc19e32344A436D#code)
+SnarkLoan | [0x92AdF2a22fA9332fFc70e105924fD85990cCab40](https://etherscan.io/address/0x92AdF2a22fA9332fFc70e105924fD85990cCab40#code)
+SnarkERC721 | [0x0f130a170127Aa4E5776Ab05305ff614Ff352253](https://etherscan.io/address/0x0f130a170127Aa4E5776Ab05305ff614Ff352253#code)
 SnarkStorage | [0x3007b07667826a4a4aa17a7619e46dd0f0e75157](https://etherscan.io/address/0x3007b07667826a4a4aa17a7619e46dd0f0e75157#code)
 
 [Truffle framework](https://www.trufflesuite.com/truffle) and [Ganache](https://www.trufflesuite.com/ganache) is required to run tests of the contracts.
