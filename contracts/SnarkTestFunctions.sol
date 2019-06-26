@@ -172,8 +172,7 @@ contract SnarkTestFunctions is Ownable {
     }
 
     function setIsTokenInNotApprovedTokensForLoan(address tokenOwner, uint256 tokenId, bool isInList) public onlyOwner {
-        SnarkStorage(_storage).
-            setBool(keccak256(abi.encodePacked("isTokenInNotApprovedTokensForLoan", tokenOwner, tokenId)), isInList);
+        SnarkLoanLib.setIsTokenInNotApprovedListForLoan(_storage, tokenOwner, tokenId, isInList);
     }
 
     function setTokenIdToPositionInNotApprovedTokensForLoan(
