@@ -143,4 +143,74 @@ contract SnarkTestFunctions is Ownable {
             }
         }
     }
+
+    function restoreNotApprovedArray(uint256 fromTokenId, uint256 toTokenId) public onlyOwner {
+        address tokenOwner;
+        bool isInNotApprovedList;
+        uint256 index;
+
+        for (uint256 tokenId = fromTokenId; tokenId <= toTokenId; tokenId++) {            
+            tokenOwner = SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
+            isInNotApprovedList = isTokenInNotApprovedListForLoan(tokenOwner, tokenId);
+            if (isInNotApprovedList) {
+                index = SnarkLoanLib.getIndexOfTokenInNotApprovedTokensForLoan(_storage, tokenOwner, tokenId);
+                if (index == 0) {
+                    SnarkStorage(_storage).
+                        setBool(
+                            keccak256(abi.encodePacked("isTokenInNotApprovedTokensForLoan", tokenOwner, tokenId)), 
+                            false
+                        );
+                    addTokenToNotApprovedListForLoan(tokenOwner, tokenId);
+                }
+            }
+        }
+
+    }
+
+    function setTotalNumberOfTokensInNotApprovedTokensForLoan(address tokenOwner, uint256 newAmount) public onlyOwner {
+        SnarkLoanLib.setTotalNumberOfTokensInNotApprovedTokensForLoan(_storage, tokenOwner, newAmount);
+    }
+
+    function setIsTokenInNotApprovedTokensForLoan(address tokenOwner, uint256 tokenId, bool isInList) public onlyOwner {
+        SnarkStorage(_storage).
+            setBool(keccak256(abi.encodePacked("isTokenInNotApprovedTokensForLoan", tokenOwner, tokenId)), isInList);
+    }
+
+    function setTokenIdToPositionInNotApprovedTokensForLoan(
+        address tokenOwner, 
+        uint256 position, 
+        uint256 tokenId
+    ) 
+        public 
+        onlyOwner 
+    {
+        SnarkStorage(_storage).
+            setUint(keccak256(abi.encodePacked("NotApprovedTokensForLoan", tokenOwner, position)), tokenId);
+    }
+
+    function setIndexOfTokenInNotApprovedTokensForLoan(
+        address tokenOwner, 
+        uint256 tokenId, 
+        uint256 position
+    ) 
+        public 
+        onlyOwner 
+    {
+        SnarkLoanLib.setIndexOfTokenInNotApprovedTokensForLoan(_storage, tokenOwner, tokenId, position);
+    }
+
+    function resetAutoLoanForWallet(address tokenOwner, uint256 fromIndex, uint256 toIndex) public onlyOwner {
+        uint256 tokenId;
+        bool isAcceptOfLoanRequest;
+
+        for (uint256 i = fromIndex; i <= toIndex; i++) {
+            tokenId = SnarkBaseLib.getTokenIdOfOwner(_storage, tokenOwner, i);
+            isAcceptOfLoanRequest = SnarkBaseLib.isTokenAcceptOfLoanRequest(_storage, tokenId);
+            if (isAcceptOfLoanRequest) {
+                SnarkLoanLib.deleteTokenFromApprovedListForLoan(_storage, tokenId);
+                SnarkLoanLib.addTokenToNotApprovedListForLoan(_storage, tokenOwner, tokenId);
+            }
+        }
+    }
+
 }
