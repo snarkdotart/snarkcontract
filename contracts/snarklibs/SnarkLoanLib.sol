@@ -221,11 +221,9 @@ library SnarkLoanLib {
     function addTokenToApprovedListForLoan(address payable storageAddress, uint256 tokenId) public {
         if (!isTokenInApprovedListForLoan(storageAddress, tokenId)) {
             uint256 position = getTotalNumberOfTokensInApprovedTokensForLoan(storageAddress);
-            SnarkStorage(storageAddress)
-                .setUint(keccak256(abi.encodePacked("ApprovedTokensForLoan", position)), tokenId);
+            setTokenIdToPositionInApprovedTokensForLoan(storageAddress, position, tokenId);
             setIndexOfTokenInApprovedTokensForLoan(storageAddress, tokenId, position);
-            SnarkStorage(storageAddress).
-                setBool(keccak256(abi.encodePacked("isTokenInApprovedTokensForLoan", tokenId)), true);
+            setIsTokenInApprovedListForLoan(storageAddress, tokenId, true);
             setTotalNumberOfTokensInApprovedTokensForLoan(storageAddress, position.add(1));
         }
     }
@@ -239,14 +237,11 @@ library SnarkLoanLib {
                 uint256 maxTokenId = getTokenFromApprovedTokensForLoanByIndex(storageAddress, maxPosition);
                 setIndexOfTokenInApprovedTokensForLoan(storageAddress, tokenId, 0);
                 setIndexOfTokenInApprovedTokensForLoan(storageAddress, maxTokenId, position);
-                SnarkStorage(storageAddress).
-                    setUint(keccak256(abi.encodePacked("ApprovedTokensForLoan", position)), maxTokenId);
+                setTokenIdToPositionInApprovedTokensForLoan(storageAddress, position, maxTokenId);
             }
-            SnarkStorage(storageAddress).
-                setUint(keccak256(abi.encodePacked("ApprovedTokensForLoan", maxPosition)), 0);
+            setTokenIdToPositionInApprovedTokensForLoan(storageAddress, maxPosition, 0);
             setTotalNumberOfTokensInApprovedTokensForLoan(storageAddress, maxPosition);
-            SnarkStorage(storageAddress).
-                setBool(keccak256(abi.encodePacked("isTokenInApprovedTokensForLoan", tokenId)), false);
+            setIsTokenInApprovedListForLoan(storageAddress, tokenId, false);            
         }
     }
 
@@ -284,11 +279,27 @@ library SnarkLoanLib {
             boolStorage(keccak256(abi.encodePacked("isTokenInApprovedTokensForLoan", tokenId)));
     }
 
+    function setIsTokenInApprovedListForLoan(address payable storageAddress, uint256 tokenId, bool isInList) public {
+        SnarkStorage(storageAddress).
+            setBool(keccak256(abi.encodePacked("isTokenInApprovedTokensForLoan", tokenId)), isInList);
+    }
+
     function getTokenFromApprovedTokensForLoanByIndex(address payable storageAddress, uint256 position) 
         public view returns (uint256) 
     {
         return SnarkStorage(storageAddress).
             uintStorage(keccak256(abi.encodePacked("ApprovedTokensForLoan", position)));
+    }
+
+    function setTokenIdToPositionInApprovedTokensForLoan(
+        address payable storageAddress,
+        uint256 position,
+        uint256 tokenId
+    ) 
+        public 
+    {
+        SnarkStorage(storageAddress).
+            setUint(keccak256(abi.encodePacked("ApprovedTokensForLoan", position)), tokenId);
     }
 
     // not approved list for owner
