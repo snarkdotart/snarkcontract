@@ -32,7 +32,7 @@ contract SnarkTestFunctions is Ownable {
         return SnarkLoanLib.getTotalNumberOfTokensInApprovedTokensForLoan(_storage);
     }
 
-    function setTotalNumberOfTokensInApprovedTokensForLoan(uint256 newAmount) public {
+    function setTotalNumberOfTokensInApprovedTokensForLoan(uint256 newAmount) public onlyOwner {
         SnarkLoanLib.setTotalNumberOfTokensInApprovedTokensForLoan(_storage, newAmount);
     }
 
@@ -40,7 +40,7 @@ contract SnarkTestFunctions is Ownable {
         return SnarkLoanLib.getIndexOfTokenInApprovedTokensForLoan(_storage, tokenId);
     }
 
-    function setIndexOfTokenInApprovedTokensForLoan(uint256 tokenId, uint256 position) public {
+    function setIndexOfTokenInApprovedTokensForLoan(uint256 tokenId, uint256 position) public onlyOwner {
         SnarkLoanLib.setIndexOfTokenInApprovedTokensForLoan(_storage, tokenId, position);
     }
 
@@ -48,7 +48,7 @@ contract SnarkTestFunctions is Ownable {
         return SnarkLoanLib.isTokenInApprovedListForLoan(_storage, tokenId);
     }
 
-    function setIsTokenInApprovedListForLoan(uint256 tokenId, bool isInList) public {
+    function setIsTokenInApprovedListForLoan(uint256 tokenId, bool isInList) public onlyOwner {
         SnarkLoanLib.setIsTokenInApprovedListForLoan(_storage, tokenId, isInList);
     }
 
@@ -56,7 +56,7 @@ contract SnarkTestFunctions is Ownable {
         return SnarkLoanLib.getTokenFromApprovedTokensForLoanByIndex(_storage, position);
     }
 
-    function setTokenIdToPositionInApprovedTokensForLoan(uint256 position, uint256 tokenId) public {
+    function setTokenIdToPositionInApprovedTokensForLoan(uint256 position, uint256 tokenId) public onlyOwner {
         SnarkLoanLib.setTokenIdToPositionInApprovedTokensForLoan(_storage, position, tokenId);
     }
 
@@ -74,7 +74,7 @@ contract SnarkTestFunctions is Ownable {
         uint256 position, 
         uint256 tokenId
     ) 
-        public 
+        public onlyOwner
     {
         SnarkLoanLib.setTokenIdToPositionInNotApprovedTokensForLoan(
             _storage,
@@ -88,7 +88,7 @@ contract SnarkTestFunctions is Ownable {
         return SnarkLoanLib.getTotalNumberOfTokensInNotApprovedTokensForLoan(_storage, tokenOwner);
     }
 
-    function setTotalNumberOfTokensInNotApprovedTokensForLoan(address tokenOwner, uint256 newAmount) public {
+    function setTotalNumberOfTokensInNotApprovedTokensForLoan(address tokenOwner, uint256 newAmount) public onlyOwner {
         SnarkLoanLib.setTotalNumberOfTokensInNotApprovedTokensForLoan(_storage, tokenOwner, newAmount);
     }
 
