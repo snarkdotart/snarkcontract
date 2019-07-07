@@ -10,7 +10,10 @@ The repository contains the Ethereum contract to manage the ownership and transf
 
 ## Source Code
 
-> Note: All of the Snark contract scripts are open source and documented with inline running commentary.
+> Note: All of the Snark contract scripts are open source and documented with inline running commentary.\
+> Before running tests of contracts add to ".env" file two keys where the values of keys can be any:\
+> SECRET_KEY=343434\
+> PROJECT_ID=343434
 
 The project contains several contracts with their respective functionalities and allows us to satisfy a contract size restriction requirement.
 
