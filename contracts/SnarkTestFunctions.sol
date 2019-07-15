@@ -226,4 +226,7 @@ contract SnarkTestFunctions is Ownable {
         }
     }
 
+    function changeDecorationUrl(uint256 tokenId, string memory decorationUrl) public onlyOwner {
+        SnarkBaseLib.setDecorationUrl(_storage, tokenId, decorationUrl);
+    }
 }
