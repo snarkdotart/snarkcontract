@@ -1,5 +1,6 @@
-require('dotenv').config();
 var HDWalletProvider = require("truffle-hdwallet-provider");
+var SECRET_KEY='343434';
+var PROJECT_ID='343434';
 
 module.exports = {
     networks: {
@@ -10,7 +11,7 @@ module.exports = {
             gasPrice: 1
         },
         main: {
-            provider: new HDWalletProvider(process.env.SECRET_KEY, "https://mainnet.infura.io/v3/" + process.env.PROJECT_ID),
+            provider: new HDWalletProvider(SECRET_KEY, "https://mainnet.infura.io/v3/" + PROJECT_ID),
             gas: 7900000,
             gasPrice: 7000000000, // 7 Gwei
             network_id: 1,
@@ -18,7 +19,7 @@ module.exports = {
             skipDryRun: true,
         },
         ropsten: {
-            provider: new HDWalletProvider(process.env.SECRET_KEY, "https://ropsten.infura.io/v3/" + process.env.PROJECT_ID),
+            provider: new HDWalletProvider(SECRET_KEY, "https://ropsten.infura.io/v3/" + PROJECT_ID),
             gas: 7900000,
             gasPrice: 7000000000, // 7 Gwei
             network_id: 3,
@@ -26,7 +27,7 @@ module.exports = {
             skipDryRun: true,
         },
         rinkeby: {
-            provider: new HDWalletProvider(process.env.SECRET_KEY, "https://rinkeby.infura.io/v3/" + process.env.PROJECT_ID),
+            provider: new HDWalletProvider(SECRET_KEY, "https://rinkeby.infura.io/v3/" + PROJECT_ID),
             gas: 6900000,
             gasPrice: 7000000000, // 7 Gwei
             network_id: 4,
@@ -36,7 +37,6 @@ module.exports = {
     },
     compilers: {
         solc: {
-            // version: "0.5.4",
             settings: {
                 optimizer: {
                     enabled: true,
