@@ -3,6 +3,10 @@ pragma solidity >=0.5.0;
 import "./openzeppelin/Ownable.sol";
 
 
+/// @title The main snark's storage for tokens and different data of contracts
+/// @author Vitali Hurski
+/// @notice This contract used by others contracts to store their data
+/// @dev All function calls are currently implemented without side effects
 contract SnarkStorage is Ownable {
 
     mapping (bytes32 => bool)       public boolStorage;
@@ -23,19 +27,28 @@ contract SnarkStorage is Ownable {
     /// @notice Will receive any eth sent to the contract
     function() external payable {} // solhint-disable-line
 
-    /// @dev Function to destroy the contract on the blockchain
+    /// @notice Function to destroy the contract on the blockchain
     function kill() external onlyOwner {
         selfdestruct(msg.sender);
     }
-    
+
+    /// @notice Allow access to functions for a particular address of contract.
+    /// @param _allowedAddress The address of the contract or wallet to which we 
+    /// want to give access to the current functionality.
     function allowAccess(address _allowedAddress) external onlyPlatform {
         boolStorage[keccak256(abi.encodePacked("accessAllowed", _allowedAddress))] = true;
     }
     
+    /// @notice Deny access to functions for a particular address of contract.
+    /// @param _allowedAddress The address of the contract or wallet that we want 
+    /// to exclude access to the current functionality.
     function denyAccess(address _allowedAddress) external onlyPlatform {
         delete boolStorage[keccak256(abi.encodePacked("accessAllowed", _allowedAddress))];
     }
-    
+
+    /// @notice Allows withdrawing ether to a specific address.
+    /// @param _to Address of wallet to withdraw
+    /// @param _value Ether amount to withdraw
     function transferFunds(address payable _to, uint256 _value) external onlyPlatform {
         require(address(this).balance >= _value, "Not enough ETH to transfer funds to the user");
         _to.transfer(_value);
