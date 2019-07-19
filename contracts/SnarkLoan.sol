@@ -8,6 +8,7 @@ import "./openzeppelin/SafeMath.sol";
 
 /// @title Contract creates the functionality to loans tokens
 /// @author Vitali Hurski
+/// @notice This contract used for creating loans of tokens
 contract SnarkLoan is Ownable {
 
     using SnarkBaseLib for address;
@@ -20,6 +21,8 @@ contract SnarkLoan is Ownable {
     event LoanCreated(address indexed loanOwner, uint256 loanId);
     event LoanDeleted(uint256 loanId);
     
+    /// @notice Snark's contracts and wallets only can call functions marked 
+    /// this modifier if restricted access were set up by Snark.
     modifier restrictedAccess() {
         if (SnarkBaseLib.isRestrictedAccess(_storage)) {
             require(msg.sender == owner, "only Snark can perform the function");
@@ -27,6 +30,7 @@ contract SnarkLoan is Ownable {
         _;
     }    
 
+    /// @notice Checks if the value of loan Id is correct.
     modifier correctLoan(uint256 loanId) {
         require(
             loanId > 0 && loanId <= SnarkLoanLib.getNumberOfLoans(_storage), 
@@ -35,6 +39,7 @@ contract SnarkLoan is Ownable {
         _;
     }
 
+    /// @notice Allows calling functions by loan owner only.
     modifier onlyLoanOwner(uint256 loanId) {
         require(
             msg.sender == SnarkLoanLib.getOwnerOfLoan(_storage, loanId), 
@@ -43,6 +48,7 @@ contract SnarkLoan is Ownable {
         _;
     }
 
+    /// @notice Allows calling functions by either loan owner or Snark
     modifier onlyLoanOwnerOrSnark(uint256 loanId) {
         require(
             msg.sender == SnarkLoanLib.getOwnerOfLoan(_storage, loanId) ||
@@ -63,19 +69,27 @@ contract SnarkLoan is Ownable {
     /// @notice Will receive any eth sent to the contract
     function() external payable {} // solhint-disable-line
 
-    /// @dev Function to destroy the contract on the blockchain
+    /// @notice Function to destroy the contract on the blockchain
     function kill() external onlyOwner {
         selfdestruct(msg.sender);
     }
 
+    /// @notice Set a default duration of loans in a day
+    /// @param duration Duration of loans
     function setDefaultLoanDuration(uint256 duration) public onlyOwner {
         SnarkLoanLib.setDefaultLoanDuration(_storage, duration);
     }
 
+    /// @notice Retrieve a default duration of loans
+    /// @return Duration of loans
     function getDefaultLoanDuration() public view returns (uint256) {
         return SnarkLoanLib.getDefaultLoanDuration(_storage);
     }
 
+    /// @notice Retrieve a loan detail
+    /// @param loanId Id of a loan
+    /// @return Address of loan owner, Start date of loan, End date of loan,
+    /// id of previous loan, id of next loan, price of loan
     function getLoanDetail(uint256 loanId) public view returns (address, uint256, uint256, uint256, uint256, uint256) {
         return (
             SnarkLoanLib.getOwnerOfLoan(_storage, loanId),
@@ -87,7 +101,7 @@ contract SnarkLoan is Ownable {
         );
     }
 
-    /// @dev Attributes of timestamp_start and timestamp_end should contain 10 digits only
+    /// @notice Attributes of timestamp_start and timestamp_end should contain 10 digits only
     /// @param timestampStart Contains date and time of loan start
     /// @param timestampEnd Contain date and time of loan end
     function createLoan(uint256 timestampStart, uint256 timestampEnd) public payable restrictedAccess {
@@ -138,6 +152,8 @@ contract SnarkLoan is Ownable {
         emit LoanCreated(msg.sender, loanId);
     }
 
+    /// @notice Function of loan deleting by it's id
+    /// @param loanId Id of loan
     function deleteLoan(uint256 loanId) public onlyLoanOwnerOrSnark(loanId) {
         bool isDeleted = SnarkLoanLib.isLoanDeleted(_storage, loanId);
         require(isDeleted == false, "Loan does not exist");
@@ -191,10 +207,14 @@ contract SnarkLoan is Ownable {
         emit LoanDeleted(loanId);
     }
 
+    /// @notice Retrieve a number of loans
+    /// @return Number of loans
     function getNumberOfLoans() public view returns (uint256) {
         return SnarkLoanLib.getNumberOfLoans(_storage);
     }
 
+    /// @notice Retrieve a list of loans id where loans are active or will be active in the future
+    /// @return Array of loans ids
     function getListOfLoans() public view returns (uint256[] memory) {
         uint256 numberOfLoans = getNumberOfLoans();
         uint256[] memory loans = new uint256[](numberOfLoans);
@@ -208,6 +228,9 @@ contract SnarkLoan is Ownable {
         return loans;
     }
 
+    /// @notice Retrieve a loan list by owner's address
+    /// @param loanOwner Owner of loans
+    /// @return Array of loans ids
     function getListOfLoansOfOwner(address loanOwner) public view returns (uint256[] memory) {
         uint256 numberOfLoans = getCountOfOwnerLoans(loanOwner);
         uint256[] memory loansList = new uint256[](numberOfLoans);
@@ -221,6 +244,9 @@ contract SnarkLoan is Ownable {
         return loansList;
     }
 
+    /// @notice Get a number of owner's loans
+    /// @param loanOwner Address of loan owner
+    /// @return Number of loans
     function getCountOfOwnerLoans(address loanOwner) public view returns (uint256) {
         uint256 amountOfAllOwnerLoans = SnarkLoanLib.getTotalNumberOfLoansInOwnerList(_storage, loanOwner);
         uint256 amountOfActiveOwnerLoans;
@@ -236,10 +262,15 @@ contract SnarkLoan is Ownable {
         return amountOfActiveOwnerLoans;
     }
 
+    /// @notice Get the ID of the current active loan or the first of the subsequent ones
+    /// @return Id of loan
     function getLoanId() public view returns (uint256) {
         return SnarkLoanLib.getLoanId(_storage);
     }
 
+    /// @notice Shows if a user has access to particular token
+    /// @dev Return value depends on loans activity
+    /// @return True - if there is access, otherwise - false
     function doUserHaveAccessToToken(address userWalletId, uint256 tokenId) public view returns (bool) {
         address realOwner = SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
         bool isUserHasAccess = (userWalletId == realOwner);
@@ -254,18 +285,29 @@ contract SnarkLoan is Ownable {
         return isUserHasAccess;
     }
 
+    /// @notice Allows to check if a loan is active
+    /// @param loanId Id of loan
+    /// @return True - if the loan is active, otherwise it returns false
     function isLoanActive(uint256 loanId) public view returns (bool) {
         return SnarkLoanLib.isLoanActive(_storage, loanId);
     }
 
+    /// @notice Allows to check if a loan is finished
+    /// @param loanId Id of loan
+    /// @return True - if the loan is finished, otherwise it returns false
     function isLoanFinished(uint256 loanId) public view returns (bool) {
         return SnarkLoanLib.isLoanFinished(_storage, loanId);
     }
 
+    /// @notice Allows to check if a loan is deleted
+    /// @param loanId Id of loan
+    /// @return True - if the loan is deleted, otherwise it returns false
     function isLoanDeleted(uint256 loanId) public view returns (bool) {
         return SnarkLoanLib.isLoanDeleted(_storage, loanId);
     }
 
+    /// @notice It's a service function to shift a loan pointer
+    /// @dev It's necessary to reduce the amount of considering loans upon searching via loop
     function toShiftPointer() public {
         uint256 loanId = SnarkLoanLib.getLoanPointer(_storage);
         if (SnarkLoanLib.isLoanFinished(_storage, loanId) || 
@@ -274,6 +316,8 @@ contract SnarkLoan is Ownable {
         }
     }
 
+    /// @notice Retrieve a list of dates which already were occupied by future loans
+    /// @return An array of start dates and an array of end dates
     function getListOfBusyDates() public view returns(uint256[] memory, uint256[] memory) {
         uint256 loanId = getLoanId();
         uint256 countOfLoans;

@@ -6,7 +6,6 @@ import "./openzeppelin/Ownable.sol";
 /// @title The main snark's storage for tokens and different data of contracts
 /// @author Vitali Hurski
 /// @notice This contract used by others contracts to store their data
-/// @dev All function calls are currently implemented without side effects
 contract SnarkStorage is Ownable {
 
     mapping (bytes32 => bool)       public boolStorage;
@@ -15,6 +14,7 @@ contract SnarkStorage is Ownable {
     mapping (bytes32 => uint256)    public uintStorage;
     mapping (bytes32 => bytes32)    public bytesStorage;
 
+    /// @notice Snark's contracts only can call functions marked this modifier.
     modifier onlyPlatform {
         require(boolStorage[keccak256(abi.encodePacked("accessAllowed", msg.sender))]);
         _;
