@@ -26,7 +26,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
 
     bytes4 private constant ERC721_RECEIVED = 0x150b7a02;
 
-    /// @dev Checks msg.sender can transfer a token - limited to owner or those approved by owner, an operator
+    /// @notice Checks msg.sender can transfer a token - limited to owner or those approved by owner, an operator
     /// @param _tokenId uint256 ID of the token to validate
     modifier canTransfer(uint256 _tokenId) {
         require(
@@ -57,36 +57,30 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
     /// @notice Will receive any eth sent to the contract
     function() external payable {} // solhint-disable-line
 
-    /// @dev Function to destroy the contract on the blockchain
+    /// @notice Function to destroy the contract on the blockchain
     function kill() external onlyOwner {
         selfdestruct(msg.sender);
     }
 
-    /********************/
-    /** ERC721Metadata **/
-    /********************/
-    /// @dev Gets the token name
+    /// @notice Gets the token name
     /// @return string representing the token name
     function name() public view returns (string memory) {
         return SnarkBaseLib.getTokenName(_storage);
     }
 
-    /// @dev Gets the token symbol
+    /// @notice Gets the token symbol
     /// @return string representing the token symbol
     function symbol() public view returns (string memory) {
         return SnarkBaseLib.getTokenSymbol(_storage);
     }
 
-    /// @dev Returns an URI for a given token ID
+    /// @notice Returns an URI for a given token ID
     /// Throws if the token ID does not exist. May return an empty string.
     /// @param _tokenId uint256 ID of the token to query
     function tokenURI(uint256 _tokenId) public view correctToken(_tokenId) returns (string memory) {
         return SnarkBaseLib.getDecorationUrl(_storage, _tokenId);
     }
 
-    /**********************/
-    /** ERC721Enumerable **/
-    /**********************/
     function totalSupply() public view returns (uint256) {
         return SnarkBaseLib.getTotalNumberOfTokens(_storage);
     }
@@ -125,11 +119,8 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
         return _index.add(1);
     }
 
-    /*****************/
-    /** ERC721Basic **/
-    /*****************/
     /// @notice Count all NFTs assigned to an owner
-    /// @dev NFTs assigned to the zero address are considered invalid, and this
+    /// @notice NFTs assigned to the zero address are considered invalid, and this
     ///      function throws for queries about the zero address.
     /// @param _owner An address for whom to query the balance
     /// @return The number of NFTs owned by `_owner`, possibly zero
@@ -150,7 +141,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
 
     /// @notice Find the owner of an NFT
     /// @param _tokenId The identifier for an NFT
-    /// @dev NFTs assigned to zero address are considered invalid, and queries
+    /// @notice NFTs assigned to zero address are considered invalid, and queries
     ///      about them do throw.
     /// @return The address of the owner of the NFT
     function ownerOf(uint256 _tokenId) public view correctToken(_tokenId) returns (address) {
@@ -159,7 +150,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
         return tokenOwner;
     }
 
-    /// @dev Returns whether the specified token exists
+    /// @notice Returns whether the specified token exists
     /// @param _tokenId uint256 ID of the token to query the existance of
     /// @return whether the token exists
     function exists(uint256 _tokenId) public view returns (bool _exists) {
@@ -167,8 +158,8 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
     }
 
     /// @notice Set or reaffirm the approved address for an NFT
-    /// @dev The zero address indicates there is no approved address.
-    /// @dev Throws unless `msg.sender` is the current NFT owner, or an authorized
+    /// @notice The zero address indicates there is no approved address.
+    /// @notice Throws unless `msg.sender` is the current NFT owner, or an authorized
     ///  operator of the current owner.
     /// @param _to address to be approved for the given token ID
     /// @param _tokenId uint256 ID of the token to be approved
@@ -183,7 +174,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
     }
 
     /// @notice Get the approved address for a single NFT
-    /// @dev Throws if `_tokenId` is not a valid NFT
+    /// @notice Throws if `_tokenId` is not a valid NFT
     /// @param _tokenId The NFT to find the approved address for
     /// @return The approved address for this NFT, or the zero address if there is none
     function getApproved(uint256 _tokenId) public view correctToken(_tokenId) returns (address _operator) {
@@ -193,7 +184,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
 
     /// @notice Enable or disable approval for a third party ("operator") to manage
     ///  all of `msg.sender`'s assets.
-    /// @dev Emits the ApprovalForAll event
+    /// @notice Emits the ApprovalForAll event
     /// @param _operator Address to add to the set of authorized operators.
     /// @param _approved True if the operators is approved, false to revoke approval
     function setApprovalForAll(address _operator, bool _approved) public {
@@ -213,7 +204,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
     /// @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
     ///  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
     ///  THEY MAY BE PERMANENTLY LOST
-    /// @dev Throws unless `msg.sender` is the current owner, an authorized
+    /// @notice Throws unless `msg.sender` is the current owner, an authorized
     ///  operator, or the approved address for this NFT. Throws if `_from` is
     ///  not the current owner. Throws if `_to` is the zero address. Throws if
     ///  `_tokenId` is not a valid NFT.
@@ -248,7 +239,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
     }
 
     /// @notice Transfers the ownership of an NFT from one address to another address
-    /// @dev This works identically to the other function with an extra data parameter,
+    /// @notice This works identically to the other function with an extra data parameter,
     ///  except this function just sets data to ""
     /// @param _from The current owner of the NFT
     /// @param _to The new owner
@@ -258,7 +249,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
     }
 
     /// @notice Transfers the ownership of an NFT from one address to another address
-    /// @dev Throws unless `msg.sender` is the current owner, an authorized
+    /// @notice Throws unless `msg.sender` is the current owner, an authorized
     ///  operator, or the approved address for this NFT. Throws if `_from` is
     ///  not the current owner. Throws if `_to` is the zero address. Throws if
     ///  `_tokenId` is not a valid NFT. When transfer is complete, this function
@@ -287,8 +278,8 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
         emit Transfer(_from, _to, _tokenId);
     }
 
-    /// @dev Internal function to clear current approval of a given token ID
-    /// @dev Reverts if the given address is not indeed the owner of the token
+    /// @notice Internal function to clear current approval of a given token ID
+    /// @notice Reverts if the given address is not indeed the owner of the token
     /// @param _owner owner of the token
     /// @param _tokenId uint256 ID of the token to be transferred
     function _clearApproval(address _owner, uint256 _tokenId) internal {
@@ -299,7 +290,7 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
         }
     }
 
-    /// @dev Returns whether the given spender can transfer a given token ID
+    /// @notice Returns whether the given spender can transfer a given token ID
     /// @param _spender address of the spender to query
     /// @param _tokenId uint256 ID of the token to be transferred
     /// @return bool whether the msg.sender is approved for the given token ID,
@@ -313,8 +304,8 @@ contract SnarkERC721 is Ownable, SupportsInterfaceWithLookup, ERC721 {
         );
     }
 
-    /// @dev Internal function to invoke `onERC721Received` on a target address
-    /// @dev The call is not executed if the target address is not a contract
+    /// @notice Internal function to invoke `onERC721Received` on a target address
+    /// @notice The call is not executed if the target address is not a contract
     /// @param _from address representing the previous owner of the given token ID
     /// @param _to target address that will receive the tokens
     /// @param _tokenId uint256 ID of the token to be transferred

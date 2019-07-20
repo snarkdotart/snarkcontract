@@ -27,14 +27,14 @@ library SnarkCommonLib {
         SnarkBaseLib.addTokenToOwner(_storageAddress, _to, _tokenId);
     }
 
-    /// @dev Snark platform takes it's profit share
+    /// @notice Snark platform takes it's profit share
     /// @param _profit A price of selling
     function takePlatformProfitShare(address payable _storageAddress, uint256 _profit) internal {
         address snarkWallet = SnarkBaseLib.getSnarkWalletAddress(_storageAddress);
         SnarkStorage(_storageAddress).transferFunds(address(uint160(snarkWallet)), _profit);
     }
 
-    /// @dev Function to distribute the profits to participants
+    /// @notice Function to distribute the profits to participants
     /// @param _price Price at which token is sold
     /// @param _tokenId Token token ID
     /// @param _from Seller Address
@@ -84,7 +84,7 @@ library SnarkCommonLib {
         residue = _income.sub(profit);
     }
 
-    /// @dev Function of an token buying
+    /// @notice Function of an token buying
     /// @param _storageAddress Address of storage
     /// @param _tokenId Token ID
     /// @param _value Selling price of token

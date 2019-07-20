@@ -30,7 +30,8 @@ contract SnarkLoan is Ownable {
         _;
     }    
 
-    /// @notice Checks if the value of loan Id is correct.
+    /// @notice Checks if the value of loan Id is correct
+    /// @param loanId Id of loan
     modifier correctLoan(uint256 loanId) {
         require(
             loanId > 0 && loanId <= SnarkLoanLib.getNumberOfLoans(_storage), 
@@ -39,7 +40,8 @@ contract SnarkLoan is Ownable {
         _;
     }
 
-    /// @notice Allows calling functions by loan owner only.
+    /// @notice Allows calling functions by loan owner only
+    /// @param loanId Id of loan
     modifier onlyLoanOwner(uint256 loanId) {
         require(
             msg.sender == SnarkLoanLib.getOwnerOfLoan(_storage, loanId), 
@@ -49,6 +51,7 @@ contract SnarkLoan is Ownable {
     }
 
     /// @notice Allows calling functions by either loan owner or Snark
+    /// @param loanId Id of loan
     modifier onlyLoanOwnerOrSnark(uint256 loanId) {
         require(
             msg.sender == SnarkLoanLib.getOwnerOfLoan(_storage, loanId) ||
@@ -58,7 +61,7 @@ contract SnarkLoan is Ownable {
         _;
     }
 
-    /// @dev Contract Constructor
+    /// @notice Contract Constructor
     /// @param storageAddress Address of a storage contract
     /// @param erc721Address Address of a ERC721 contract
     constructor(address payable storageAddress, address erc721Address) public {
@@ -88,8 +91,12 @@ contract SnarkLoan is Ownable {
 
     /// @notice Retrieve a loan detail
     /// @param loanId Id of a loan
-    /// @return Address of loan owner, Start date of loan, End date of loan,
-    /// id of previous loan, id of next loan, price of loan
+    /// @return Address of loan owner
+    /// @return Start date of loan
+    /// @return End date of loan
+    /// @return Id of previous loan
+    /// @return Id of next loan
+    /// @return Price of loan
     function getLoanDetail(uint256 loanId) public view returns (address, uint256, uint256, uint256, uint256, uint256) {
         return (
             SnarkLoanLib.getOwnerOfLoan(_storage, loanId),
@@ -269,7 +276,7 @@ contract SnarkLoan is Ownable {
     }
 
     /// @notice Shows if a user has access to particular token
-    /// @dev Return value depends on loans activity
+    /// @notice Return value depends on loans activity
     /// @return True - if there is access, otherwise - false
     function doUserHaveAccessToToken(address userWalletId, uint256 tokenId) public view returns (bool) {
         address realOwner = SnarkBaseLib.getOwnerOfToken(_storage, tokenId);
@@ -307,7 +314,7 @@ contract SnarkLoan is Ownable {
     }
 
     /// @notice It's a service function to shift a loan pointer
-    /// @dev It's necessary to reduce the amount of considering loans upon searching via loop
+    /// @notice It's necessary to reduce the amount of considering loans upon searching via loop
     function toShiftPointer() public {
         uint256 loanId = SnarkLoanLib.getLoanPointer(_storage);
         if (SnarkLoanLib.isLoanFinished(_storage, loanId) || 
@@ -317,7 +324,8 @@ contract SnarkLoan is Ownable {
     }
 
     /// @notice Retrieve a list of dates which already were occupied by future loans
-    /// @return An array of start dates and an array of end dates
+    /// @return An array of start dates 
+    /// @return An array of end dates
     function getListOfBusyDates() public view returns(uint256[] memory, uint256[] memory) {
         uint256 loanId = getLoanId();
         uint256 countOfLoans;

@@ -20,6 +20,8 @@ contract SnarkStorage is Ownable {
         _;
     }
     
+    /// @notice Contract constructor
+    /// @dev The address of the creator is placed on the list of those who are allowed to call functions of contract.
     constructor() public {
         boolStorage[keccak256(abi.encodePacked("accessAllowed", msg.sender))] = true;
     }
