@@ -1142,4 +1142,112 @@ contract('SnarkLoan', async (accounts) => {
     it("test deleteAllLoans", async () => {
         await snarktest.deleteAllLoans(100);
     });
+
+    it("add 3 loans, delete 2 the last and wait when the first finish work", async () => {
+        const _dt_n     = new Date();
+        const _year_n   = _dt_n.getFullYear();
+        const _month_n  = _dt_n.getMonth();
+        const _date_n   = _dt_n.getDate();
+        const _hours_n  = _dt_n.getHours();
+        const _min_n    = _dt_n.getMinutes();
+        const valueOfLoan = web3.utils.toWei('2', "ether");
+        
+        const l1s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 1, 0) / 1000;
+        const l1f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
+        
+        const l2s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 10) / 1000;
+        const l2f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 3, 0) / 1000;
+        
+        const l3s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 3, 10) / 1000;
+        const l3f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 4, 0) / 1000;
+        
+        let loansCount = await snarkloan.getNumberOfLoans();
+        expect(loansCount.toNumber()).to.equal(0);
+
+        await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
+        const loanId_1 = await snarktest.getMaxLoanId();
+
+        await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
+        const loanId_2 = await snarktest.getMaxLoanId();
+
+        await snarkloan.createLoan(l3s, l3f, { from: accounts[0], value: valueOfLoan });
+        const loanId_3 = await snarktest.getMaxLoanId();
+
+        loansCount = await snarkloan.getNumberOfLoans();
+        expect(loansCount.toNumber()).to.equal(3);
+
+        let pointer = await snarkloan.getLoanId();
+        expect(pointer.toNumber()).to.equal(loanId_1.toNumber());
+
+        let bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
+        expect(bottomBoundary.toNumber()).to.equal(l1s);
+
+        let topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
+        expect(topBoundary.toNumber()).to.equal(l3f);
+
+        await snarkloan.deleteLoan(loanId_2);
+        await snarkloan.deleteLoan(loanId_3);
+
+        loansCount = await snarkloan.getNumberOfLoans();
+        expect(loansCount.toNumber()).to.equal(1);
+
+        pointer = await snarkloan.getLoanId();
+        expect(pointer.toNumber()).to.equal(loanId_1.toNumber());
+
+        bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
+        expect(bottomBoundary.toNumber()).to.equal(l1s);
+
+        topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
+        expect(topBoundary.toNumber()).to.equal(l1f);
+
+        let isLoanFinished = await snarkloan.isLoanFinished(loanId_1);
+        assert.isFalse(isLoanFinished, "Loan is finished now and it's wrong");
+        
+        let isActive = await snarkloan.isLoanActive(loanId_1);
+        assert.isFalse(isActive, "Loan is finished now and it's wrong");
+
+        pause(60000);
+
+        isActive = await snarkloan.isLoanActive(loanId_1);
+        assert.isTrue(isActive, "Loan is not active now and it's wrong");
+
+        isLoanFinished = await snarkloan.isLoanFinished(loanId_1);
+        assert.isFalse(isLoanFinished, "Loan is finished now and it's wrong");
+
+        pause(60000);
+
+        isActive = await snarkloan.isLoanActive(loanId_1);
+        assert.isFalse(isActive, "Loan is active now and it's wrong");
+
+        isLoanFinished = await snarkloan.isLoanFinished(loanId_1);
+        assert.isTrue(isLoanFinished, "Loan is not finished now and it's wrong");
+
+        loansCount = await snarkloan.getNumberOfLoans();
+        expect(loansCount.toNumber()).to.equal(1);
+
+        pointer = await snarkloan.getLoanId();
+        expect(pointer.toNumber()).to.equal(0);
+
+        bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
+        expect(bottomBoundary.toNumber()).to.equal(l1s);
+
+        topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
+        expect(topBoundary.toNumber()).to.equal(l1f);
+
+        await snarkloan.createLoan(l3s, l3f, { from: accounts[0], value: valueOfLoan });
+        const loanId_4 = await snarktest.getMaxLoanId();
+
+        loansCount = await snarkloan.getNumberOfLoans();
+        expect(loansCount.toNumber()).to.equal(1);
+
+        pointer = await snarkloan.getLoanId();
+        expect(pointer.toNumber()).to.equal(loanId_4.toNumber());
+
+        bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
+        expect(bottomBoundary.toNumber()).to.equal(l3s);
+
+        topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
+        expect(topBoundary.toNumber()).to.equal(l3f);
+
+    });
 });
