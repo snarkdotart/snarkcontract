@@ -118,9 +118,8 @@ contract('Snark Logic', async (accounts) => {
         retval = await snarktest.getTotalNumberOfTokensInNotApprovedTokensForLoan(accounts[2]);
         assert.equal(retval.toNumber(), 2, "count tokens in not approved for account[1] is wrong");
 
-        // перекидываем токен с одного кошелька на другой. ожидаю, что у исходного адреса
-        // останется только один токен в не автолоане списке, т.е. будет 1. 
-        // А у второго - должно стать 3 (на один больше)
+        // we throw a token from one wallet to another. I expect that the source address will have 
+        // only one token in the non-autoloan list, i.e. will be 1. And the second - should be 3 (one more)
         await snarkerc721.transferFrom(accounts[0], accounts[1], 1, { from: accounts[0] });
 
         retval = await snarkerc721.balanceOf(accounts[0]);
