@@ -157,7 +157,6 @@ contract SnarkTestFunctions is Ownable {
     }
 
     function deleteAllLoans(uint256 countOfLoans) public onlyOwner {
-        SnarkLoanLib.setNumberOfLoans(_storage, 0);
         SnarkLoanLib.setMaxLoanId(_storage, 0);
         SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, 0);
         SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, 0);
@@ -171,6 +170,22 @@ contract SnarkTestFunctions is Ownable {
                 SnarkLoanLib.deleteLoanFromOwnerList(_storage, loanOwner, i);
             }
         }
+    }
+
+    function setMaxLoanId(uint256 maxLoanId) public onlyOwner {
+        SnarkLoanLib.setMaxLoanId(_storage, maxLoanId);
+    }
+
+    function setBottomBoundaryOfLoansPeriod(uint256 bottomBoundary) public onlyOwner {
+        SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, bottomBoundary);
+    }
+
+    function setTopBoundaryOfLoansPeriod(uint256 topBoundary) public onlyOwner {
+        SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, topBoundary);
+    }
+
+    function setLoanPointer(uint256 loanId) public onlyOwner {
+        SnarkLoanLib.setLoanPointer(_storage, loanId);
     }
 
     function updateTokens(uint256 fromTokenId, uint256 toTokenId) public onlyOwner {
