@@ -1421,7 +1421,7 @@ contract('SnarkLoan', async (accounts) => {
         let isActive = await snarkloan.isLoanActive(loanId);
         assert.isFalse(isActive, "Loan is active and it's wrong");
 
-        pause(70000);
+        pause(80000);
 
         isActive = await snarkloan.isLoanActive(loanId);
         assert.isTrue(isActive, "Loan is not active and it's wrong");
