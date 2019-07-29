@@ -34,7 +34,7 @@ contract SnarkLoan is Ownable {
     /// @param loanId Id of loan
     modifier correctLoan(uint256 loanId) {
         require(
-            loanId > 0 && loanId <= SnarkLoanLib.getNumberOfLoans(_storage), 
+            loanId > 0 && loanId <= SnarkLoanLib.getMaxLoanId(_storage), 
             "Loan id is wrong"
         );
         _;
@@ -97,7 +97,12 @@ contract SnarkLoan is Ownable {
     /// @return Id of previous loan
     /// @return Id of next loan
     /// @return Price of loan
-    function getLoanDetail(uint256 loanId) public view returns (address, uint256, uint256, uint256, uint256, uint256) {
+    function getLoanDetail(uint256 loanId) 
+        public 
+        view 
+        correctLoan(loanId) 
+        returns (address, uint256, uint256, uint256, uint256, uint256) 
+    {
         return (
             SnarkLoanLib.getOwnerOfLoan(_storage, loanId),
             SnarkLoanLib.getLoanStartDate(_storage, loanId),
@@ -139,8 +144,6 @@ contract SnarkLoan is Ownable {
         // Keep the ether in the storage contract
         if (msg.value > 0) _storage.transfer(msg.value);
 
-        // Update number of loans
-        SnarkLoanLib.setNumberOfLoans(_storage, SnarkLoanLib.getNumberOfLoans(_storage).add(1));
         // Add loan to the owner list
         SnarkLoanLib.addLoanToOwnerList(_storage, msg.sender, loanId);
 
@@ -161,21 +164,17 @@ contract SnarkLoan is Ownable {
 
     /// @notice Function of loan deleting by it's id
     /// @param loanId Id of loan
-    function deleteLoan(uint256 loanId) public onlyLoanOwnerOrSnark(loanId) {
+    function deleteLoan(uint256 loanId) public correctLoan(loanId) onlyLoanOwnerOrSnark(loanId) {
         bool isDeleted = SnarkLoanLib.isLoanDeleted(_storage, loanId);
         require(isDeleted == false, "Loan does not exist");
 
         uint256 beforeLoanId = SnarkLoanLib.getPreviousLoan(_storage, loanId);
         uint256 nextLoanId = SnarkLoanLib.getNextLoan(_storage, loanId);
-        uint256 countOfLoans = SnarkLoanLib.getNumberOfLoans(_storage);
 
         if (beforeLoanId == 0 && nextLoanId == 0) {
             SnarkLoanLib.setLoanPointer(_storage, 0);
             SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, 0);
             SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, 0);
-            if (countOfLoans > 0) {
-                SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
-            }
         }
         if (beforeLoanId == 0 && nextLoanId > 0) {
             SnarkLoanLib.setPreviousLoan(_storage, nextLoanId, 0);
@@ -185,24 +184,15 @@ contract SnarkLoan is Ownable {
             }
             uint256 bottomTime = SnarkLoanLib.getLoanStartDate(_storage, nextLoanId);
             SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, bottomTime);
-            if (countOfLoans > 0) {
-                SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
-            }
         }
         if (beforeLoanId > 0 && nextLoanId == 0) {
             SnarkLoanLib.setNextLoan(_storage, beforeLoanId, 0);
             uint256 topTime = SnarkLoanLib.getLoanEndDate(_storage, beforeLoanId);
             SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, topTime);
-            if (countOfLoans > 0) {
-                SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
-            }
         }
         if (beforeLoanId > 0 && nextLoanId > 0) {
             SnarkLoanLib.setNextLoan(_storage, beforeLoanId, nextLoanId);
             SnarkLoanLib.setPreviousLoan(_storage, nextLoanId, beforeLoanId);
-            if (countOfLoans > 0) {
-                SnarkLoanLib.setNumberOfLoans(_storage, countOfLoans.sub(1));
-            }
         }
         // Remove loan from the owner list
         address loanOwner = SnarkLoanLib.getOwnerOfLoan(_storage, loanId);
@@ -295,21 +285,21 @@ contract SnarkLoan is Ownable {
     /// @notice Allows to check if a loan is active
     /// @param loanId Id of loan
     /// @return True - if the loan is active, otherwise it returns false
-    function isLoanActive(uint256 loanId) public view returns (bool) {
+    function isLoanActive(uint256 loanId) public view correctLoan(loanId) returns (bool) {
         return SnarkLoanLib.isLoanActive(_storage, loanId);
     }
 
     /// @notice Allows to check if a loan is finished
     /// @param loanId Id of loan
     /// @return True - if the loan is finished, otherwise it returns false
-    function isLoanFinished(uint256 loanId) public view returns (bool) {
+    function isLoanFinished(uint256 loanId) public view correctLoan(loanId) returns (bool) {
         return SnarkLoanLib.isLoanFinished(_storage, loanId);
     }
 
     /// @notice Allows to check if a loan is deleted
     /// @param loanId Id of loan
     /// @return True - if the loan is deleted, otherwise it returns false
-    function isLoanDeleted(uint256 loanId) public view returns (bool) {
+    function isLoanDeleted(uint256 loanId) public view correctLoan(loanId) returns (bool) {
         return SnarkLoanLib.isLoanDeleted(_storage, loanId);
     }
 

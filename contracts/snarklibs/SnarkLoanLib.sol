@@ -36,11 +36,13 @@ library SnarkLoanLib {
     }
 
     function getNumberOfLoans(address payable storageAddress) public view returns (uint256) {
-        return SnarkStorage(storageAddress).uintStorage(keccak256("NumberOfLoans"));
-    }
-
-    function setNumberOfLoans(address payable storageAddress, uint256 newAmount) public {
-        SnarkStorage(storageAddress).setUint(keccak256("NumberOfLoans"), newAmount);
+        uint256 loansAmount = 0;
+        uint256 loanId = getLoanId(storageAddress);
+        while (loanId > 0) {
+            loansAmount = loansAmount.add(1);
+            loanId = getNextLoan(storageAddress, loanId);
+        }
+        return loansAmount;
     }
 
     function getLoanPointer(address payable storageAddress) public view returns (uint256) {
@@ -67,12 +69,7 @@ library SnarkLoanLib {
 
     function toShiftPointer(address payable storageAddress) public returns (uint256) {
         uint256 loanId = getLoanPointer(storageAddress);
-        uint256 numberOfLoans;
         while ((isLoanFinished(storageAddress, loanId) || isLoanDeleted(storageAddress, loanId)) && (loanId > 0)) {
-            numberOfLoans = getNumberOfLoans(storageAddress);
-            if (numberOfLoans > 0) {
-                setNumberOfLoans(storageAddress, numberOfLoans.sub(1));
-            }
             loanId = getLoanPointer(storageAddress);
             loanId = getNextLoan(storageAddress, loanId);
             setLoanPointer(storageAddress, loanId);
