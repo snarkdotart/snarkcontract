@@ -2,6 +2,8 @@ var SnarkERC721 = artifacts.require("SnarkERC721");
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkStorage = artifacts.require("SnarkStorage");
 
+const truffleAssert = require('truffle-assertions');
+
 const BN = web3.utils.BN;
 
 contract('SnarkERC721', async (accounts) => {
@@ -23,6 +25,7 @@ contract('SnarkERC721', async (accounts) => {
             to:     instance_storage.address, 
             value:  web3.utils.toWei('1', "ether")
         });
+
     });
 
     it("1. get size of the SnarkERC721 library", async () => {
@@ -129,113 +132,125 @@ contract('SnarkERC721', async (accounts) => {
         assert.equal(retval, tokenOwner);
     });
 
-    // it("10. test exists function", async () => {
-    //     retval = await instance_erc721.exists(6);
-    //     assert.isTrue(retval, "error on step 1");
+    it("10. test exists function", async () => {
+        retval = await instance_erc721.exists(6);
+        assert.isTrue(retval, "error on step 1");
 
-    //     retval = await instance_erc721.exists(100);
-    //     assert.isFalse(retval, "error on step 2");
-    // });
+        retval = await instance_erc721.exists(100);
+        assert.isFalse(retval, "error on step 2");
+    });
 
-    // it("11. test approve and getApproved functions", async () => {
-    //     retval = await instance_erc721.getApproved(1);
-    //     assert.equal(retval, 0, "error on step 1");
+    it("11. test approve and getApproved functions", async () => {
+        retval = await instance_erc721.getApproved(1);
+        assert.equal(retval, 0, "error on step 1");
 
-    //     await instance_erc721.approve(participants[1], 1);
+        const tx = await instance_erc721.approve(participants[1], 1);
 
-    //     retval = await instance_erc721.getApproved(1);
-    //     assert.equal(retval.toUpperCase(), participants[1].toUpperCase(), "error on step 2");
-    // });
+        truffleAssert.eventEmitted(tx, 'Approval', (ev) => {
+            return ev._owner == accounts[0] && ev._approved == participants[1] && ev._tokenId == 1;
+        });
 
-    // it("12. test setApprovalForAll and isApprovedForAll functions", async () => {
-    //     retval = await instance_erc721.isApprovedForAll(tokenOwner, participants[1]);
-    //     assert.equal(retval, false, "error on step 1");
+        retval = await instance_erc721.getApproved(1);
+        assert.equal(retval.toUpperCase(), participants[1].toUpperCase(), "error on step 2");
+    });
 
-    //     await instance_erc721.setApprovalForAll(participants[1], true);
+    it("12. test setApprovalForAll and isApprovedForAll functions", async () => {
+        retval = await instance_erc721.isApprovedForAll(tokenOwner, participants[1]);
+        assert.equal(retval, false, "error on step 1");
 
-    //     retval = await instance_erc721.isApprovedForAll(tokenOwner, participants[1]);
-    //     assert.equal(retval, true, "error on step 2");
-    // });
+        const tx = await instance_erc721.setApprovalForAll(participants[1], true);
 
-    // it("13. test transferFrom function", async () => {
-    //     const _to = accounts[1];
-    //     const _tokenId = 1;
+        truffleAssert.eventEmitted(tx, 'ApprovalForAll', (ev) => {
+            return ev._owner == tokenOwner && ev._operator == participants[1] && ev._approved == true;
+        });
 
-    //     retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
-    //     assert.equal(retval, tokenOwner, "error on step 1");
+        retval = await instance_erc721.isApprovedForAll(tokenOwner, participants[1]);
+        assert.equal(retval, true, "error on step 2");
+    });
 
-    //     const _v = web3.utils.toWei('1', 'Ether');
-    //     const tokenDetail = await instance_snarkbase.getTokenDetail(_tokenId);
+    it("13. test transferFrom function", async () => {
+        const _to = accounts[1];
+        const _tokenId = 1;
+
+        retval = await instance_erc721.ownerOf(_tokenId);
+        assert.equal(retval, tokenOwner, "error on step 1");
+
+        const _v = web3.utils.toWei('1', 'Ether');
+        const tokenDetail = await instance_snarkbase.getTokenDetail(_tokenId);
         
-    //     await instance_snarkbase.setSnarkWalletAddress(accounts[5]);
+        await instance_snarkbase.setSnarkWalletAddress(accounts[5]);
 
-    //     const snarkwalletandprofit = await instance_snarkbase.getSnarkWalletAddressAndProfit();
+        const snarkwalletandprofit = await instance_snarkbase.getSnarkWalletAddressAndProfit();
 
-    //     const numberParticipants = await instance_snarkbase.getNumberOfParticipantsForProfitShareScheme(tokenDetail.profitShareSchemeId);
-    //     const balanceOfParticipantsBeforeTransfer = [];
-    //     for (let i = 0; i < numberParticipants; i++) {
-    //         const participant = await instance_snarkbase.getParticipantOfProfitShareScheme(tokenDetail.profitShareSchemeId, i);
-    //         retval = await web3.eth.getBalance(participant[0]);
-    //         balanceOfParticipantsBeforeTransfer.push(retval);
-    //     }
+        const numberParticipants = await instance_snarkbase.getNumberOfParticipantsForProfitShareScheme(tokenDetail.profitShareSchemeId);
+        const balanceOfParticipantsBeforeTransfer = [];
+        for (let i = 0; i < numberParticipants; i++) {
+            const participant = await instance_snarkbase.getParticipantOfProfitShareScheme(tokenDetail.profitShareSchemeId, i);
+            retval = await web3.eth.getBalance(participant[0]);
+            balanceOfParticipantsBeforeTransfer.push(retval);
+        }
         
-    //     balanceOfSnarkWalletBeforeTransfer = await web3.eth.getBalance(snarkwalletandprofit.snarkWalletAddr);
-    //     balanceOfTokenOwnerBeforeTransfer = await web3.eth.getBalance(tokenOwner);
-    //     balanceOfTokenReceiverBeforeTransfer = await web3.eth.getBalance(_to);
+        balanceOfSnarkWalletBeforeTransfer = await web3.eth.getBalance(snarkwalletandprofit.snarkWalletAddr);
+        balanceOfTokenOwnerBeforeTransfer = await web3.eth.getBalance(tokenOwner);
+        balanceOfTokenReceiverBeforeTransfer = await web3.eth.getBalance(_to);
 
-    //     await instance_erc721.transferFrom(
-    //         tokenOwner, 
-    //         _to, 
-    //         _tokenId, 
-    //         { 
-    //             from: tokenOwner, 
-    //             value: _v, 
-    //         }
-    //     );
+        let tx = await instance_erc721.transferFrom(tokenOwner, _to, _tokenId, { from: tokenOwner, value: _v, });
 
-    //     const profit = (tokenDetail.lastPrice == 0) ? new BN(_v) : new BN(_v).mul(tokenDetail.profitShareFromSecondarySale).div(new BN(100));
-    //     const valueOfSnark = profit.mul(snarkwalletandprofit.platformProfit).div(new BN(100));
+        truffleAssert.eventEmitted(tx, 'Transfer', (ev) => {
+            return ev._from == tokenOwner && ev._to == _to && ev._tokenId == _tokenId;
+        });
 
-    //     balanceOfSnarkWalletAfterTransfer = await web3.eth.getBalance(snarkwalletandprofit.snarkWalletAddr);
-    //     assert.isTrue(new BN(balanceOfSnarkWalletAfterTransfer).eq(new BN(balanceOfSnarkWalletBeforeTransfer).add(valueOfSnark)), "balance of Snark isn't correct");
+        const profit = (tokenDetail.lastPrice == 0) ? new BN(_v) : new BN(_v).mul(tokenDetail.profitShareFromSecondarySale).div(new BN(100));
+        const valueOfSnark = profit.mul(snarkwalletandprofit.platformProfit).div(new BN(100));
 
-    //     for (let i = 0; i < numberParticipants; i++) {
-    //         const participant = await instance_snarkbase.getParticipantOfProfitShareScheme(tokenDetail.profitShareSchemeId, i);
-    //         const valueOfParticipant = profit.sub(valueOfSnark).mul(participant[1]).div(new BN(100));
+        balanceOfSnarkWalletAfterTransfer = await web3.eth.getBalance(snarkwalletandprofit.snarkWalletAddr);
+        assert.isTrue(new BN(balanceOfSnarkWalletAfterTransfer).eq(new BN(balanceOfSnarkWalletBeforeTransfer).add(valueOfSnark)), "balance of Snark isn't correct");
 
-    //         retval = await web3.eth.getBalance(participant[0]);            
-    //         assert.equal(retval, new BN(balanceOfParticipantsBeforeTransfer[i]).add(valueOfParticipant), "balance of participant isn't correct");
-    //     }
+        for (let i = 0; i < numberParticipants; i++) {
+            const participant = await instance_snarkbase.getParticipantOfProfitShareScheme(tokenDetail.profitShareSchemeId, i);
+            const valueOfParticipant = profit.sub(valueOfSnark).mul(participant[1]).div(new BN(100));
 
-    //     retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
-    //     assert.equal(retval, _to, "error on step 5");
-    // });
+            retval = await web3.eth.getBalance(participant[0]);            
+            assert.equal(retval, new BN(balanceOfParticipantsBeforeTransfer[i]).add(valueOfParticipant), "balance of participant isn't correct");
+        }
 
-    // it("14. test freeTransfer function behalf of contract owner", async () => {
-    //     const _from = accounts[1];
-    //     const _to = accounts[2];
-    //     const _tokenId = 1;
+        retval = await instance_erc721.ownerOf(_tokenId);
+        assert.equal(retval, _to, "error on step 5");
+    });
 
-    //     retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
-    //     assert.equal(retval, _from, "error on step 1");
+    it("14. test freeTransfer function behalf of contract owner", async () => {
+        const _from = accounts[1];
+        const _to = accounts[2];
+        const _tokenId = 1;
 
-    //     await instance_erc721.transferFrom(_from, _to, _tokenId, { from: accounts[0] });
+        retval = await instance_erc721.ownerOf(_tokenId);
+        assert.equal(retval, _from, "error on step 1");
 
-    //     retval = await instance_snarkbase.getOwnerOfToken(_tokenId);
-    //     assert.equal(retval, _to, "error on step 2");
-    // });
+        try {
+            await instance_erc721.transferFrom(_from, _to, _tokenId, { from: accounts[0] });
+        } catch (e) {
+            assert.equal(e.message, "Returned error: VM Exception while processing transaction: revert You have to be either token owner or be approved by owner -- Reason given: You have to be either token owner or be approved by owner.");
+        }
 
-    // it('15. freeTransfer - not owner can\'t call a function', async () => {
-    //     const tokenId = 1;
-    //     try {
-    //         await instance_erc721.transferFrom(accounts[2], accounts[3], tokenId, { from: accounts[3] });
-    //     } catch(err) {
-    //         assert.equal(err.message, 'Returned error: VM Exception while processing transaction: revert You have to be either token owner or be approved by owner -- Reason given: You have to be either token owner or be approved by owner.');
-    //     }
-    // });
+        retval = await instance_erc721.ownerOf(_tokenId);
+        assert.equal(retval, _from, "error on step 2");
+    });
 
-    // it('16. freeTransfer - snark can transfer token from other wallet', async () => {
-    //     const tokenId = 1;
-    //     await instance_erc721.transferFrom(accounts[2], accounts[3], tokenId, { from: accounts[0] });
-    // });
+    it('15. freeTransfer - not owner can\'t call a function', async () => {
+        const tokenId = 1;
+        try {
+            await instance_erc721.transferFrom(accounts[2], accounts[3], tokenId, { from: accounts[3] });
+        } catch(err) {
+            assert.equal(err.message, 'Returned error: VM Exception while processing transaction: revert You have to be either token owner or be approved by owner -- Reason given: You have to be either token owner or be approved by owner.');
+        }
+    });
+
+    it('16. freeTransfer - snark can\'t transfer token from other wallet', async () => {
+        const tokenId = 1;
+        try {
+            await instance_erc721.transferFrom(accounts[2], accounts[3], tokenId, { from: accounts[0] });
+        } catch (e) {
+            assert.equal(e.message, "Returned error: VM Exception while processing transaction: revert You have to be either token owner or be approved by owner -- Reason given: You have to be either token owner or be approved by owner.");
+        }
+    });
 });
