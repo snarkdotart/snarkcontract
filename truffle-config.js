@@ -1,6 +1,11 @@
+require('dotenv').config();
 var HDWalletProvider = require("truffle-hdwallet-provider");
-var SECRET_KEY='343434';
-var PROJECT_ID='343434';
+
+var DEFAULT_VALUE = '343434';
+
+var SECRET_KEY = (process.env.SECRET_KEY) ? process.env.SECRET_KEY : DEFAULT_VALUE;
+var PROJECT_ID = (process.env.PROJECT_ID) ? process.env.PROJECT_ID : DEFAULT_VALUE;
+var ETHERSCAN_KEY = (process.env.ETHERSCAN_KEY) ? process.env.ETHERSCAN_KEY : DEFAULT_VALUE;
 
 module.exports = {
     networks: {
@@ -44,5 +49,11 @@ module.exports = {
                 }
             }
         },
+    },
+    plugins: [
+        'truffle-plugin-verify'
+    ],
+    api_keys: {
+        etherscan: ETHERSCAN_KEY
     },
 };
