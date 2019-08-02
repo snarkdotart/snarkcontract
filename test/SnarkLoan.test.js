@@ -3,8 +3,8 @@ var SnarkBase = artifacts.require("SnarkBase");
 var SnarkStorage = artifacts.require("SnarkStorage");
 var SnarkTestFunctions = artifacts.require("SnarkTestFunctions");
 var SnarkERC721 = artifacts.require("SnarkERC721");
-
-const BN = web3.utils.BN;
+var truffleAssert = require('truffle-assertions');
+var BN = web3.utils.BN;
 
 function pause(millis) {
     var date = Date.now();
@@ -46,17 +46,17 @@ contract('SnarkLoan', async (accounts) => {
         });
     });
 
-    it("get size of the SnarkLoan library", async () => {
-        const bytecode = snarkloan.constructor._json.bytecode;
-        const deployed = snarkloan.constructor._json.deployedBytecode;
-        const sizeOfB = bytecode.length / 2;
-        const sizeOfD = deployed.length / 2;
-        console.log("size of bytecode in bytes = ", sizeOfB);
-        console.log("size of deployed in bytes = ", sizeOfD);
-        console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
-    });
+    // it("size of the SnarkLoan library", async () => {
+    //     const bytecode = snarkloan.constructor._json.bytecode;
+    //     const deployed = snarkloan.constructor._json.deployedBytecode;
+    //     const sizeOfB = bytecode.length / 2;
+    //     const sizeOfD = deployed.length / 2;
+    //     console.log("size of bytecode in bytes = ", sizeOfB);
+    //     console.log("size of deployed in bytes = ", sizeOfD);
+    //     console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
+    // });
 
-    it("test create loan", async () => {
+    it("1. test create loan", async () => {
         const valueOfLoan = web3.utils.toWei('1', "ether");
 
         // check that there are not any loans
@@ -79,7 +79,7 @@ contract('SnarkLoan', async (accounts) => {
         expect(bottomBoundary.toNumber()).to.equal(0);
 
         let findplace = await snarktest.findPosition(loan_1_start, loan_1_finish);
-        console.log(`find position for loan 1: ${JSON.stringify(findplace)}`);
+        // console.log(`find position for loan 1: ${JSON.stringify(findplace)}`);
 
         // check a number of loans in the owner list before adding a new one
         let numberOfOwnerLoans = await snarkloan.getCountOfOwnerLoans(accounts[0]);
@@ -173,7 +173,7 @@ contract('SnarkLoan', async (accounts) => {
 
         // prepare to add of the second loan which will not overlap with the first one
         findplace = await snarktest.findPosition(loan_2_start, loan_2_finish);
-        console.log(`find position for loan 2: ${JSON.stringify(findplace)}`);
+        // console.log(`find position for loan 2: ${JSON.stringify(findplace)}`);
 
         let busyDates = await snarkloan.getListOfBusyDates();
         expect(busyDates[0]).to.have.lengthOf(1);
@@ -207,7 +207,7 @@ contract('SnarkLoan', async (accounts) => {
 
         // add 3rd loan which should be between 2nd and 1st loans
         findplace = await snarktest.findPosition(loan_3_start, loan_3_finish);
-        console.log(`find position for loan 3: ${JSON.stringify(findplace)}`);
+        // console.log(`find position for loan 3: ${JSON.stringify(findplace)}`);
 
         busyDates = await snarkloan.getListOfBusyDates();
         expect(busyDates[0]).to.have.lengthOf(2);
@@ -244,7 +244,7 @@ contract('SnarkLoan', async (accounts) => {
         // add 4th loan which has to become the first in the list
         // and the pointer has to shift to it
         findplace = await snarktest.findPosition(loan_4_start, loan_4_finish);
-        console.log(`find position for loan 4: ${JSON.stringify(findplace)}`);
+        // console.log(`find position for loan 4: ${JSON.stringify(findplace)}`);
 
         busyDates = await snarkloan.getListOfBusyDates();
         expect(busyDates[0]).to.have.lengthOf(3);
@@ -280,7 +280,7 @@ contract('SnarkLoan', async (accounts) => {
         // add 5th loan to the last position
         // despite that, the pointer has not to be changed
         findplace = await snarktest.findPosition(loan_5_start, loan_5_finish);
-        console.log(`find position for loan 5: ${JSON.stringify(findplace)}`);
+        // console.log(`find position for loan 5: ${JSON.stringify(findplace)}`);
 
         busyDates = await snarkloan.getListOfBusyDates();
         expect(busyDates[0]).to.have.lengthOf(4);
@@ -350,7 +350,7 @@ contract('SnarkLoan', async (accounts) => {
         expect(busyDates[1][4].eq(new BN(loan_5_finish))).to.be.true;
     });
 
-    it("test delete of loan", async () => {
+    it("2. test delete of loan", async () => {
         // check if we still have 5 loans
         let countOfLoans = await snarkloan.getNumberOfLoans();
         expect(countOfLoans.toNumber()).to.equal(5);
@@ -535,7 +535,7 @@ contract('SnarkLoan', async (accounts) => {
         expect(busyDates[1]).to.have.lengthOf(0);
     });
 
-    it('test creating a loan with the same data as a deleted one', async () => {
+    it("3. test creating a loan with the same data as a deleted one", async () => {
         pointer = await snarkloan.getLoanId();
         expect(pointer.toNumber()).to.equal(0);
 
@@ -570,7 +570,7 @@ contract('SnarkLoan', async (accounts) => {
         expect(loanId.toNumber()).to.equal(0);
     });
 
-    it("test deleting the last loan when a pointer to points on it", async () => {
+    it("4. test deleting the last loan when a pointer to points on it", async () => {
         const _dt_n     = new Date();
         const _year_n   = _dt_n.getFullYear();
         const _month_n  = _dt_n.getMonth();
@@ -635,7 +635,7 @@ contract('SnarkLoan', async (accounts) => {
 
     });
 
-    it("test ApprovedTokensForLoan array", async () => {
+    it("5. test ApprovedTokensForLoan array", async () => {
         let countOfTokens = await snarktest.getTotalNumberOfTokensInApprovedTokensForLoan();
         assert.equal(countOfTokens, 1, "error on step 1");
                         //  0  1  2  3  4  5  6
@@ -717,7 +717,7 @@ contract('SnarkLoan', async (accounts) => {
         await snarktest.deleteTokenFromApprovedListForLoan(54);
     });
 
-    it("test new logic of loan", async () => {
+    it("6. test new logic of loan", async () => {
         // until this time here has to exist 2 tokens where one of them has to be in a list of approve
         let totalSupply = await snarkerc721.totalSupply();
         assert.equal(totalSupply, 2, "total supply is wrong");
@@ -926,7 +926,7 @@ contract('SnarkLoan', async (accounts) => {
         
     });
 
-    it("test of loan shifting by time", async () => {
+    it("7. test of loan shifting by time", async () => {
         let loanId = await snarkloan.getLoanId();
         expect(loanId.toNumber()).to.equal(0);
 
@@ -953,56 +953,63 @@ contract('SnarkLoan', async (accounts) => {
         // create a first loan which has to start in a minute
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
-        console.log(`before, Bottom boundary: ${bottomBoundary}, Top boundary: ${topBoundary}`);
-        console.log(`Find position: ${ JSON.stringify(await snarktest.findPosition(l1s, l1f)) }`);
+        // console.log(`before, Bottom boundary: ${bottomBoundary}, Top boundary: ${topBoundary}`);
+        // console.log(`Find position: ${ JSON.stringify(await snarktest.findPosition(l1s, l1f)) }`);
 
-        await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
+        tx = await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
         const loanId_1 = await snarktest.getMaxLoanId();
-        console.log(`LoanId of 1st loan: ${ loanId_1 }`);
+        truffleAssert.eventEmitted(tx, 'LoanCreated', (ev) => {
+            return ev.loanOwner == accounts[0] && ev.loanId.eq(loanId_1);
+        });
+
+        // console.log(`LoanId of 1st loan: ${ loanId_1 }`);
 
         pointer = await snarktest.getLoanPointer();
-        console.log(`Loan Pointer before start loan 1: ${ pointer }`);
+        // console.log(`Loan Pointer before start loan 1: ${ pointer }`);
         
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
-        console.log(`after, Bottom boundary: ${bottomBoundary}, Top boundary: ${topBoundary}`);
+        // console.log(`after, Bottom boundary: ${bottomBoundary}, Top boundary: ${topBoundary}`);
 
         isLoanFinished = await snarkloan.isLoanFinished(loanId_1);
         assert.isFalse(isLoanFinished, "Loan 1 is finished now and it's wrong");
 
         loanDetail = await snarkloan.getLoanDetail(loanId_1);
-        console.log(`
-            Start date: ${ new BN(loanDetail[1]).toNumber() },
-            End date: ${ new BN(loanDetail[2]).toNumber() },
-            Previous loanId: ${ loanDetail[3] },
-            Next loanId: ${ loanDetail[4] },
-        `);
+        // console.log(`
+        //     Start date: ${ new BN(loanDetail[1]).toNumber() },
+        //     End date: ${ new BN(loanDetail[2]).toNumber() },
+        //     Previous loanId: ${ loanDetail[3] },
+        //     Next loanId: ${ loanDetail[4] },
+        // `);
 
-        // check if a position is right\
-        console.log(`Find position: ${ JSON.stringify(await snarktest.findPosition(l2s, l2f)) }`);
+        // check if a position is right
+        // console.log(`Find position: ${ JSON.stringify(await snarktest.findPosition(l2s, l2f)) }`);
         
         // create a second loan which has to start in 3 minutes
-        await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
+        tx = await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
         const loanId_2 = await snarktest.getMaxLoanId();
-        console.log(`LoanId of 2nd loan: ${ loanId_2 }`);
+        truffleAssert.eventEmitted(tx, 'LoanCreated', (ev) => {
+            return ev.loanOwner == accounts[0] && ev.loanId.eq(loanId_2);
+        });
+        // console.log(`LoanId of 2nd loan: ${ loanId_2 }`);
 
         pointer = await snarktest.getLoanPointer();
-        console.log(`Loan Pointer before start loan 2: ${ pointer }`);
+        // console.log(`Loan Pointer before start loan 2: ${ pointer }`);
 
         bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
-        console.log(`after, Bottom boundary: ${bottomBoundary}, Top boundary: ${topBoundary}`);
+        // console.log(`after, Bottom boundary: ${bottomBoundary}, Top boundary: ${topBoundary}`);
 
         isLoanFinished = await snarkloan.isLoanFinished(loanId_2);
         assert.isFalse(isLoanFinished, "Loan 2 is finished now and it's wrong");
 
         loanDetail = await snarkloan.getLoanDetail(loanId_2);
-        console.log(`
-            Start date: ${ new BN(loanDetail[1]).toNumber() },
-            End date: ${ new BN(loanDetail[2]).toNumber() },
-            Previous loanId: ${ loanDetail[3] },
-            Next loanId: ${ loanDetail[4] }
-        `);
+        // console.log(`
+        //     Start date: ${ new BN(loanDetail[1]).toNumber() },
+        //     End date: ${ new BN(loanDetail[2]).toNumber() },
+        //     Previous loanId: ${ loanDetail[3] },
+        //     Next loanId: ${ loanDetail[4] }
+        // `);
 
         // check if the loan was created
         countOfLoans = await snarkloan.getNumberOfLoans();
@@ -1018,7 +1025,7 @@ contract('SnarkLoan', async (accounts) => {
         assert.isTrue(isActive, "Loan is not active and it's wrong");
 
         pointer = await snarktest.getLoanPointer();
-        console.log(`Loan Pointer after start loan: ${ pointer }`);
+        // console.log(`Loan Pointer after start loan: ${ pointer }`);
 
         loanId = await snarkloan.getLoanId();
         expect(loanId.toNumber()).to.equal(loanId_1.toNumber());
@@ -1039,7 +1046,7 @@ contract('SnarkLoan', async (accounts) => {
 
     });
 
-    it("test duration of a loan upon creation one", async () => {
+    it("8. test duration of a loan upon creation one", async () => {
 
         const duration = await snarkloan.getDefaultLoanDuration();
         expect(duration.toNumber()).to.equal(1);
@@ -1054,12 +1061,12 @@ contract('SnarkLoan', async (accounts) => {
         const l1s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 10, 0) / 1000;
         const l1f = new Date(_year_n, _month_n, _date_n + 1, _hours_n, _min_n + 10, 0) / 1000;
 
-        console.log(`1. s: ${l1s}, f: ${l1f}, f-s=${l1f - l1s}`);
+        // console.log(`1. s: ${l1s}, f: ${l1f}, f-s=${l1f - l1s}`);
         
         const l2s  = new Date(_year_n, _month_n, _date_n + 1, _hours_n, _min_n + 10, 0) / 1000;
         const l2f = new Date(_year_n, _month_n, _date_n + 2, _hours_n, _min_n + 11, 0) / 1000;
 
-        console.log(`1. s: ${l2s}, f: ${l2f}, f-s=${l2f - l2s}`);
+        // console.log(`1. s: ${l2s}, f: ${l2f}, f-s=${l2f - l2s}`);
 
         const valueOfLoan = web3.utils.toWei('2', "ether");
 
@@ -1072,7 +1079,7 @@ contract('SnarkLoan', async (accounts) => {
         }
     });
 
-    it("test overlapping of loans", async () => {
+    it("9. test overlapping of loans", async () => {
         const _dt_n     = new Date();
         const _year_n   = _dt_n.getFullYear();
         const _month_n  = _dt_n.getMonth();
@@ -1101,42 +1108,42 @@ contract('SnarkLoan', async (accounts) => {
         const valueOfLoan = web3.utils.toWei('2', "ether");
 
         await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
-        console.log(`Loan #1 was successfully created`);
+        // console.log(`Loan #1 was successfully created`);
         await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
-        console.log(`Loan #2 was successfully created`);
+        // console.log(`Loan #2 was successfully created`);
         await snarkloan.createLoan(l3s, l3f, { from: accounts[0], value: valueOfLoan });
-        console.log(`Loan #3 was successfully created`);
+        // console.log(`Loan #3 was successfully created`);
         
         try {
             await snarkloan.createLoan(l4s, l4f, { from: accounts[0], value: valueOfLoan });
         } catch (e) {
-            console.log(`An exception occurred upon creation of Loan #4`);
+            // console.log(`An exception occurred upon creation of Loan #4`);
             expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert Selected period has not to crossed with existing loans -- Reason given: Selected period has not to crossed with existing loans.');
         }
 
         try {
             await snarkloan.createLoan(l5s, l5f, { from: accounts[0], value: valueOfLoan });
         } catch (e) {
-            console.log(`An exception occurred upon creation of Loan #5`);
+            // console.log(`An exception occurred upon creation of Loan #5`);
             expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert Selected period has not to crossed with existing loans -- Reason given: Selected period has not to crossed with existing loans.');
         }
 
         try {
             await snarkloan.createLoan(l6s, l6f, { from: accounts[0], value: valueOfLoan });
         } catch (e) {
-            console.log(`An exception occurred upon creation of Loan #6`);
+            // console.log(`An exception occurred upon creation of Loan #6`);
             expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert Selected period has not to crossed with existing loans -- Reason given: Selected period has not to crossed with existing loans.');
         }
         
     });
 
-    it("test deleteAllLoans", async () => {
+    it("10. test deleteAllLoans", async () => {
         await snarktest.deleteAllLoans(100);
     });
 
-    it("add 3 loans, delete 2 the last after the first one is finished", async () => {
+    it("11. add 3 loans, delete 2 the last after the first one is finished", async () => {
         await snarkbase.createProfitShareScheme(accounts[0], [accounts[1], accounts[2]], [20, 80]);
-        let profitSchemeId = await snarkbase.getProfitShareSchemesTotalCount();
+        // let profitSchemeId = await snarkbase.getProfitShareSchemesTotalCount();
 
         const _dt_n     = new Date();
         const _year_n   = _dt_n.getFullYear();
@@ -1271,7 +1278,7 @@ contract('SnarkLoan', async (accounts) => {
 
     });
 
-    it("sell token after a loan creation", async () => {
+    it("12. sell token after a loan creation", async () => {
         
         let tokensAmount = await snarkerc721.balanceOf(accounts[0]);
         expect(tokensAmount.toNumber()).to.equal(2);
@@ -1318,7 +1325,7 @@ contract('SnarkLoan', async (accounts) => {
         loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
         expect(loansCount.toNumber()).to.equal(1);
 
-        pause(70000);
+        pause(60000);
 
         isActive = await snarkloan.isLoanActive(loanId);
         assert.isTrue(isActive, "Loan is not active and it's wrong");
@@ -1343,8 +1350,17 @@ contract('SnarkLoan', async (accounts) => {
             expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert User has to have at least one token -- Reason given: User has to have at least one token.');
         }
 
-        await snarkerc721.transferFrom(accounts[1], accounts[0], 1, { from: accounts[1] });
-        await snarkerc721.transferFrom(accounts[1], accounts[0], 2, { from: accounts[1] });
+        tx = await snarkerc721.transferFrom(accounts[1], accounts[0], 1, { from: accounts[1] });
+
+        truffleAssert.eventEmitted(tx, 'Transfer', (ev) => {
+            return ev._from == accounts[1] && ev._to == accounts[0] && ev._tokenId == 1;
+        });
+
+        tx = await snarkerc721.transferFrom(accounts[1], accounts[0], 2, { from: accounts[1] });
+
+        truffleAssert.eventEmitted(tx, 'Transfer', (ev) => {
+            return ev._from == accounts[1] && ev._to == accounts[0] && ev._tokenId == 2;
+        });
 
         tokensAmount = await snarkerc721.balanceOf(accounts[0]);
         expect(tokensAmount.toNumber()).to.equal(2);
@@ -1355,7 +1371,11 @@ contract('SnarkLoan', async (accounts) => {
         const lfs = loan_1_start + 10000;
         const lff = loan_1_finish + 10000;
         
-        await snarkloan.createLoan(lfs, lff, { from: accounts[0], value: valueOfLoan });
+        tx = await snarkloan.createLoan(lfs, lff, { from: accounts[0], value: valueOfLoan });
+
+        truffleAssert.eventEmitted(tx, 'LoanCreated', (ev) => {
+            return ev.loanOwner == accounts[1] && ev.loanId.eq(2);
+        });
 
         loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
         expect(loansCount.toNumber()).to.equal(1);
@@ -1371,7 +1391,11 @@ contract('SnarkLoan', async (accounts) => {
         topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
         expect(topBoundary.toNumber()).to.equal(lff);
 
-        await snarkloan.deleteLoan(loanId);
+        tx = await snarkloan.deleteLoan(loanId);
+
+        truffleAssert.eventEmitted(tx, 'LoanDeleted', (ev) => {
+            return ev.loanId == loanId;
+        });
 
         loansCount = await snarkloan.getNumberOfLoans();
         expect(loansCount.toNumber()).to.equal(0);
@@ -1387,122 +1411,122 @@ contract('SnarkLoan', async (accounts) => {
 
     });
 
-    it("sell token during a loan working", async () => {
-        let tokensAmount = await snarkerc721.balanceOf(accounts[0]);
-        expect(tokensAmount.toNumber()).to.equal(2);
+    // it("13. sell token during a loan working", async () => {
+    //     let tokensAmount = await snarkerc721.balanceOf(accounts[0]);
+    //     expect(tokensAmount.toNumber()).to.equal(2);
 
-        tokensAmount = await snarkerc721.balanceOf(accounts[1]);
-        expect(tokensAmount.toNumber()).to.equal(2);
+    //     tokensAmount = await snarkerc721.balanceOf(accounts[1]);
+    //     expect(tokensAmount.toNumber()).to.equal(2);
 
-        let totalSupply = await snarkerc721.totalSupply();
-        assert.equal(totalSupply, 4, "total supply is wrong");
+    //     let totalSupply = await snarkerc721.totalSupply();
+    //     assert.equal(totalSupply, 4, "total supply is wrong");
 
-        let loansCount = await snarkloan.getNumberOfLoans();
-        expect(loansCount.toNumber()).to.equal(0);
+    //     let loansCount = await snarkloan.getNumberOfLoans();
+    //     expect(loansCount.toNumber()).to.equal(0);
 
-        const _dt_n     = new Date();
-        const _year_n   = _dt_n.getFullYear();
-        const _month_n  = _dt_n.getMonth();
-        const _date_n   = _dt_n.getDate();
-        const _hours_n  = _dt_n.getHours();
-        const _min_n    = _dt_n.getMinutes();
-        const l1s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 1, 0) / 1000;
-        const l1f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
+    //     const _dt_n     = new Date();
+    //     const _year_n   = _dt_n.getFullYear();
+    //     const _month_n  = _dt_n.getMonth();
+    //     const _date_n   = _dt_n.getDate();
+    //     const _hours_n  = _dt_n.getHours();
+    //     const _min_n    = _dt_n.getMinutes();
+    //     const l1s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 1, 0) / 1000;
+    //     const l1f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
 
-        const valueOfLoan = web3.utils.toWei('2', "ether");
+    //     const valueOfLoan = web3.utils.toWei('2', "ether");
 
-        await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
+    //     await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
 
-        let loanId = await snarktest.getMaxLoanId();
+    //     let loanId = await snarktest.getMaxLoanId();
 
-        loansCount = await snarkloan.getNumberOfLoans();
-        expect(loansCount.toNumber()).to.equal(1);
+    //     loansCount = await snarkloan.getNumberOfLoans();
+    //     expect(loansCount.toNumber()).to.equal(1);
 
-        let isActive = await snarkloan.isLoanActive(loanId);
-        assert.isFalse(isActive, "Loan is active and it's wrong");
+    //     let isActive = await snarkloan.isLoanActive(loanId);
+    //     assert.isFalse(isActive, "Loan is active and it's wrong");
 
-        pause(80000);
+    //     pause(80000);
 
-        isActive = await snarkloan.isLoanActive(loanId);
-        assert.isTrue(isActive, "Loan is not active and it's wrong");
+    //     isActive = await snarkloan.isLoanActive(loanId);
+    //     assert.isTrue(isActive, "Loan is not active and it's wrong");
 
-        tokensAmount = await snarkerc721.balanceOf(accounts[0]);
-        expect(tokensAmount.toNumber()).to.equal(3);
+    //     tokensAmount = await snarkerc721.balanceOf(accounts[0]);
+    //     expect(tokensAmount.toNumber()).to.equal(3);
 
-        await snarkerc721.transferFrom(accounts[0], accounts[1], 1, { from: accounts[0] });
-        await snarkerc721.transferFrom(accounts[0], accounts[1], 2, { from: accounts[0] });
+    //     await snarkerc721.transferFrom(accounts[0], accounts[1], 1, { from: accounts[0] });
+    //     await snarkerc721.transferFrom(accounts[0], accounts[1], 2, { from: accounts[0] });
 
-        tokensAmount = await snarkerc721.balanceOf(accounts[0]);
-        expect(tokensAmount.toNumber()).to.equal(2);
+    //     tokensAmount = await snarkerc721.balanceOf(accounts[0]);
+    //     expect(tokensAmount.toNumber()).to.equal(2);
 
-        tokensAmount = await snarkerc721.balanceOf(accounts[1]);
-        expect(tokensAmount.toNumber()).to.equal(4);
+    //     tokensAmount = await snarkerc721.balanceOf(accounts[1]);
+    //     expect(tokensAmount.toNumber()).to.equal(4);
 
-        totalSupply = await snarkerc721.totalSupply();
-        assert.equal(totalSupply, 4, "total supply is wrong");
+    //     totalSupply = await snarkerc721.totalSupply();
+    //     assert.equal(totalSupply, 4, "total supply is wrong");
         
-        loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
-        expect(loansCount.toNumber()).to.equal(1);
+    //     loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
+    //     expect(loansCount.toNumber()).to.equal(1);
 
-        pause(60000);
+    //     pause(60000);
 
-        isActive = await snarkloan.isLoanActive(loanId);
-        assert.isFalse(isActive, "Loan is not active and it's wrong");
+    //     isActive = await snarkloan.isLoanActive(loanId);
+    //     assert.isFalse(isActive, "Loan is not active and it's wrong");
 
-        tokensAmount = await snarkerc721.balanceOf(accounts[0]);
-        expect(tokensAmount.toNumber()).to.equal(0);
+    //     tokensAmount = await snarkerc721.balanceOf(accounts[0]);
+    //     expect(tokensAmount.toNumber()).to.equal(0);
 
-        loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
-        expect(loansCount.toNumber()).to.equal(0);
+    //     loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
+    //     expect(loansCount.toNumber()).to.equal(0);
 
-        try {
-            await snarkloan.createLoan(loan_1_start + 10000, loan_1_finish + 10000, { from: accounts[0], value: valueOfLoan });
-        } catch(e) {
-            expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert User has to have at least one token -- Reason given: User has to have at least one token.');
-        }
+    //     try {
+    //         await snarkloan.createLoan(loan_1_start + 10000, loan_1_finish + 10000, { from: accounts[0], value: valueOfLoan });
+    //     } catch(e) {
+    //         expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert User has to have at least one token -- Reason given: User has to have at least one token.');
+    //     }
 
-        await snarkerc721.transferFrom(accounts[1], accounts[0], 1, { from: accounts[1] });
-        await snarkerc721.transferFrom(accounts[1], accounts[0], 2, { from: accounts[1] });
+    //     await snarkerc721.transferFrom(accounts[1], accounts[0], 1, { from: accounts[1] });
+    //     await snarkerc721.transferFrom(accounts[1], accounts[0], 2, { from: accounts[1] });
 
-        tokensAmount = await snarkerc721.balanceOf(accounts[0]);
-        expect(tokensAmount.toNumber()).to.equal(2);
+    //     tokensAmount = await snarkerc721.balanceOf(accounts[0]);
+    //     expect(tokensAmount.toNumber()).to.equal(2);
 
-        tokensAmount = await snarkerc721.balanceOf(accounts[1]);
-        expect(tokensAmount.toNumber()).to.equal(2);
+    //     tokensAmount = await snarkerc721.balanceOf(accounts[1]);
+    //     expect(tokensAmount.toNumber()).to.equal(2);
 
-        const lfs = loan_1_start + 10000;
-        const lff = loan_1_finish + 10000;
+    //     const lfs = loan_1_start + 10000;
+    //     const lff = loan_1_finish + 10000;
 
-        await snarkloan.createLoan(lfs, lff, { from: accounts[0], value: valueOfLoan });
+    //     await snarkloan.createLoan(lfs, lff, { from: accounts[0], value: valueOfLoan });
 
-        loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
-        expect(loansCount.toNumber()).to.equal(1);
+    //     loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
+    //     expect(loansCount.toNumber()).to.equal(1);
 
-        loansCount = await snarkloan.getNumberOfLoans();
-        expect(loansCount.toNumber()).to.equal(1);
+    //     loansCount = await snarkloan.getNumberOfLoans();
+    //     expect(loansCount.toNumber()).to.equal(1);
 
-        loanId = await snarkloan.getLoanId();
+    //     loanId = await snarkloan.getLoanId();
 
-        bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
-        expect(bottomBoundary.toNumber()).to.equal(lfs);
+    //     bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
+    //     expect(bottomBoundary.toNumber()).to.equal(lfs);
 
-        topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
-        expect(topBoundary.toNumber()).to.equal(lff);
+    //     topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
+    //     expect(topBoundary.toNumber()).to.equal(lff);
 
-        await snarkloan.deleteLoan(loanId);
+    //     await snarkloan.deleteLoan(loanId);
 
-        loansCount = await snarkloan.getNumberOfLoans();
-        expect(loansCount.toNumber()).to.equal(0);
+    //     loansCount = await snarkloan.getNumberOfLoans();
+    //     expect(loansCount.toNumber()).to.equal(0);
 
-        loanId = await snarkloan.getLoanId();
-        expect(loanId.toNumber()).to.equal(0);
+    //     loanId = await snarkloan.getLoanId();
+    //     expect(loanId.toNumber()).to.equal(0);
 
-        bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
-        expect(bottomBoundary.toNumber()).to.equal(0);
+    //     bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
+    //     expect(bottomBoundary.toNumber()).to.equal(0);
 
-        topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
-        expect(topBoundary.toNumber()).to.equal(0);
+    //     topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
+    //     expect(topBoundary.toNumber()).to.equal(0);
 
-    });
+    // });
 
 });

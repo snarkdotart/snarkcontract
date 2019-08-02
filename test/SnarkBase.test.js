@@ -1,6 +1,6 @@
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkERC721 = artifacts.require("SnarkERC721");
-const BN = web3.utils.BN;
+var BN = web3.utils.BN;
 
 contract('SnarkBase', async (accounts) => {
 
@@ -11,17 +11,17 @@ contract('SnarkBase', async (accounts) => {
         instanceERC721 = await SnarkERC721.deployed();
     });
 
-    it("1. get size of the SnarkBase contract", async () => {
-        const bytecode = instance.constructor._json.bytecode;
-        const deployed = instance.constructor._json.deployedBytecode;
-        const sizeOfB = bytecode.length / 2;
-        const sizeOfD = deployed.length / 2;
-        console.log("size of bytecode in bytes = ", sizeOfB);
-        console.log("size of deployed in bytes = ", sizeOfD);
-        console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
-    });
+    // it("size of the SnarkBase contract", async () => {
+    //     const bytecode = instance.constructor._json.bytecode;
+    //     const deployed = instance.constructor._json.deployedBytecode;
+    //     const sizeOfB = bytecode.length / 2;
+    //     const sizeOfD = deployed.length / 2;
+    //     console.log("size of bytecode in bytes = ", sizeOfB);
+    //     console.log("size of deployed in bytes = ", sizeOfD);
+    //     console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
+    // });
 
-    it("2. test ProfitShareScheme's functions", async () => {
+    it("1. test ProfitShareScheme's functions", async () => {
         const participants = [
             '0xC04691B99EB731536E35F375ffC85249Ec713597', 
             '0xCB1C59F74C2ac63200c673B98449D8D00bb711BB'
@@ -61,7 +61,7 @@ contract('SnarkBase', async (accounts) => {
         assert.equal(retval.toNumber(), 2, "error on step 5");
     });
 
-    it("3. test addToken function", async () => {
+    it("2. test addToken function", async () => {
         const artist = accounts[5];
         const tokenHash = web3.utils.sha3("tokenHash");
         const limitedEdition = 10;
@@ -136,7 +136,7 @@ contract('SnarkBase', async (accounts) => {
         assert.equal(retval.toNumber(), 10, "error on step 8");
     });
 
-    it("4. test changeProfitShareSchemeForToken function", async () => {
+    it("3. test changeProfitShareSchemeForToken function", async () => {
         const participants_prev = [
             '0xC04691B99EB731536E35F375ffC85249Ec713597', 
             '0xCB1C59F74C2ac63200c673B98449D8D00bb711BB'
@@ -204,7 +204,7 @@ contract('SnarkBase', async (accounts) => {
         assert.equal(retval[3].toLowerCase(), participants[2].toLowerCase(), "error on step 11");
     });
 
-    it("5. test of getListOfAllArtists function", async () => {
+    it("4. test of getListOfAllArtists function", async () => {
         const artist1 = accounts[0];
         const artist2 = accounts[1];
         const artist3 = accounts[2];
@@ -348,7 +348,7 @@ contract('SnarkBase', async (accounts) => {
 
     });
 
-    it('6. check saving auto LoanRequest from Snark and Others', async () => {
+    it("5. check saving auto LoanRequest from Snark and Others", async () => {
         const tokenId = 1;
 
         const isAgreeForSnarkAndOthers = await instance.isTokenAcceptOfLoanRequest(tokenId);
@@ -357,7 +357,7 @@ contract('SnarkBase', async (accounts) => {
         assert.notEqual(retval, isAgreeForSnarkAndOthers, 'error for Snark');
     });
 
-    it("test setLinkDropPrice function", async () => {
+    it("6. test setLinkDropPrice function", async () => {
         const newPrice = web3.utils.toWei("3", "ether");
         const tokenCount = await instanceERC721.totalSupply();
         expect(tokenCount.toNumber()).to.be.above(0);

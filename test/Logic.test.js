@@ -20,7 +20,7 @@ contract('Snark Logic', async (accounts) => {
         snarktest = await SnarkTestFunctions.deployed();
     });
 
-    it("test loan list functions", async () => {
+    it("1. test loan list functions", async () => {
         await snarkbase.changeRestrictAccess(false);
         
         for (let i = 0; i < 3; i++) {

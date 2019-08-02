@@ -1,10 +1,8 @@
 var SnarkERC721 = artifacts.require("SnarkERC721");
 var SnarkBase = artifacts.require("SnarkBase");
 var SnarkStorage = artifacts.require("SnarkStorage");
-
-const truffleAssert = require('truffle-assertions');
-
-const BN = web3.utils.BN;
+var truffleAssert = require('truffle-assertions');
+var BN = web3.utils.BN;
 
 contract('SnarkERC721', async (accounts) => {
 
@@ -28,31 +26,31 @@ contract('SnarkERC721', async (accounts) => {
 
     });
 
-    it("1. get size of the SnarkERC721 library", async () => {
-        const bytecode = instance_erc721.constructor._json.bytecode;
-        const deployed = instance_erc721.constructor._json.deployedBytecode;
-        const sizeOfB = bytecode.length / 2;
-        const sizeOfD = deployed.length / 2;
-        console.log("size of bytecode in bytes = ", sizeOfB);
-        console.log("size of deployed in bytes = ", sizeOfD);
-        console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
-    });
+    // it("size of the SnarkERC721 library", async () => {
+    //     const bytecode = instance_erc721.constructor._json.bytecode;
+    //     const deployed = instance_erc721.constructor._json.deployedBytecode;
+    //     const sizeOfB = bytecode.length / 2;
+    //     const sizeOfD = deployed.length / 2;
+    //     console.log("size of bytecode in bytes = ", sizeOfB);
+    //     console.log("size of deployed in bytes = ", sizeOfD);
+    //     console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
+    // });
 
-    it("2. test name function", async () => {
+    it("1. test name function", async () => {
         const _name = '89 seconds Atomized';
 
         let retval = await instance_erc721.name();
         assert.equal(retval, _name);
     });
 
-    it("3. test symbol function", async () => {
+    it("2. test symbol function", async () => {
         const _symbol = 'SNP001';
 
         retval = await instance_erc721.symbol();
         assert.equal(retval, _symbol);
     });
 
-    it("4. test tokenURL function", async () => {
+    it("3. test tokenURL function", async () => {
         // ------ PREPARING FOR TEST ------
 
         // add profit share scheme
@@ -101,22 +99,22 @@ contract('SnarkERC721', async (accounts) => {
         assert.equal(retval, decorUrl, "error on step 5");
     });
 
-    it("5. test totalSupply function", async () => {
+    it("4. test totalSupply function", async () => {
         retval = await instance_erc721.totalSupply();
         assert.equal(retval.toNumber(), 10);
     });
 
-    it("6. test tokenOfOwnerByIndex function", async () => {
+    it("5. test tokenOfOwnerByIndex function", async () => {
         retval = await instance_erc721.tokenOfOwnerByIndex(tokenOwner, 2);
         assert.equal(retval.toNumber(), 3);
     });
 
-    it("7. test tokenByIndex function", async () => {
+    it("6. test tokenByIndex function", async () => {
         retval = await instance_erc721.tokenByIndex(0);
         assert.equal(retval.toNumber(), 1);
     });
 
-    it("8. test balanceOf function", async () => {
+    it("7. test balanceOf function", async () => {
         retval = await instance_erc721.balanceOf(tokenOwner);
         assert.equal(retval.toNumber(), 10, "error on step 1");
 
@@ -127,12 +125,12 @@ contract('SnarkERC721', async (accounts) => {
         assert.equal(retval.toNumber(), 0, "error on step 3");        
     });
 
-    it("9. test ownerOf function", async () => {
+    it("8. test ownerOf function", async () => {
         retval = await instance_erc721.ownerOf(2);
         assert.equal(retval, tokenOwner);
     });
 
-    it("10. test exists function", async () => {
+    it("9. test exists function", async () => {
         retval = await instance_erc721.exists(6);
         assert.isTrue(retval, "error on step 1");
 
@@ -140,7 +138,7 @@ contract('SnarkERC721', async (accounts) => {
         assert.isFalse(retval, "error on step 2");
     });
 
-    it("11. test approve and getApproved functions", async () => {
+    it("10. test approve and getApproved functions", async () => {
         retval = await instance_erc721.getApproved(1);
         assert.equal(retval, 0, "error on step 1");
 
@@ -154,7 +152,7 @@ contract('SnarkERC721', async (accounts) => {
         assert.equal(retval.toUpperCase(), participants[1].toUpperCase(), "error on step 2");
     });
 
-    it("12. test setApprovalForAll and isApprovedForAll functions", async () => {
+    it("11. test setApprovalForAll and isApprovedForAll functions", async () => {
         retval = await instance_erc721.isApprovedForAll(tokenOwner, participants[1]);
         assert.equal(retval, false, "error on step 1");
 
@@ -168,7 +166,7 @@ contract('SnarkERC721', async (accounts) => {
         assert.equal(retval, true, "error on step 2");
     });
 
-    it("13. test transferFrom function", async () => {
+    it("12. test transferFrom function", async () => {
         const _to = accounts[1];
         const _tokenId = 1;
 
@@ -218,7 +216,7 @@ contract('SnarkERC721', async (accounts) => {
         assert.equal(retval, _to, "error on step 5");
     });
 
-    it("14. test freeTransfer function behalf of contract owner", async () => {
+    it("13. test freeTransfer function behalf of contract owner", async () => {
         const _from = accounts[1];
         const _to = accounts[2];
         const _tokenId = 1;
@@ -236,7 +234,7 @@ contract('SnarkERC721', async (accounts) => {
         assert.equal(retval, _from, "error on step 2");
     });
 
-    it('15. freeTransfer - not owner can\'t call a function', async () => {
+    it("14. freeTransfer - not owner can't call a function", async () => {
         const tokenId = 1;
         try {
             await instance_erc721.transferFrom(accounts[2], accounts[3], tokenId, { from: accounts[3] });
@@ -245,7 +243,7 @@ contract('SnarkERC721', async (accounts) => {
         }
     });
 
-    it('16. freeTransfer - snark can\'t transfer token from other wallet', async () => {
+    it("15. freeTransfer - snark can't transfer token from other wallet", async () => {
         const tokenId = 1;
         try {
             await instance_erc721.transferFrom(accounts[2], accounts[3], tokenId, { from: accounts[0] });
