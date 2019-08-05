@@ -959,7 +959,7 @@ contract('SnarkLoan', async (accounts) => {
         tx = await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
         const loanId_1 = await snarktest.getMaxLoanId();
         truffleAssert.eventEmitted(tx, 'LoanCreated', (ev) => {
-            return ev.loanOwner == accounts[0] && ev.loanId.eq(loanId_1);
+            return ev.loanOwner == accounts[0] && ev.loanId.toNumber() == loanId_1;
         });
 
         // console.log(`LoanId of 1st loan: ${ loanId_1 }`);
@@ -989,7 +989,7 @@ contract('SnarkLoan', async (accounts) => {
         tx = await snarkloan.createLoan(l2s, l2f, { from: accounts[0], value: valueOfLoan });
         const loanId_2 = await snarktest.getMaxLoanId();
         truffleAssert.eventEmitted(tx, 'LoanCreated', (ev) => {
-            return ev.loanOwner == accounts[0] && ev.loanId.eq(loanId_2);
+            return ev.loanOwner == accounts[0] && ev.loanId.toNumber() == loanId_2;
         });
         // console.log(`LoanId of 2nd loan: ${ loanId_2 }`);
 
@@ -1283,6 +1283,9 @@ contract('SnarkLoan', async (accounts) => {
         let tokensAmount = await snarkerc721.balanceOf(accounts[0]);
         expect(tokensAmount.toNumber()).to.equal(2);
 
+        tokensAmount = await snarkerc721.balanceOf(accounts[1]);
+        expect(tokensAmount.toNumber()).to.equal(2);
+
         let totalSupply = await snarkerc721.totalSupply();
         assert.equal(totalSupply, 4, "total supply is wrong");
 
@@ -1310,8 +1313,15 @@ contract('SnarkLoan', async (accounts) => {
         let isActive = await snarkloan.isLoanActive(loanId);
         assert.isFalse(isActive, "Loan is active and it's wrong");
 
-        await snarkerc721.transferFrom(accounts[0], accounts[1], 1, { from: accounts[0] });
-        await snarkerc721.transferFrom(accounts[0], accounts[1], 2, { from: accounts[0] });
+        tx = await snarkerc721.transferFrom(accounts[0], accounts[1], 1, { from: accounts[0] });
+        truffleAssert.eventEmitted(tx, 'Transfer', (ev) => {
+            return ev._from == accounts[0] && ev._to == accounts[1] && ev._tokenId.toNumber() == 1;
+        });
+
+        tx = await snarkerc721.transferFrom(accounts[0], accounts[1], 2, { from: accounts[0] });
+        truffleAssert.eventEmitted(tx, 'Transfer', (ev) => {
+            return ev._from == accounts[0] && ev._to == accounts[1] && ev._tokenId.toNumber() == 2;
+        });
 
         tokensAmount = await snarkerc721.balanceOf(accounts[0]);
         expect(tokensAmount.toNumber()).to.equal(0);
@@ -1351,15 +1361,13 @@ contract('SnarkLoan', async (accounts) => {
         }
 
         tx = await snarkerc721.transferFrom(accounts[1], accounts[0], 1, { from: accounts[1] });
-
         truffleAssert.eventEmitted(tx, 'Transfer', (ev) => {
-            return ev._from == accounts[1] && ev._to == accounts[0] && ev._tokenId == 1;
+            return ev._from == accounts[1] && ev._to == accounts[0] && ev._tokenId.toNumber() == 1;
         });
 
         tx = await snarkerc721.transferFrom(accounts[1], accounts[0], 2, { from: accounts[1] });
-
         truffleAssert.eventEmitted(tx, 'Transfer', (ev) => {
-            return ev._from == accounts[1] && ev._to == accounts[0] && ev._tokenId == 2;
+            return ev._from == accounts[1] && ev._to == accounts[0] && ev._tokenId.toNumber() == 2;
         });
 
         tokensAmount = await snarkerc721.balanceOf(accounts[0]);
@@ -1372,9 +1380,9 @@ contract('SnarkLoan', async (accounts) => {
         const lff = loan_1_finish + 10000;
         
         tx = await snarkloan.createLoan(lfs, lff, { from: accounts[0], value: valueOfLoan });
-
+        loanId = await snarktest.getMaxLoanId();
         truffleAssert.eventEmitted(tx, 'LoanCreated', (ev) => {
-            return ev.loanOwner == accounts[1] && ev.loanId.eq(2);
+            return ev.loanId.toNumber() == loanId && ev.loanOwner == accounts[0];
         });
 
         loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
@@ -1392,9 +1400,8 @@ contract('SnarkLoan', async (accounts) => {
         expect(topBoundary.toNumber()).to.equal(lff);
 
         tx = await snarkloan.deleteLoan(loanId);
-
         truffleAssert.eventEmitted(tx, 'LoanDeleted', (ev) => {
-            return ev.loanId == loanId;
+            return ev.loanId.eq(loanId);
         });
 
         loansCount = await snarkloan.getNumberOfLoans();
@@ -1410,123 +1417,5 @@ contract('SnarkLoan', async (accounts) => {
         expect(topBoundary.toNumber()).to.equal(0);
 
     });
-
-    // it("13. sell token during a loan working", async () => {
-    //     let tokensAmount = await snarkerc721.balanceOf(accounts[0]);
-    //     expect(tokensAmount.toNumber()).to.equal(2);
-
-    //     tokensAmount = await snarkerc721.balanceOf(accounts[1]);
-    //     expect(tokensAmount.toNumber()).to.equal(2);
-
-    //     let totalSupply = await snarkerc721.totalSupply();
-    //     assert.equal(totalSupply, 4, "total supply is wrong");
-
-    //     let loansCount = await snarkloan.getNumberOfLoans();
-    //     expect(loansCount.toNumber()).to.equal(0);
-
-    //     const _dt_n     = new Date();
-    //     const _year_n   = _dt_n.getFullYear();
-    //     const _month_n  = _dt_n.getMonth();
-    //     const _date_n   = _dt_n.getDate();
-    //     const _hours_n  = _dt_n.getHours();
-    //     const _min_n    = _dt_n.getMinutes();
-    //     const l1s  = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 1, 0) / 1000;
-    //     const l1f = new Date(_year_n, _month_n, _date_n, _hours_n, _min_n + 2, 0) / 1000;
-
-    //     const valueOfLoan = web3.utils.toWei('2', "ether");
-
-    //     await snarkloan.createLoan(l1s, l1f, { from: accounts[0], value: valueOfLoan });
-
-    //     let loanId = await snarktest.getMaxLoanId();
-
-    //     loansCount = await snarkloan.getNumberOfLoans();
-    //     expect(loansCount.toNumber()).to.equal(1);
-
-    //     let isActive = await snarkloan.isLoanActive(loanId);
-    //     assert.isFalse(isActive, "Loan is active and it's wrong");
-
-    //     pause(80000);
-
-    //     isActive = await snarkloan.isLoanActive(loanId);
-    //     assert.isTrue(isActive, "Loan is not active and it's wrong");
-
-    //     tokensAmount = await snarkerc721.balanceOf(accounts[0]);
-    //     expect(tokensAmount.toNumber()).to.equal(3);
-
-    //     await snarkerc721.transferFrom(accounts[0], accounts[1], 1, { from: accounts[0] });
-    //     await snarkerc721.transferFrom(accounts[0], accounts[1], 2, { from: accounts[0] });
-
-    //     tokensAmount = await snarkerc721.balanceOf(accounts[0]);
-    //     expect(tokensAmount.toNumber()).to.equal(2);
-
-    //     tokensAmount = await snarkerc721.balanceOf(accounts[1]);
-    //     expect(tokensAmount.toNumber()).to.equal(4);
-
-    //     totalSupply = await snarkerc721.totalSupply();
-    //     assert.equal(totalSupply, 4, "total supply is wrong");
-        
-    //     loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
-    //     expect(loansCount.toNumber()).to.equal(1);
-
-    //     pause(60000);
-
-    //     isActive = await snarkloan.isLoanActive(loanId);
-    //     assert.isFalse(isActive, "Loan is not active and it's wrong");
-
-    //     tokensAmount = await snarkerc721.balanceOf(accounts[0]);
-    //     expect(tokensAmount.toNumber()).to.equal(0);
-
-    //     loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
-    //     expect(loansCount.toNumber()).to.equal(0);
-
-    //     try {
-    //         await snarkloan.createLoan(loan_1_start + 10000, loan_1_finish + 10000, { from: accounts[0], value: valueOfLoan });
-    //     } catch(e) {
-    //         expect(e.message).to.equal('Returned error: VM Exception while processing transaction: revert User has to have at least one token -- Reason given: User has to have at least one token.');
-    //     }
-
-    //     await snarkerc721.transferFrom(accounts[1], accounts[0], 1, { from: accounts[1] });
-    //     await snarkerc721.transferFrom(accounts[1], accounts[0], 2, { from: accounts[1] });
-
-    //     tokensAmount = await snarkerc721.balanceOf(accounts[0]);
-    //     expect(tokensAmount.toNumber()).to.equal(2);
-
-    //     tokensAmount = await snarkerc721.balanceOf(accounts[1]);
-    //     expect(tokensAmount.toNumber()).to.equal(2);
-
-    //     const lfs = loan_1_start + 10000;
-    //     const lff = loan_1_finish + 10000;
-
-    //     await snarkloan.createLoan(lfs, lff, { from: accounts[0], value: valueOfLoan });
-
-    //     loansCount = await snarkloan.getCountOfOwnerLoans(accounts[0]);
-    //     expect(loansCount.toNumber()).to.equal(1);
-
-    //     loansCount = await snarkloan.getNumberOfLoans();
-    //     expect(loansCount.toNumber()).to.equal(1);
-
-    //     loanId = await snarkloan.getLoanId();
-
-    //     bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
-    //     expect(bottomBoundary.toNumber()).to.equal(lfs);
-
-    //     topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
-    //     expect(topBoundary.toNumber()).to.equal(lff);
-
-    //     await snarkloan.deleteLoan(loanId);
-
-    //     loansCount = await snarkloan.getNumberOfLoans();
-    //     expect(loansCount.toNumber()).to.equal(0);
-
-    //     loanId = await snarkloan.getLoanId();
-    //     expect(loanId.toNumber()).to.equal(0);
-
-    //     bottomBoundary = await snarktest.getBottomBoundaryOfLoansPeriod();
-    //     expect(bottomBoundary.toNumber()).to.equal(0);
-
-    //     topBoundary = await snarktest.getTopBoundaryOfLoansPeriod();
-    //     expect(topBoundary.toNumber()).to.equal(0);
-
-    // });
 
 });
