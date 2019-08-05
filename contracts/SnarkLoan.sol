@@ -100,7 +100,6 @@ contract SnarkLoan is Ownable {
     function getLoanDetail(uint256 loanId) 
         public 
         view 
-        correctLoan(loanId) 
         returns (address, uint256, uint256, uint256, uint256, uint256) 
     {
         return (
