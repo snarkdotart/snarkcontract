@@ -157,7 +157,6 @@ contract SnarkTestFunctions is Ownable {
     }
 
     function deleteAllLoans(uint256 countOfLoans) public onlyOwner {
-        SnarkLoanLib.setMaxLoanId(_storage, 0);
         SnarkLoanLib.setBottomBoundaryOfLoansPeriod(_storage, 0);
         SnarkLoanLib.setTopBoundaryOfLoansPeriod(_storage, 0);
         SnarkLoanLib.setLoanPointer(_storage, 0);
